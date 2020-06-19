@@ -1,0 +1,4 @@
+[submodule "Pelican/dependencies/glfw"]
+	path = Pelican/dependencies/glfw
+	url = https://github.com/SeppahBaws/glfw
+	branch = 3.3-stable

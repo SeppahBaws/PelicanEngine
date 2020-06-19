@@ -1,0 +1,10 @@
+# Build items
+bin/
+bin-int/
+
+# Generated Visual Studio items
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
