@@ -18,11 +18,13 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 IncludeDir = {}
 IncludeDir["GLFW"] = "Pelican/dependencies/GLFW/include"
-IncludeDir["Glad"] = "Pelican/dependencies/glad/include"
+IncludeDir["Vulkan"] = "C:/VulkanSDK/1.2.141.2/Include"
+
+LibDir = {}
+LibDir["Vulkan"] = "C:/VulkanSDK/1.2.141.2/Lib"
 
 group "Dependencies"
     include "Pelican/dependencies/glfw"
-    include "Pelican/dependencies/glad"
 group ""
 
 project "Pelican"
@@ -35,6 +37,9 @@ project "Pelican"
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+    pchheader "PelicanPCH.h"
+    pchsource "Pelican/src/PelicanPCH.cpp"
 
     files
     {
@@ -51,14 +56,18 @@ project "Pelican"
     {
         "%{prj.name}/src",
         "%{IncludeDir.GLFW}",
-        "%{IncludeDir.Glad}"
+        "%{IncludeDir.Vulkan}"
+    }
+
+    libdirs
+    {
+        "%{LibDir.Vulkan}"
     }
 
     links
     {
         "GLFW",
-        "Glad",
-        "opengl32"
+        "vulkan-1"
     }
 
     filter "system:windows"
@@ -93,6 +102,7 @@ project "Sandbox"
     {
         "Pelican/src",
         "Pelican/vendor",
+        "%{IncludeDir.Vulkan}"
     }
 
     links

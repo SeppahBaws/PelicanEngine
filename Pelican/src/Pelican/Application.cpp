@@ -1,51 +1,30 @@
-﻿#include "Application.h"
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+﻿#include "PelicanPCH.h"
+#include "Application.h"
 #include <iostream>
 
 namespace Pelican
 {
 	void Application::Run()
 	{
-		if (!glfwInit())
+		m_pWindow = new Window(Window::Params{ 1280, 720, "Hello Pelican!", false });
+
+		try
 		{
-			std::cerr << "Failed to initialize GLFW!" << std::endl;
-			return;
+			m_pWindow->Init();
+			m_Device.Initialize();
+		}
+		catch (std::exception& e)
+		{
+			std::cout << e.what() << std::endl;
 		}
 
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-		GLFWwindow* window = glfwCreateWindow(1280, 720, "Hello Pelican Engine!", nullptr, nullptr);
-		if (!window)
+		while (!m_pWindow->ShouldClose())
 		{
-			std::cerr << "Failed to create GLFW window!" << std::endl;
-			glfwTerminate();
-			return;
+			m_pWindow->Update();
 		}
 
-		glfwMakeContextCurrent(window);
-
-		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-		{
-			std::cerr << "Failed to initialize GLAD!" << std::endl;
-			glfwTerminate();
-			return;
-		}
-
-		glViewport(0, 0, 1280, 720);
-
-		while (!glfwWindowShouldClose(window))
-		{
-			glClearColor(0.8f, 0.3f, 0.2f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			glfwPollEvents();
-
-			glfwSwapBuffers(window);
-		}
-
-		glfwTerminate();
+		m_Device.Cleanup();
+		m_pWindow->Cleanup();
+		delete m_pWindow;
 	}
 }

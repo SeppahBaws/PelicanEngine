@@ -1,3 +1,5 @@
+// ReSharper disable once CppUnusedIncludeDirective
+#include <vld.h>
 #include <iostream>
 #include <Pelican.h>
 
@@ -10,5 +12,6 @@ public:
 
 Pelican::Application* Pelican::CreateApplication()
 {
-	return new MyApp();
+	// return new MyApp();
+	return new Pelican::Application();
 }

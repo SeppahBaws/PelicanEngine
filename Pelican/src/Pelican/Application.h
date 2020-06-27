@@ -1,4 +1,7 @@
 ﻿#pragma once
+#include "Window.h"
+
+#include "VulkanDevice.h"
 
 namespace Pelican
 {
@@ -9,6 +12,10 @@ namespace Pelican
 		virtual ~Application() = default;
 
 		virtual void Run() final;
+
+	private:
+		Window* m_pWindow;
+		VulkanDevice m_Device;
 	};
 
 	Application* CreateApplication();
