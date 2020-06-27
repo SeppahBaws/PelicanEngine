@@ -1,9 +1,20 @@
 ﻿#pragma once
+#include <optional>
 
 #include <vulkan/vulkan.h>
 
 namespace Pelican
 {
+	struct QueueFamilyIndices
+	{
+		std::optional<uint32_t> graphicsFamily;
+
+		bool IsComplete() const
+		{
+			return graphicsFamily.has_value();
+		}
+	};
+
 	class VulkanDevice final
 	{
 	public:
@@ -17,10 +28,18 @@ namespace Pelican
 		bool CheckValidationLayerSupport();
 		std::vector<const char*> GetRequiredExtensions();
 		void PrintExtensions();
-		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
 		void SetupDebugMessenger();
+		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
+		void PickPhysicalDevice();
+		bool IsDeviceSuitable(VkPhysicalDevice device);
+
+		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+
+		void CreateLogicalDevice();
+
+	private:
 		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 			VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 			VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -34,5 +53,8 @@ namespace Pelican
 			"VK_LAYER_KHRONOS_validation"
 		};
 		VkDebugUtilsMessengerEXT m_VkDebugMessenger{};
+		VkPhysicalDevice m_VkPhysicalDevice{};
+		VkDevice m_VkDevice{};
+		VkQueue m_VkGraphicsQueue;
 	};
 }
