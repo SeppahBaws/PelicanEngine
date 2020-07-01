@@ -56,12 +56,20 @@ namespace Pelican
 		void CreateSwapChain();
 		void CreateImageViews();
 
+		void CreateRenderPass();
+
+		void CreateGraphicsPipeline();
+		VkShaderModule CreateShaderModule(const std::vector<char>& code);
+
 	private:
 		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 			VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 			VkDebugUtilsMessageTypeFlagsEXT messageType,
 			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 			void* pUserData);
+
+	private:
+		static std::vector<char> ReadFile(const std::string& filename);
 
 	private:
 		VkInstance m_VkInstance{};
@@ -83,5 +91,8 @@ namespace Pelican
 		VkFormat m_VkSwapChainImageFormat;
 		VkExtent2D m_VkSwapChainExtent;
 		std::vector<VkImageView> m_VkSwapChainImageViews;
+		VkRenderPass m_VkRenderPass;
+		VkPipelineLayout m_VkPipelineLayout;
+		VkPipeline m_VkGraphicsPipeline;
 	};
 }
