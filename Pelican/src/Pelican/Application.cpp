@@ -32,8 +32,11 @@ namespace Pelican
 
 		while (!m_pWindow->ShouldClose())
 		{
+			m_Device.Draw();
 			m_pWindow->Update();
 		}
+
+		m_Device.WaitForIdle();
 
 		m_Device.Cleanup();
 		m_pWindow->Cleanup();

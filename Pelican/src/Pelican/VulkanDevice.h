@@ -31,6 +31,9 @@ namespace Pelican
 		void Initialize();
 		void Cleanup();
 
+		void Draw();
+		void WaitForIdle();
+
 	private:
 		void CreateInstance();
 		bool CheckValidationLayerSupport();
@@ -60,6 +63,12 @@ namespace Pelican
 
 		void CreateGraphicsPipeline();
 		VkShaderModule CreateShaderModule(const std::vector<char>& code);
+
+		void CreateFramebuffers();
+		void CreateCommandPool();
+		void CreateCommandBuffers();
+
+		void CreateSyncObjects();
 
 	private:
 		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
@@ -94,5 +103,14 @@ namespace Pelican
 		VkRenderPass m_VkRenderPass;
 		VkPipelineLayout m_VkPipelineLayout;
 		VkPipeline m_VkGraphicsPipeline;
+		std::vector<VkFramebuffer> m_VkSwapChainFramebuffers;
+		VkCommandPool m_VkCommandPool;
+		std::vector<VkCommandBuffer> m_VkCommandBuffers;
+		const int MAX_FRAMES_IN_FLIGHT = 2;
+		size_t m_CurrentFrame = 0;
+		std::vector<VkSemaphore> m_VkImageAvailableSemaphores;
+		std::vector<VkSemaphore> m_VkRenderFinishedSemaphores;
+		std::vector<VkFence> m_VkInFlightFences;
+		std::vector<VkFence> m_VkImagesInFlight;
 	};
 }
