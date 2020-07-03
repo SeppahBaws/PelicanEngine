@@ -72,14 +72,30 @@ project "Pelican"
 
     filter "system:windows"
         systemversion "latest"
+        system "Windows"
+
+        defines
+        {
+            "PLATFORM_WINDOWS"
+        }
 
     filter "configurations:Debug"
         runtime "Debug"
         symbols "on"
 
+        defines
+        {
+            "PELICAN_DEBUG"
+        }
+
     filter "configurations:Release"
         runtime "Release"
         optimize "on"
+
+        defines
+        {
+            "PELICAN_RELEASE"
+        }
 
 project "Sandbox"
     location "Sandbox"

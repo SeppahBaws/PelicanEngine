@@ -1,9 +1,10 @@
 #pragma once
 
-#define ENABLE_ASSERTIONS // TODO: move to premake file
-#ifdef ENABLE_ASSERTIONS
-#include <iostream>
+#ifdef PELICAN_DEBUG
+#define ENABLE_ASSERTIONS
+#endif
 
+#ifdef ENABLE_ASSERTIONS
 #if _MSC_VER
 #include <intrin.h>
 #define debugBreak() __debugbreak()
@@ -23,6 +24,7 @@
 		debugBreak(); \
 	}
 
+#include <iostream>
 inline void ReportAssertionFailure(const char* expression, const char* msg, const char* file, int line)
 {
 	std::cerr << "Assertion failed: " << expression << " -- message: '" << msg << "' in file " << file << " at line " << line << std::endl;
