@@ -23,10 +23,10 @@ namespace Pelican
 		std::vector<VkPresentModeKHR> presentModes;
 	};
 
-	class VulkanDevice final
+	class VulkanRenderer final
 	{
 	public:
-		VulkanDevice() = default;
+		VulkanRenderer() = default;
 
 		void Initialize();
 		void Cleanup();

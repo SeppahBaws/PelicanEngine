@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Window.h"
 
-#include "VulkanDevice.h"
+#include "VulkanRenderer.h"
 
 namespace Pelican
 {
@@ -18,7 +18,7 @@ namespace Pelican
 
 	private:
 		Window* m_pWindow{};
-		VulkanDevice m_Device;
+		VulkanRenderer m_Renderer;
 
 		static Application* m_Instance;
 	};

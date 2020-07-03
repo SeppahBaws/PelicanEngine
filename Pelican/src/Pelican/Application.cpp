@@ -23,7 +23,7 @@ namespace Pelican
 		try
 		{
 			m_pWindow->Init();
-			m_Device.Initialize();
+			m_Renderer.Initialize();
 		}
 		catch (std::exception& e)
 		{
@@ -32,13 +32,13 @@ namespace Pelican
 
 		while (!m_pWindow->ShouldClose())
 		{
-			m_Device.Draw();
+			m_Renderer.Draw();
 			m_pWindow->Update();
 		}
 
-		m_Device.WaitForIdle();
+		m_Renderer.WaitForIdle();
 
-		m_Device.Cleanup();
+		m_Renderer.Cleanup();
 		m_pWindow->Cleanup();
 		delete m_pWindow;
 	}

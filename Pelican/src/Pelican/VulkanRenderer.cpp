@@ -1,5 +1,5 @@
 ﻿#include "PelicanPCH.h"
-#include "VulkanDevice.h"
+#include "VulkanRenderer.h"
 
 #include <fstream>
 #include <algorithm>
@@ -11,7 +11,7 @@
 
 namespace Pelican
 {
-	void VulkanDevice::Initialize()
+	void VulkanRenderer::Initialize()
 	{
 		CreateInstance();
 		SetupDebugMessenger();
@@ -28,7 +28,7 @@ namespace Pelican
 		CreateSyncObjects();
 	}
 
-	void VulkanDevice::Cleanup()
+	void VulkanRenderer::Cleanup()
 	{
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
@@ -65,7 +65,7 @@ namespace Pelican
 		vkDestroyInstance(m_VkInstance, nullptr);
 	}
 
-	void VulkanDevice::Draw()
+	void VulkanRenderer::Draw()
 	{
 		vkWaitForFences(m_VkDevice, 1, &m_VkInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
 
@@ -119,12 +119,12 @@ namespace Pelican
 		m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
-	void VulkanDevice::WaitForIdle()
+	void VulkanRenderer::WaitForIdle()
 	{
 		vkDeviceWaitIdle(m_VkDevice);
 	}
 
-	void VulkanDevice::CreateInstance()
+	void VulkanRenderer::CreateInstance()
 	{
 		if (m_EnableValidationLayers && !CheckValidationLayerSupport())
 		{
@@ -172,7 +172,7 @@ namespace Pelican
 		}
 	}
 
-	bool VulkanDevice::CheckValidationLayerSupport()
+	bool VulkanRenderer::CheckValidationLayerSupport()
 	{
 		uint32_t layerCount;
 		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -202,7 +202,7 @@ namespace Pelican
 		return true;
 	}
 
-	std::vector<const char*> VulkanDevice::GetRequiredExtensions()
+	std::vector<const char*> VulkanRenderer::GetRequiredExtensions()
 	{
 		uint32_t glfwExtensionCount = 0;
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -217,7 +217,7 @@ namespace Pelican
 		return extensions;
 	}
 
-	void VulkanDevice::PrintExtensions()
+	void VulkanRenderer::PrintExtensions()
 	{
 		uint32_t extensionCount = 0;
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -232,7 +232,7 @@ namespace Pelican
 		}
 	}
 
-	void VulkanDevice::SetupDebugMessenger()
+	void VulkanRenderer::SetupDebugMessenger()
 	{
 		if (!m_EnableValidationLayers)
 			return;
@@ -246,7 +246,7 @@ namespace Pelican
 		}
 	}
 
-	void VulkanDevice::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+	void VulkanRenderer::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 	{
 		createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -257,7 +257,7 @@ namespace Pelican
 		createInfo.pfnUserCallback = DebugCallback;
 	}
 
-	void VulkanDevice::CreateSurface()
+	void VulkanRenderer::CreateSurface()
 	{
 		if (glfwCreateWindowSurface(m_VkInstance, Application::Get().GetWindow()->GetGLFWWindow(), nullptr, &m_VkSurface) != VK_SUCCESS)
 		{
@@ -265,7 +265,7 @@ namespace Pelican
 		}
 	}
 
-	void VulkanDevice::PickPhysicalDevice()
+	void VulkanRenderer::PickPhysicalDevice()
 	{
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, nullptr);
@@ -293,7 +293,7 @@ namespace Pelican
 		}
 	}
 
-	bool VulkanDevice::IsDeviceSuitable(VkPhysicalDevice device)
+	bool VulkanRenderer::IsDeviceSuitable(VkPhysicalDevice device)
 	{
 		VkPhysicalDeviceProperties deviceProperties;
 		VkPhysicalDeviceFeatures deviceFeatures;
@@ -315,7 +315,7 @@ namespace Pelican
 			indices.IsComplete() && extensionsSupported && swapChainAdequate;
 	}
 
-	QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device)
+	QueueFamilyIndices VulkanRenderer::FindQueueFamilies(VkPhysicalDevice device)
 	{
 		QueueFamilyIndices indices;
 
@@ -351,7 +351,7 @@ namespace Pelican
 		return indices;
 	}
 
-	void VulkanDevice::CreateLogicalDevice()
+	void VulkanRenderer::CreateLogicalDevice()
 	{
 		QueueFamilyIndices indices = FindQueueFamilies(m_VkPhysicalDevice);
 
@@ -390,7 +390,7 @@ namespace Pelican
 		vkGetDeviceQueue(m_VkDevice, indices.presentFamily.value(), 0, &m_VkPresentQueue);
 	}
 
-	bool VulkanDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device)
+	bool VulkanRenderer::CheckDeviceExtensionSupport(VkPhysicalDevice device)
 	{
 		uint32_t extensionCount;
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -408,7 +408,7 @@ namespace Pelican
 		return requiredExtensions.empty();
 	}
 
-	SwapChainSupportDetails VulkanDevice::QuerySwapChainSupport(VkPhysicalDevice device)
+	SwapChainSupportDetails VulkanRenderer::QuerySwapChainSupport(VkPhysicalDevice device)
 	{
 		SwapChainSupportDetails details;
 
@@ -435,7 +435,7 @@ namespace Pelican
 		return details;
 	}
 
-	VkSurfaceFormatKHR VulkanDevice::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+	VkSurfaceFormatKHR VulkanRenderer::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 	{
 		for (const auto& availableFormat : availableFormats)
 		{
@@ -448,7 +448,7 @@ namespace Pelican
 		return availableFormats[0];
 	}
 
-	VkPresentModeKHR VulkanDevice::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+	VkPresentModeKHR VulkanRenderer::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
 	{
 		for (const auto& availablePresentMode : availablePresentModes)
 		{
@@ -461,7 +461,7 @@ namespace Pelican
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
-	VkExtent2D VulkanDevice::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+	VkExtent2D VulkanRenderer::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 	{
 		if (capabilities.currentExtent.width != UINT32_MAX)
 		{
@@ -477,7 +477,7 @@ namespace Pelican
 		return actualExtent;
 	}
 
-	void VulkanDevice::CreateSwapChain()
+	void VulkanRenderer::CreateSwapChain()
 	{
 		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_VkPhysicalDevice);
 
@@ -536,7 +536,7 @@ namespace Pelican
 		m_VkSwapChainExtent = extent;
 	}
 
-	void VulkanDevice::CreateImageViews()
+	void VulkanRenderer::CreateImageViews()
 	{
 		m_VkSwapChainImageViews.resize(m_VkSwapChainImages.size());
 
@@ -564,7 +564,7 @@ namespace Pelican
 		}
 	}
 
-	void VulkanDevice::CreateRenderPass()
+	void VulkanRenderer::CreateRenderPass()
 	{
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = m_VkSwapChainImageFormat;
@@ -608,7 +608,7 @@ namespace Pelican
 		}
 	}
 
-	void VulkanDevice::CreateGraphicsPipeline()
+	void VulkanRenderer::CreateGraphicsPipeline()
 	{
 		std::vector<char> vertShaderCode = ReadFile("res/shaders/vert.spv");
 		std::vector<char> fragShaderCode = ReadFile("res/shaders/frag.spv");
@@ -746,7 +746,7 @@ namespace Pelican
 		vkDestroyShaderModule(m_VkDevice, fragShaderModule, nullptr);
 	}
 
-	VkShaderModule VulkanDevice::CreateShaderModule(const std::vector<char>& code)
+	VkShaderModule VulkanRenderer::CreateShaderModule(const std::vector<char>& code)
 	{
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -762,7 +762,7 @@ namespace Pelican
 		return shaderModule;
 	}
 
-	void VulkanDevice::CreateFramebuffers()
+	void VulkanRenderer::CreateFramebuffers()
 	{
 		m_VkSwapChainFramebuffers.resize(m_VkSwapChainImageViews.size());
 
@@ -789,7 +789,7 @@ namespace Pelican
 		}
 	}
 
-	void VulkanDevice::CreateCommandPool()
+	void VulkanRenderer::CreateCommandPool()
 	{
 		QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_VkPhysicalDevice);
 
@@ -804,7 +804,7 @@ namespace Pelican
 		}
 	}
 
-	void VulkanDevice::CreateCommandBuffers()
+	void VulkanRenderer::CreateCommandBuffers()
 	{
 		m_VkCommandBuffers.resize(m_VkSwapChainFramebuffers.size());
 
@@ -854,7 +854,7 @@ namespace Pelican
 		}
 	}
 
-	void VulkanDevice::CreateSyncObjects()
+	void VulkanRenderer::CreateSyncObjects()
 	{
 		m_VkImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		m_VkRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -879,7 +879,7 @@ namespace Pelican
 		}
 	}
 
-	VkBool32 VulkanDevice::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
+	VkBool32 VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
 	                                     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
 	{
 		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
@@ -887,7 +887,7 @@ namespace Pelican
 		return VK_FALSE;
 	}
 
-	std::vector<char> VulkanDevice::ReadFile(const std::string& filename)
+	std::vector<char> VulkanRenderer::ReadFile(const std::string& filename)
 	{
 		std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
