@@ -19,7 +19,7 @@ namespace Pelican
 	{
 		if (!glfwInit())
 		{
-			throw std::exception("Failed to initialize GLFW!");
+			ASSERT_MSG(false, "Failed to initialize GLFW!");
 		}
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

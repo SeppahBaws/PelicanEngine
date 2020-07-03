@@ -99,7 +99,7 @@ namespace Pelican
 
 		if (vkQueueSubmit(m_VkGraphicsQueue, 1, &submitInfo, m_VkInFlightFences[m_CurrentFrame]) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to submit draw command buffer!");
+			ASSERT_MSG(false, "failed to submit draw command buffer!");
 		}
 
 		VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
@@ -123,7 +123,7 @@ namespace Pelican
 	{
 		if (m_EnableValidationLayers && !CheckValidationLayerSupport())
 		{
-			throw std::runtime_error("validation layers requested, but not available!");
+			ASSERT_MSG(false, "validation layers requested, but not available!");
 		}
 
 		VkApplicationInfo appInfo = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
@@ -161,7 +161,7 @@ namespace Pelican
 
 		if (vkCreateInstance(&createInfo, nullptr, &m_VkInstance) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to create instance!");
+			ASSERT_MSG(false, "failed to create instance!");
 		}
 	}
 
@@ -235,7 +235,7 @@ namespace Pelican
 	
 		if (VulkanProxy::CreateDebugUtilsMessenger(m_VkInstance, &createInfo, nullptr, &m_VkDebugMessenger) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to set up debug messenger!");
+			ASSERT_MSG(false, "failed to set up debug messenger!");
 		}
 	}
 
@@ -253,7 +253,7 @@ namespace Pelican
 	{
 		if (glfwCreateWindowSurface(m_VkInstance, Application::Get().GetWindow()->GetGLFWWindow(), nullptr, &m_VkSurface) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to create window surface");
+			ASSERT_MSG(false, "failed to create window surface");
 		}
 	}
 
@@ -264,7 +264,7 @@ namespace Pelican
 
 		if (deviceCount == 0)
 		{
-			throw std::runtime_error("failed to find GPUs with Vulkan support!");
+			ASSERT_MSG(false, "failed to find GPUs with Vulkan support!");
 		}
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -281,7 +281,7 @@ namespace Pelican
 
 		if (m_VkPhysicalDevice == VK_NULL_HANDLE)
 		{
-			throw std::runtime_error("failed to find a suitable GPU!");
+			ASSERT_MSG(false, "failed to find a suitable GPU!");
 		}
 	}
 
@@ -373,7 +373,7 @@ namespace Pelican
 
 		if (vkCreateDevice(m_VkPhysicalDevice, &createInfo, nullptr, &m_VkDevice) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to create logical device!");
+			ASSERT_MSG(false, "failed to create logical device!");
 		}
 
 		vkGetDeviceQueue(m_VkDevice, indices.graphicsFamily.value(), 0, &m_VkGraphicsQueue);
@@ -515,7 +515,7 @@ namespace Pelican
 
 		if (vkCreateSwapchainKHR(m_VkDevice, &createInfo, nullptr, &m_VkSwapchain) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to create swap chain!");
+			ASSERT_MSG(false, "failed to create swap chain!");
 		}
 
 		vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapchain, &imageCount, nullptr);
@@ -547,7 +547,7 @@ namespace Pelican
 
 			if (vkCreateImageView(m_VkDevice, &createInfo, nullptr, &m_VkSwapChainImageViews[i]) != VK_SUCCESS)
 			{
-				throw std::runtime_error("failed to create image views");
+				ASSERT_MSG(false, "failed to create image views");
 			}
 		}
 	}
@@ -591,7 +591,7 @@ namespace Pelican
 
 		if (vkCreateRenderPass(m_VkDevice, &renderPassInfo, nullptr, &m_VkRenderPass) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to create render pass!");
+			ASSERT_MSG(false, "failed to create render pass!");
 		}
 	}
 
@@ -691,7 +691,7 @@ namespace Pelican
 
 		if (vkCreatePipelineLayout(m_VkDevice, &pipelineLayoutInfo, nullptr, &m_VkPipelineLayout) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to create pipeline layout!");
+			ASSERT_MSG(false, "failed to create pipeline layout!");
 		}
 
 		VkGraphicsPipelineCreateInfo pipelineInfo = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
@@ -716,7 +716,7 @@ namespace Pelican
 
 		if (vkCreateGraphicsPipelines(m_VkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_VkGraphicsPipeline) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to create graphics pipeline!");
+			ASSERT_MSG(false, "failed to create graphics pipeline!");
 		}
 
 		vkDestroyShaderModule(m_VkDevice, vertShaderModule, nullptr);
@@ -732,7 +732,7 @@ namespace Pelican
 		VkShaderModule shaderModule;
 		if (vkCreateShaderModule(m_VkDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to create shader module!");
+			ASSERT_MSG(false, "failed to create shader module!");
 		}
 
 		return shaderModule;
@@ -759,7 +759,7 @@ namespace Pelican
 
 			if (vkCreateFramebuffer(m_VkDevice, &framebufferInfo, nullptr, &m_VkSwapChainFramebuffers[i]) != VK_SUCCESS)
 			{
-				throw std::runtime_error("failed to create framebuffer!");
+				ASSERT_MSG(false, "failed to create framebuffer!");
 			}
 		}
 	}
@@ -774,7 +774,7 @@ namespace Pelican
 
 		if (vkCreateCommandPool(m_VkDevice, &poolInfo, nullptr, &m_VkCommandPool) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to create command pool!");
+			ASSERT_MSG(false, "failed to create command pool!");
 		}
 	}
 
@@ -789,7 +789,7 @@ namespace Pelican
 
 		if (vkAllocateCommandBuffers(m_VkDevice, &allocInfo, m_VkCommandBuffers.data()) != VK_SUCCESS)
 		{
-			throw std::runtime_error("failed to allocate command buffers!");
+			ASSERT_MSG(false, "failed to allocate command buffers!");
 		}
 
 		for (size_t i = 0; i < m_VkCommandBuffers.size(); i++)
@@ -800,7 +800,7 @@ namespace Pelican
 
 			if (vkBeginCommandBuffer(m_VkCommandBuffers[i], &beginInfo) != VK_SUCCESS)
 			{
-				throw std::runtime_error("failed to begin recording command buffer!");
+				ASSERT_MSG(false, "failed to begin recording command buffer!");
 			}
 
 			VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
@@ -820,7 +820,7 @@ namespace Pelican
 
 			if (vkEndCommandBuffer(m_VkCommandBuffers[i]) != VK_SUCCESS)
 			{
-				throw std::runtime_error("failed to record command buffer!");
+				ASSERT_MSG(false, "failed to record command buffer!");
 			}
 		}
 	}
@@ -843,7 +843,7 @@ namespace Pelican
 				vkCreateSemaphore(m_VkDevice, &semaphoreInfo, nullptr, &m_VkRenderFinishedSemaphores[i]) != VK_SUCCESS ||
 				vkCreateFence(m_VkDevice, &fenceInfo, nullptr, &m_VkInFlightFences[i]) != VK_SUCCESS)
 			{
-				throw std::runtime_error("failed to create synchronization objects for a frame!");
+				ASSERT_MSG(false, "failed to create synchronization objects for a frame!");
 			}
 		}
 	}
@@ -862,7 +862,7 @@ namespace Pelican
 
 		if (!file.is_open())
 		{
-			throw std::runtime_error("failed to open file!");
+			ASSERT_MSG(false, "failed to open file!");
 		}
 
 		size_t fileSize = static_cast<size_t>(file.tellg());

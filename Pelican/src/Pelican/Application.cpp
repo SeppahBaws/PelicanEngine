@@ -1,6 +1,5 @@
 ﻿#include "PelicanPCH.h"
 #include "Application.h"
-#include <iostream>
 
 namespace Pelican
 {
@@ -10,7 +9,7 @@ namespace Pelican
 	{
 		if (m_Instance)
 		{
-			throw std::runtime_error("Application already exists! Cannot create two applications at once!");
+			ASSERT_MSG(false, "Application already exists! Cannot create two applications at once!");
 		}
 
 		m_Instance = this;
@@ -20,15 +19,8 @@ namespace Pelican
 	{
 		m_pWindow = new Window(Window::Params{ 1280, 720, "Hello Pelican!", false });
 
-		try
-		{
-			m_pWindow->Init();
-			m_Renderer.Initialize();
-		}
-		catch (std::exception& e)
-		{
-			std::cout << e.what() << std::endl;
-		}
+		m_pWindow->Init();
+		m_Renderer.Initialize();
 
 		while (!m_pWindow->ShouldClose())
 		{
