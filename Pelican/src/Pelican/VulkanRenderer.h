@@ -32,7 +32,6 @@ namespace Pelican
 		void Cleanup();
 
 		void Draw();
-		void WaitForIdle();
 
 	private:
 		void CreateInstance();

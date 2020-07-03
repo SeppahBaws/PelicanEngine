@@ -30,6 +30,8 @@ namespace Pelican
 
 	void VulkanRenderer::Cleanup()
 	{
+		vkDeviceWaitIdle(m_VkDevice);
+
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
 			vkDestroySemaphore(m_VkDevice, m_VkRenderFinishedSemaphores[i], nullptr);
@@ -117,11 +119,6 @@ namespace Pelican
 		vkQueueWaitIdle(m_VkPresentQueue);
 
 		m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-	}
-
-	void VulkanRenderer::WaitForIdle()
-	{
-		vkDeviceWaitIdle(m_VkDevice);
 	}
 
 	void VulkanRenderer::CreateInstance()

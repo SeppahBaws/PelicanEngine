@@ -36,8 +36,6 @@ namespace Pelican
 			m_pWindow->Update();
 		}
 
-		m_Renderer.WaitForIdle();
-
 		m_Renderer.Cleanup();
 		m_pWindow->Cleanup();
 		delete m_pWindow;
