@@ -32,5 +32,5 @@ inline void ReportAssertionFailure(const char* expression, const char* msg, cons
 
 #else
 #define ASSERT(expr)
-#define ASSERT_MSG(expr)
+#define ASSERT_MSG(expr, msg)
 #endif // ENABLE_ASSERTIONS

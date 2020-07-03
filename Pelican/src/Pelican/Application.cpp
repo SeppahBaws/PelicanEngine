@@ -17,19 +17,22 @@ namespace Pelican
 
 	void Application::Run()
 	{
-		m_pWindow = new Window(Window::Params{ 1280, 720, "Hello Pelican!", false });
+		m_pWindow = new Window(Window::Params{ 1280, 720, "Sandbox", true });
+		m_pRenderer = new VulkanRenderer();
 
 		m_pWindow->Init();
-		m_Renderer.Initialize();
+		m_pRenderer->Initialize();
 
 		while (!m_pWindow->ShouldClose())
 		{
-			m_Renderer.Draw();
+			m_pRenderer->Draw();
 			m_pWindow->Update();
 		}
 
-		m_Renderer.Cleanup();
+		m_pRenderer->Cleanup();
 		m_pWindow->Cleanup();
+
+		delete m_pRenderer;
 		delete m_pWindow;
 	}
 }

@@ -1,5 +1,6 @@
 ﻿#include "PelicanPCH.h"
 #include "Window.h"
+#include "Application.h"
 
 #include <GLFW/glfw3.h>
 
@@ -32,7 +33,16 @@ namespace Pelican
 			throw std::exception("Failed to create GLFW window!");
 		}
 
-		glfwMakeContextCurrent(m_pGLFWwindow);
+		glfwSetWindowUserPointer(m_pGLFWwindow, this);
+
+		glfwSetFramebufferSizeCallback(m_pGLFWwindow, [](GLFWwindow* window, int width, int height)
+		{
+			Window* pWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+			pWindow->m_Params.width = width;
+			pWindow->m_Params.height = height;
+
+			Application::Get().GetRenderer().FlagWindowResized();
+		});
 	}
 
 	void Window::Cleanup()

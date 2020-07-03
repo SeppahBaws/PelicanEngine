@@ -32,6 +32,7 @@ namespace Pelican
 		void Cleanup();
 
 		void Draw();
+		void FlagWindowResized() { m_FrameBufferResized = true; }
 
 	private:
 		void CreateInstance();
@@ -69,6 +70,9 @@ namespace Pelican
 
 		void CreateSyncObjects();
 
+		void CleanupSwapChain();
+		void RecreateSwapChain();
+
 	private:
 		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 			VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -81,7 +85,11 @@ namespace Pelican
 
 	private:
 		VkInstance m_VkInstance{};
+#ifdef PELICAN_DEBUG
 		const bool m_EnableValidationLayers = true;
+#else
+		const bool m_EnableValidationLayers = false;
+#endif
 		const std::vector<const char*> m_ValidationLayers = {
 			"VK_LAYER_KHRONOS_validation"
 		};
@@ -111,5 +119,7 @@ namespace Pelican
 		std::vector<VkSemaphore> m_VkRenderFinishedSemaphores;
 		std::vector<VkFence> m_VkInFlightFences;
 		std::vector<VkFence> m_VkImagesInFlight;
+
+		bool m_FrameBufferResized = false;
 	};
 }

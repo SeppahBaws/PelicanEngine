@@ -14,11 +14,12 @@ namespace Pelican
 		virtual void Run() final;
 
 		Window* GetWindow() const { return m_pWindow; }
+		VulkanRenderer& GetRenderer() const { return *m_pRenderer; }
 		static Application& Get() { return *m_Instance; }
 
 	private:
 		Window* m_pWindow{};
-		VulkanRenderer m_Renderer;
+		VulkanRenderer* m_pRenderer{};
 
 		static Application* m_Instance;
 	};

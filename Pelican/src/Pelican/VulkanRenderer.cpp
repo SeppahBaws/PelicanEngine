@@ -32,6 +32,8 @@ namespace Pelican
 	{
 		vkDeviceWaitIdle(m_VkDevice);
 
+		CleanupSwapChain();
+
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
 			vkDestroySemaphore(m_VkDevice, m_VkRenderFinishedSemaphores[i], nullptr);
@@ -40,22 +42,6 @@ namespace Pelican
 		}
 
 		vkDestroyCommandPool(m_VkDevice, m_VkCommandPool, nullptr);
-
-		for (auto framebuffer : m_VkSwapChainFramebuffers)
-		{
-			vkDestroyFramebuffer(m_VkDevice, framebuffer, nullptr);
-		}
-
-		vkDestroyPipeline(m_VkDevice, m_VkGraphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(m_VkDevice, m_VkPipelineLayout, nullptr);
-		vkDestroyRenderPass(m_VkDevice, m_VkRenderPass, nullptr);
-
-		for (auto imageView : m_VkSwapChainImageViews)
-		{
-			vkDestroyImageView(m_VkDevice, imageView, nullptr);
-		}
-
-		vkDestroySwapchainKHR(m_VkDevice, m_VkSwapchain, nullptr);
 		vkDestroyDevice(m_VkDevice, nullptr);
 
 		if (m_EnableValidationLayers)
@@ -72,7 +58,18 @@ namespace Pelican
 		vkWaitForFences(m_VkDevice, 1, &m_VkInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex;
-		vkAcquireNextImageKHR(m_VkDevice, m_VkSwapchain, UINT64_MAX, m_VkImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(m_VkDevice, m_VkSwapchain, UINT64_MAX, m_VkImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_FrameBufferResized)
+		{
+			m_FrameBufferResized = false;
+			RecreateSwapChain();
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		{
+			ASSERT_MSG(false, "failed to acquire swap chain image!");
+		}
 
 		if (m_VkImagesInFlight[imageIndex] != VK_NULL_HANDLE)
 		{
@@ -112,9 +109,16 @@ namespace Pelican
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = nullptr;
 
-		vkQueuePresentKHR(m_VkPresentQueue, &presentInfo);
+		result = vkQueuePresentKHR(m_VkPresentQueue, &presentInfo);
 
-		vkQueueWaitIdle(m_VkPresentQueue);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+		{
+			RecreateSwapChain();
+		}
+		else if (result != VK_SUCCESS)
+		{
+			ASSERT_MSG(false, "failed to present swap chain image!");
+		}
 
 		m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
@@ -457,6 +461,7 @@ namespace Pelican
 		{
 			return capabilities.currentExtent;
 		}
+
 		Window::Params params = Application::Get().GetWindow()->GetParams();
 
 		VkExtent2D actualExtent = { static_cast<uint32_t>(params.width), static_cast<uint32_t>(params.height) };
@@ -848,8 +853,53 @@ namespace Pelican
 		}
 	}
 
+	void VulkanRenderer::CleanupSwapChain()
+	{
+		for (size_t i = 0; i < m_VkSwapChainFramebuffers.size(); i++)
+		{
+			vkDestroyFramebuffer(m_VkDevice, m_VkSwapChainFramebuffers[i], nullptr);
+		}
+
+		vkFreeCommandBuffers(m_VkDevice, m_VkCommandPool, static_cast<uint32_t>(m_VkCommandBuffers.size()), m_VkCommandBuffers.data());
+
+		vkDestroyPipeline(m_VkDevice, m_VkGraphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(m_VkDevice, m_VkPipelineLayout, nullptr);
+		vkDestroyRenderPass(m_VkDevice, m_VkRenderPass, nullptr);
+
+		for (size_t i = 0; i < m_VkSwapChainImageViews.size(); i++)
+		{
+			vkDestroyImageView(m_VkDevice, m_VkSwapChainImageViews[i], nullptr);
+		}
+
+		vkDestroySwapchainKHR(m_VkDevice, m_VkSwapchain, nullptr);
+	}
+
+	void VulkanRenderer::RecreateSwapChain()
+	{
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(Application::Get().GetWindow()->GetGLFWWindow(), &width, &height);
+		while (width == 0 || height == 0)
+		{
+			glfwGetFramebufferSize(Application::Get().GetWindow()->GetGLFWWindow(), &width, &height);
+			glfwWaitEvents();
+		}
+
+		std::cout << "framebuffer resized, recreating swap chain!" << std::endl;
+
+		vkDeviceWaitIdle(m_VkDevice);
+
+		CleanupSwapChain();
+
+		CreateSwapChain();
+		CreateImageViews();
+		CreateRenderPass();
+		CreateGraphicsPipeline();
+		CreateFramebuffers();
+		CreateCommandBuffers();
+	}
+
 	VkBool32 VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
-	                                     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
+	                                       const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
 	{
 		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 

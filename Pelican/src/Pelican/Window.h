@@ -27,7 +27,7 @@ namespace Pelican
 
 		[[nodiscard]] GLFWwindow* GetGLFWWindow() const { return m_pGLFWwindow; }
 
-		Params GetParams() const { return m_Params; }
+		[[nodiscard]] Params GetParams() const { return m_Params; }
 
 	private:
 		GLFWwindow* m_pGLFWwindow;
