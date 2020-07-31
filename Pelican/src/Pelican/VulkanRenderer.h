@@ -3,6 +3,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include "Vertex.h"
+
 namespace Pelican
 {
 	struct QueueFamilyIndices
@@ -66,12 +68,18 @@ namespace Pelican
 
 		void CreateFramebuffers();
 		void CreateCommandPool();
+		void CreateVertexBuffer();
+		void CreateIndexBuffer();
 		void CreateCommandBuffers();
 
 		void CreateSyncObjects();
 
 		void CleanupSwapChain();
 		void RecreateSwapChain();
+
+		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 	private:
 		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
@@ -121,5 +129,20 @@ namespace Pelican
 		std::vector<VkFence> m_VkImagesInFlight;
 
 		bool m_FrameBufferResized = false;
+
+		VkBuffer m_VkVertexBuffer;
+		VkDeviceMemory m_VkVertexBufferMemory;
+		VkBuffer m_VkIndexBuffer;
+		VkDeviceMemory m_VkIndexBufferMemory;
+
+		const std::vector<Vertex> m_Vertices = {
+			{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+			{{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+			{{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
+			{{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}},
+		};
+		const std::vector<uint16_t> m_Indices = {
+			0, 1, 2, 2, 3, 0
+		};
 	};
 }

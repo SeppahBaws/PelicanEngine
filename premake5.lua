@@ -18,6 +18,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 IncludeDir = {}
 IncludeDir["GLFW"] = "Pelican/dependencies/GLFW/include"
+IncludeDir["Glm"] = "Pelican/dependencies/glm"
 IncludeDir["Vulkan"] = "C:/VulkanSDK/1.2.141.2/Include"
 
 LibDir = {}
@@ -56,6 +57,7 @@ project "Pelican"
     {
         "%{prj.name}/src",
         "%{IncludeDir.GLFW}",
+        "%{IncludeDir.Glm}",
         "%{IncludeDir.Vulkan}"
     }
 
@@ -118,6 +120,7 @@ project "Sandbox"
     {
         "Pelican/src",
         "Pelican/vendor",
+        "%{IncludeDir.Glm}",
         "%{IncludeDir.Vulkan}"
     }
 

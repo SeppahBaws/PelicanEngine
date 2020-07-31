@@ -2,3 +2,6 @@
 	path = Pelican/dependencies/glfw
 	url = https://github.com/SeppahBaws/glfw
 	branch = 3.3-stable
+[submodule "Pelican/dependencies/glm"]
+	path = Pelican/dependencies/glm
+	url = https://github.com/g-truc/glm

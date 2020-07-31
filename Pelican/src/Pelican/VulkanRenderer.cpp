@@ -24,6 +24,8 @@ namespace Pelican
 		CreateGraphicsPipeline();
 		CreateFramebuffers();
 		CreateCommandPool();
+		CreateVertexBuffer();
+		CreateIndexBuffer();
 		CreateCommandBuffers();
 		CreateSyncObjects();
 	}
@@ -33,6 +35,12 @@ namespace Pelican
 		vkDeviceWaitIdle(m_VkDevice);
 
 		CleanupSwapChain();
+
+		vkDestroyBuffer(m_VkDevice, m_VkIndexBuffer, nullptr);
+		vkFreeMemory(m_VkDevice, m_VkIndexBufferMemory, nullptr);
+
+		vkDestroyBuffer(m_VkDevice, m_VkVertexBuffer, nullptr);
+		vkFreeMemory(m_VkDevice, m_VkVertexBufferMemory, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
@@ -620,11 +628,14 @@ namespace Pelican
 
 		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
+		auto bindingDescription = Vertex::GetBindingDescription();
+		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
+
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly = { VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
 		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -783,6 +794,52 @@ namespace Pelican
 		}
 	}
 
+	void VulkanRenderer::CreateVertexBuffer()
+	{
+		VkDeviceSize bufferSize = sizeof(m_Vertices[0]) * m_Vertices.size();
+
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			stagingBuffer, stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(m_VkDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+			memcpy(data, m_Vertices.data(), static_cast<size_t>(bufferSize));
+		vkUnmapMemory(m_VkDevice, stagingBufferMemory);
+
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			m_VkVertexBuffer, m_VkVertexBufferMemory);
+
+		CopyBuffer(stagingBuffer, m_VkVertexBuffer, bufferSize);
+
+		vkDestroyBuffer(m_VkDevice, stagingBuffer, nullptr);
+		vkFreeMemory(m_VkDevice, stagingBufferMemory, nullptr);
+	}
+
+	void VulkanRenderer::CreateIndexBuffer()
+	{
+		VkDeviceSize bufferSize = sizeof(m_Indices[0]) * m_Indices.size();
+
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			stagingBuffer, stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(m_VkDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+			memcpy(data, m_Indices.data(), static_cast<size_t>(bufferSize));
+		vkUnmapMemory(m_VkDevice, stagingBufferMemory);
+
+		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			m_VkIndexBuffer, m_VkIndexBufferMemory);
+
+		CopyBuffer(stagingBuffer, m_VkIndexBuffer, bufferSize);
+
+		vkDestroyBuffer(m_VkDevice, stagingBuffer, nullptr);
+		vkFreeMemory(m_VkDevice, stagingBufferMemory, nullptr);
+	}
+
 	void VulkanRenderer::CreateCommandBuffers()
 	{
 		m_VkCommandBuffers.resize(m_VkSwapChainFramebuffers.size());
@@ -820,7 +877,13 @@ namespace Pelican
 
 			vkCmdBeginRenderPass(m_VkCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 				vkCmdBindPipeline(m_VkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkGraphicsPipeline);
-				vkCmdDraw(m_VkCommandBuffers[i], 3, 1, 0, 0);
+
+				VkBuffer vertexBuffers[] = { m_VkVertexBuffer };
+				VkDeviceSize offsets[] = { 0 };
+				vkCmdBindVertexBuffers(m_VkCommandBuffers[i], 0, 1, vertexBuffers, offsets);
+				vkCmdBindIndexBuffer(m_VkCommandBuffers[i], m_VkIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+				vkCmdDrawIndexed(m_VkCommandBuffers[i], static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
 			vkCmdEndRenderPass(m_VkCommandBuffers[i]);
 
 			if (vkEndCommandBuffer(m_VkCommandBuffers[i]) != VK_SUCCESS)
@@ -896,6 +959,84 @@ namespace Pelican
 		CreateGraphicsPipeline();
 		CreateFramebuffers();
 		CreateCommandBuffers();
+	}
+
+	uint32_t VulkanRenderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+	{
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(m_VkPhysicalDevice, &memProperties);
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+		{
+			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				return i;
+			}
+		}
+
+		ASSERT_MSG(false, "failed to find suitable memory type!");
+		return 0; // TODO: make sure that the assert fails in all configurations!
+	}
+
+	void VulkanRenderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+		VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	{
+		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+		bufferInfo.size = size;
+		bufferInfo.usage = usage;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(m_VkDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
+		{
+			ASSERT_MSG(false, "failed to create buffer!");
+		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(m_VkDevice, buffer, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
+
+		if (vkAllocateMemory(m_VkDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
+		{
+			ASSERT_MSG(false, "failed to allocate vertex buffer memory!");
+		}
+
+		vkBindBufferMemory(m_VkDevice, buffer, bufferMemory, 0);
+	}
+
+	void VulkanRenderer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+	{
+		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = m_VkCommandPool;
+		allocInfo.commandBufferCount = 1;
+
+		VkCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers(m_VkDevice, &allocInfo, &commandBuffer);
+
+		VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+			VkBufferCopy copyRegion{};
+			copyRegion.srcOffset = 0;
+			copyRegion.dstOffset = 0;
+			copyRegion.size = size;
+			vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		vkQueueSubmit(m_VkGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(m_VkGraphicsQueue);
+
+		vkFreeCommandBuffers(m_VkDevice, m_VkCommandPool, 1, &commandBuffer);
 	}
 
 	VkBool32 VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
