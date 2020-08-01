@@ -63,6 +63,8 @@ namespace Pelican
 
 		void CreateRenderPass();
 
+		void CreateDescriptorSetLayout();
+
 		void CreateGraphicsPipeline();
 		VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
@@ -70,6 +72,9 @@ namespace Pelican
 		void CreateCommandPool();
 		void CreateVertexBuffer();
 		void CreateIndexBuffer();
+		void CreateUniformBuffers();
+		void CreateDescriptorPool();
+		void CreateDescriptorSets();
 		void CreateCommandBuffers();
 
 		void CreateSyncObjects();
@@ -80,6 +85,8 @@ namespace Pelican
 		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+		void UpdateUniformBuffer(uint32_t currentImage);
 
 	private:
 		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
@@ -116,6 +123,7 @@ namespace Pelican
 		VkExtent2D m_VkSwapChainExtent;
 		std::vector<VkImageView> m_VkSwapChainImageViews;
 		VkRenderPass m_VkRenderPass;
+		VkDescriptorSetLayout m_VkDescriptorSetLayout;
 		VkPipelineLayout m_VkPipelineLayout;
 		VkPipeline m_VkGraphicsPipeline;
 		std::vector<VkFramebuffer> m_VkSwapChainFramebuffers;
@@ -144,5 +152,10 @@ namespace Pelican
 		const std::vector<uint16_t> m_Indices = {
 			0, 1, 2, 2, 3, 0
 		};
+
+		std::vector<VkBuffer> m_VkUniformBuffers;
+		std::vector<VkDeviceMemory> m_VkUniformBuffersMemory;
+		VkDescriptorPool m_VkDescriptorPool;
+		std::vector<VkDescriptorSet> m_VkDescriptorSets;
 	};
 }

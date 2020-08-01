@@ -6,8 +6,15 @@
 #include <cstdint>
 #include <GLFW/glfw3.h>
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <chrono>
+
 #include "VulkanProxy.h"
 #include "Application.h"
+#include "UniformBufferObject.h"
 
 namespace Pelican
 {
@@ -21,11 +28,15 @@ namespace Pelican
 		CreateSwapChain();
 		CreateImageViews();
 		CreateRenderPass();
+		CreateDescriptorSetLayout();
 		CreateGraphicsPipeline();
 		CreateFramebuffers();
 		CreateCommandPool();
 		CreateVertexBuffer();
 		CreateIndexBuffer();
+		CreateUniformBuffers();
+		CreateDescriptorPool();
+		CreateDescriptorSets();
 		CreateCommandBuffers();
 		CreateSyncObjects();
 	}
@@ -35,6 +46,8 @@ namespace Pelican
 		vkDeviceWaitIdle(m_VkDevice);
 
 		CleanupSwapChain();
+
+		vkDestroyDescriptorSetLayout(m_VkDevice, m_VkDescriptorSetLayout, nullptr);
 
 		vkDestroyBuffer(m_VkDevice, m_VkIndexBuffer, nullptr);
 		vkFreeMemory(m_VkDevice, m_VkIndexBufferMemory, nullptr);
@@ -84,6 +97,8 @@ namespace Pelican
 			vkWaitForFences(m_VkDevice, 1, &m_VkImagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
 		}
 		m_VkImagesInFlight[imageIndex] = m_VkInFlightFences[m_CurrentFrame];
+
+		UpdateUniformBuffer(imageIndex);
 
 		VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 
@@ -608,6 +623,25 @@ namespace Pelican
 		}
 	}
 
+	void VulkanRenderer::CreateDescriptorSetLayout()
+	{
+		VkDescriptorSetLayoutBinding uboLayoutBinding{};
+		uboLayoutBinding.binding = 0;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboLayoutBinding.descriptorCount = 1;
+		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		uboLayoutBinding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+		layoutInfo.bindingCount = 1;
+		layoutInfo.pBindings = &uboLayoutBinding;
+
+		if (vkCreateDescriptorSetLayout(m_VkDevice, &layoutInfo, nullptr, &m_VkDescriptorSetLayout) != VK_SUCCESS)
+		{
+			ASSERT_MSG(false, "failed to create descriptor set layout");
+		}
+	}
+
 	void VulkanRenderer::CreateGraphicsPipeline()
 	{
 		std::vector<char> vertShaderCode = ReadFile("res/shaders/vert.spv");
@@ -665,7 +699,7 @@ namespace Pelican
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f;
 		rasterizer.depthBiasClamp = 0.0f;
@@ -700,8 +734,8 @@ namespace Pelican
 		colorBlending.blendConstants[3] = 0.0f;
 
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-		pipelineLayoutInfo.setLayoutCount = 0;
-		pipelineLayoutInfo.pSetLayouts = nullptr;
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &m_VkDescriptorSetLayout;
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -840,6 +874,72 @@ namespace Pelican
 		vkFreeMemory(m_VkDevice, stagingBufferMemory, nullptr);
 	}
 
+	void VulkanRenderer::CreateUniformBuffers()
+	{
+		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+		m_VkUniformBuffers.resize(m_VkSwapChainImages.size());
+		m_VkUniformBuffersMemory.resize(m_VkSwapChainImages.size());
+
+		for (size_t i = 0; i < m_VkSwapChainImages.size(); i++)
+		{
+			CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				m_VkUniformBuffers[i], m_VkUniformBuffersMemory[i]);
+		}
+	}
+
+	void VulkanRenderer::CreateDescriptorPool()
+	{
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = static_cast<uint32_t>(m_VkSwapChainImages.size());
+
+		VkDescriptorPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+		poolInfo.poolSizeCount = 1;
+		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.maxSets = static_cast<uint32_t>(m_VkSwapChainImages.size());
+
+		if (vkCreateDescriptorPool(m_VkDevice, &poolInfo, nullptr, &m_VkDescriptorPool) != VK_SUCCESS)
+		{
+			ASSERT_MSG(false, "failed to create descriptor pool!");
+		}
+	}
+
+	void VulkanRenderer::CreateDescriptorSets()
+	{
+		std::vector<VkDescriptorSetLayout> layouts(m_VkSwapChainImages.size(), m_VkDescriptorSetLayout);
+		VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+		allocInfo.descriptorPool = m_VkDescriptorPool;
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(m_VkSwapChainImages.size());
+		allocInfo.pSetLayouts = layouts.data();
+
+		m_VkDescriptorSets.resize(m_VkSwapChainImages.size());
+		if (vkAllocateDescriptorSets(m_VkDevice, &allocInfo, m_VkDescriptorSets.data()) != VK_SUCCESS)
+		{
+			ASSERT_MSG(false, "failed to allocate descriptor sets!");
+		}
+
+		for (size_t i = 0; i < m_VkSwapChainImages.size(); i++)
+		{
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = m_VkUniformBuffers[i];
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(UniformBufferObject);
+
+			VkWriteDescriptorSet descriptorWrite = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+			descriptorWrite.dstSet = m_VkDescriptorSets[i];
+			descriptorWrite.dstBinding = 0;
+			descriptorWrite.dstArrayElement = 0;
+			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorCount = 1;
+			descriptorWrite.pBufferInfo = &bufferInfo;
+			descriptorWrite.pImageInfo = nullptr;
+			descriptorWrite.pTexelBufferView = nullptr;
+
+			vkUpdateDescriptorSets(m_VkDevice, 1, &descriptorWrite, 0, nullptr);
+		}
+	}
+
 	void VulkanRenderer::CreateCommandBuffers()
 	{
 		m_VkCommandBuffers.resize(m_VkSwapChainFramebuffers.size());
@@ -882,6 +982,9 @@ namespace Pelican
 				VkDeviceSize offsets[] = { 0 };
 				vkCmdBindVertexBuffers(m_VkCommandBuffers[i], 0, 1, vertexBuffers, offsets);
 				vkCmdBindIndexBuffer(m_VkCommandBuffers[i], m_VkIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+				vkCmdBindDescriptorSets(m_VkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkPipelineLayout, 0, 1,
+					&m_VkDescriptorSets[i], 0, nullptr);
 
 				vkCmdDrawIndexed(m_VkCommandBuffers[i], static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
 			vkCmdEndRenderPass(m_VkCommandBuffers[i]);
@@ -935,6 +1038,14 @@ namespace Pelican
 		}
 
 		vkDestroySwapchainKHR(m_VkDevice, m_VkSwapchain, nullptr);
+
+		for (size_t i = 0; i < m_VkSwapChainImages.size(); i++)
+		{
+			vkDestroyBuffer(m_VkDevice, m_VkUniformBuffers[i], nullptr);
+			vkFreeMemory(m_VkDevice, m_VkUniformBuffersMemory[i], nullptr);
+		}
+
+		vkDestroyDescriptorPool(m_VkDevice, m_VkDescriptorPool, nullptr);
 	}
 
 	void VulkanRenderer::RecreateSwapChain()
@@ -958,6 +1069,9 @@ namespace Pelican
 		CreateRenderPass();
 		CreateGraphicsPipeline();
 		CreateFramebuffers();
+		CreateUniformBuffers();
+		CreateDescriptorPool();
+		CreateDescriptorSets();
 		CreateCommandBuffers();
 	}
 
@@ -1037,6 +1151,26 @@ namespace Pelican
 		vkQueueWaitIdle(m_VkGraphicsQueue);
 
 		vkFreeCommandBuffers(m_VkDevice, m_VkCommandPool, 1, &commandBuffer);
+	}
+
+	void VulkanRenderer::UpdateUniformBuffer(uint32_t currentImage)
+	{
+		static auto startTime = std::chrono::high_resolution_clock::now();
+
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+		UniformBufferObject ubo{};
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.proj = glm::perspective(glm::radians(45.0f), 
+			static_cast<float>(m_VkSwapChainExtent.width) / static_cast<float>(m_VkSwapChainExtent.height), 0.1f, 10.0f);
+		ubo.proj[1][1] *= -1;
+
+		void* data;
+		vkMapMemory(m_VkDevice, m_VkUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+			memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(m_VkDevice, m_VkUniformBuffersMemory[currentImage]);
 	}
 
 	VkBool32 VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
