@@ -18,8 +18,13 @@ namespace Pelican
 		static Application& Get() { return *m_Instance; }
 
 	private:
+		void Init();
+		void Cleanup();
+
+	private:
 		Window* m_pWindow{};
 		VulkanRenderer* m_pRenderer{};
+		Camera* m_pCamera{};
 
 		static Application* m_Instance;
 	};

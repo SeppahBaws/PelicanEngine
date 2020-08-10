@@ -7,6 +7,10 @@
 
 namespace Pelican
 {
+	// Forward declarations
+	class Camera;
+
+
 	struct QueueFamilyIndices
 	{
 		std::optional<uint32_t> graphicsFamily;
@@ -35,6 +39,7 @@ namespace Pelican
 
 		void Draw();
 		void FlagWindowResized() { m_FrameBufferResized = true; }
+		void SetCamera(Camera* pCamera);
 
 	private:
 		void CreateInstance();
@@ -99,6 +104,9 @@ namespace Pelican
 		static std::vector<char> ReadFile(const std::string& filename);
 
 	private:
+		Camera* m_pCamera = nullptr;
+
+	private:
 		VkInstance m_VkInstance{};
 #ifdef PELICAN_DEBUG
 		const bool m_EnableValidationLayers = true;
@@ -144,13 +152,49 @@ namespace Pelican
 		VkDeviceMemory m_VkIndexBufferMemory;
 
 		const std::vector<Vertex> m_Vertices = {
-			{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-			{{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-			{{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
-			{{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}},
+			// Left face
+			{{-5.0f, -5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
+			{{ 5.0f, -5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
+			{{ 5.0f,  5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
+			{{-5.0f,  5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
+
+			// Right face
+			{{-5.0f, -5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
+			{{-5.0f,  5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
+			{{ 5.0f,  5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
+			{{ 5.0f, -5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
+
+			// Top face
+			{{-5.0f,  5.0f, -5.0f}, {0.0f, 1.0f, 0.0f}},
+			{{ 5.0f,  5.0f, -5.0f}, {0.0f, 1.0f, 0.0f}},
+			{{ 5.0f,  5.0f,  5.0f}, {0.0f, 1.0f, 0.0f}},
+			{{-5.0f,  5.0f,  5.0f}, {0.0f, 1.0f, 0.0f}},
+
+			// Bottom face
+			{{-5.0f, -5.0f, -5.0f}, {0.0f, 0.0f, 1.0f}},
+			{{-5.0f, -5.0f,  5.0f}, {0.0f, 0.0f, 1.0f}},
+			{{ 5.0f, -5.0f,  5.0f}, {0.0f, 0.0f, 1.0f}},
+			{{ 5.0f, -5.0f, -5.0f}, {0.0f, 0.0f, 1.0f}},
+
+			// Front face
+			{{-5.0f, -5.0f, -5.0f}, {1.0f, 0.0f, 0.0f}},
+			{{-5.0f,  5.0f, -5.0f}, {1.0f, 0.0f, 0.0f}},
+			{{-5.0f,  5.0f,  5.0f}, {1.0f, 0.0f, 0.0f}},
+			{{-5.0f, -5.0f,  5.0f}, {1.0f, 0.0f, 0.0f}},
+
+			// Back face
+			{{ 5.0f, -5.0f, -5.0f}, {1.0f, 0.5f, 0.0f}},
+			{{ 5.0f, -5.0f,  5.0f}, {1.0f, 0.5f, 0.0f}},
+			{{ 5.0f,  5.0f,  5.0f}, {1.0f, 0.5f, 0.0f}},
+			{{ 5.0f,  5.0f, -5.0f}, {1.0f, 0.5f, 0.0f}},
 		};
 		const std::vector<uint16_t> m_Indices = {
-			0, 1, 2, 2, 3, 0
+			0, 1, 2, 2, 3, 0,       // Left face
+			4, 5, 6, 6, 7, 4,       // Right face
+			8, 9, 10, 10, 11, 8,    // Top face
+			12, 13, 14, 14, 15, 12, // Bottom face
+			16, 17, 18, 18, 19, 16, // Front face
+			20, 21, 22, 22, 23, 20, // Back face
 		};
 
 		std::vector<VkBuffer> m_VkUniformBuffers;

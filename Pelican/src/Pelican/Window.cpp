@@ -54,7 +54,7 @@ namespace Pelican
 	void Window::Update()
 	{
 		glfwPollEvents();
-		glfwSwapBuffers(m_pGLFWwindow);
+		// glfwSwapBuffers(m_pGLFWwindow);
 	}
 
 	bool Window::ShouldClose() const

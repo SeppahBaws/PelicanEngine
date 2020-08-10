@@ -15,6 +15,9 @@
 #include "VulkanProxy.h"
 #include "Application.h"
 #include "UniformBufferObject.h"
+#include "Camera.h"
+#include "Time.h"
+#include "Input/Input.h"
 
 namespace Pelican
 {
@@ -81,7 +84,7 @@ namespace Pelican
 		uint32_t imageIndex;
 		VkResult result = vkAcquireNextImageKHR(m_VkDevice, m_VkSwapchain, UINT64_MAX, m_VkImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_FrameBufferResized)
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || m_FrameBufferResized)
 		{
 			m_FrameBufferResized = false;
 			RecreateSwapChain();
@@ -144,6 +147,11 @@ namespace Pelican
 		}
 
 		m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	}
+
+	void VulkanRenderer::SetCamera(Camera* pCamera)
+	{
+		m_pCamera = pCamera;
 	}
 
 	void VulkanRenderer::CreateInstance()
@@ -1155,16 +1163,24 @@ namespace Pelican
 
 	void VulkanRenderer::UpdateUniformBuffer(uint32_t currentImage)
 	{
-		static auto startTime = std::chrono::high_resolution_clock::now();
+		ASSERT_MSG(m_pCamera, "Current camera is nullptr!");
 
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+		// static auto startTime = std::chrono::high_resolution_clock::now();
+		//
+		// auto currentTime = std::chrono::high_resolution_clock::now();
+		// float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), 
-			static_cast<float>(m_VkSwapChainExtent.width) / static_cast<float>(m_VkSwapChainExtent.height), 0.1f, 10.0f);
+		// ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		// ubo.model = glm::rotate(glm::mat4(1.0f), m_Rotation, glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::mat4(1.0f); // just stay still for now
+
+		// ubo.view = glm::lookAt(glm::vec3(20.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = m_pCamera->GetView();
+
+		// ubo.proj = glm::perspective(glm::radians(45.0f),
+			// static_cast<float>(m_VkSwapChainExtent.width) / static_cast<float>(m_VkSwapChainExtent.height), 0.1f, 1000.0f);
+		ubo.proj = m_pCamera->GetProjection();
 		ubo.proj[1][1] *= -1;
 
 		void* data;
