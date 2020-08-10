@@ -1165,21 +1165,9 @@ namespace Pelican
 	{
 		ASSERT_MSG(m_pCamera, "Current camera is nullptr!");
 
-		// static auto startTime = std::chrono::high_resolution_clock::now();
-		//
-		// auto currentTime = std::chrono::high_resolution_clock::now();
-		// float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
 		UniformBufferObject ubo{};
-		// ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		// ubo.model = glm::rotate(glm::mat4(1.0f), m_Rotation, glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.model = glm::mat4(1.0f); // just stay still for now
-
-		// ubo.view = glm::lookAt(glm::vec3(20.0f, 20.0f, 20.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = m_pCamera->GetView();
-
-		// ubo.proj = glm::perspective(glm::radians(45.0f),
-			// static_cast<float>(m_VkSwapChainExtent.width) / static_cast<float>(m_VkSwapChainExtent.height), 0.1f, 1000.0f);
 		ubo.proj = m_pCamera->GetProjection();
 		ubo.proj[1][1] *= -1;
 
