@@ -82,8 +82,6 @@ namespace Pelican
 
 			m_Position += mov * Time::GetDeltaTime() * m_MoveSpeed;
 		}
-
-		Logger::LogInfo("Camera Position: (%.2f, %.2f, %.2f)", m_Position.x, m_Position.y, m_Position.z);
 	}
 
 	glm::mat4 Camera::GetView()
