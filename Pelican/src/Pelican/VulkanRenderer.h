@@ -75,6 +75,9 @@ namespace Pelican
 
 		void CreateFramebuffers();
 		void CreateCommandPool();
+		void CreateTextureImage();
+		void CreateTextureImageView();
+		void CreateTextureSampler();
 		void CreateVertexBuffer();
 		void CreateIndexBuffer();
 		void CreateUniformBuffers();
@@ -88,10 +91,20 @@ namespace Pelican
 		void RecreateSwapChain();
 
 		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+			VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
+		VkCommandBuffer BeginSingleTimeCommands();
+		void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
+
 		void UpdateUniformBuffer(uint32_t currentImage);
+
+		void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+			VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+		void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+		VkImageView CreateImageView(VkImage image, VkFormat format);
 
 	private:
 		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
@@ -151,55 +164,71 @@ namespace Pelican
 		VkBuffer m_VkIndexBuffer;
 		VkDeviceMemory m_VkIndexBufferMemory;
 
+		// const std::vector<Vertex> m_Vertices = {
+		// 	// Left face
+		// 	{{-5.0f, -5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
+		// 	{{ 5.0f, -5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
+		// 	{{ 5.0f,  5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
+		// 	{{-5.0f,  5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
+		//
+		// 	// Right face
+		// 	{{-5.0f, -5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
+		// 	{{-5.0f,  5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
+		// 	{{ 5.0f,  5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
+		// 	{{ 5.0f, -5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
+		//
+		// 	// Top face
+		// 	{{-5.0f,  5.0f, -5.0f}, {0.0f, 1.0f, 0.0f}},
+		// 	{{ 5.0f,  5.0f, -5.0f}, {0.0f, 1.0f, 0.0f}},
+		// 	{{ 5.0f,  5.0f,  5.0f}, {0.0f, 1.0f, 0.0f}},
+		// 	{{-5.0f,  5.0f,  5.0f}, {0.0f, 1.0f, 0.0f}},
+		//
+		// 	// Bottom face
+		// 	{{-5.0f, -5.0f, -5.0f}, {0.0f, 0.0f, 1.0f}},
+		// 	{{-5.0f, -5.0f,  5.0f}, {0.0f, 0.0f, 1.0f}},
+		// 	{{ 5.0f, -5.0f,  5.0f}, {0.0f, 0.0f, 1.0f}},
+		// 	{{ 5.0f, -5.0f, -5.0f}, {0.0f, 0.0f, 1.0f}},
+		//
+		// 	// Front face
+		// 	{{-5.0f, -5.0f, -5.0f}, {1.0f, 0.0f, 0.0f}},
+		// 	{{-5.0f,  5.0f, -5.0f}, {1.0f, 0.0f, 0.0f}},
+		// 	{{-5.0f,  5.0f,  5.0f}, {1.0f, 0.0f, 0.0f}},
+		// 	{{-5.0f, -5.0f,  5.0f}, {1.0f, 0.0f, 0.0f}},
+		//
+		// 	// Back face
+		// 	{{ 5.0f, -5.0f, -5.0f}, {1.0f, 0.5f, 0.0f}},
+		// 	{{ 5.0f, -5.0f,  5.0f}, {1.0f, 0.5f, 0.0f}},
+		// 	{{ 5.0f,  5.0f,  5.0f}, {1.0f, 0.5f, 0.0f}},
+		// 	{{ 5.0f,  5.0f, -5.0f}, {1.0f, 0.5f, 0.0f}},
+		// };
+		// const std::vector<uint16_t> m_Indices = {
+		// 	0, 1, 2, 2, 3, 0,       // Left face
+		// 	4, 5, 6, 6, 7, 4,       // Right face
+		// 	8, 9, 10, 10, 11, 8,    // Top face
+		// 	12, 13, 14, 14, 15, 12, // Bottom face
+		// 	16, 17, 18, 18, 19, 16, // Front face
+		// 	20, 21, 22, 22, 23, 20, // Back face
+		// };
+
 		const std::vector<Vertex> m_Vertices = {
-			// Left face
-			{{-5.0f, -5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-			{{ 5.0f, -5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-			{{ 5.0f,  5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-			{{-5.0f,  5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-
-			// Right face
-			{{-5.0f, -5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-			{{-5.0f,  5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-			{{ 5.0f,  5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-			{{ 5.0f, -5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-
-			// Top face
-			{{-5.0f,  5.0f, -5.0f}, {0.0f, 1.0f, 0.0f}},
-			{{ 5.0f,  5.0f, -5.0f}, {0.0f, 1.0f, 0.0f}},
-			{{ 5.0f,  5.0f,  5.0f}, {0.0f, 1.0f, 0.0f}},
-			{{-5.0f,  5.0f,  5.0f}, {0.0f, 1.0f, 0.0f}},
-
-			// Bottom face
-			{{-5.0f, -5.0f, -5.0f}, {0.0f, 0.0f, 1.0f}},
-			{{-5.0f, -5.0f,  5.0f}, {0.0f, 0.0f, 1.0f}},
-			{{ 5.0f, -5.0f,  5.0f}, {0.0f, 0.0f, 1.0f}},
-			{{ 5.0f, -5.0f, -5.0f}, {0.0f, 0.0f, 1.0f}},
-
-			// Front face
-			{{-5.0f, -5.0f, -5.0f}, {1.0f, 0.0f, 0.0f}},
-			{{-5.0f,  5.0f, -5.0f}, {1.0f, 0.0f, 0.0f}},
-			{{-5.0f,  5.0f,  5.0f}, {1.0f, 0.0f, 0.0f}},
-			{{-5.0f, -5.0f,  5.0f}, {1.0f, 0.0f, 0.0f}},
-
-			// Back face
-			{{ 5.0f, -5.0f, -5.0f}, {1.0f, 0.5f, 0.0f}},
-			{{ 5.0f, -5.0f,  5.0f}, {1.0f, 0.5f, 0.0f}},
-			{{ 5.0f,  5.0f,  5.0f}, {1.0f, 0.5f, 0.0f}},
-			{{ 5.0f,  5.0f, -5.0f}, {1.0f, 0.5f, 0.0f}},
+			{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+			{{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+			{{ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+			{{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
 		};
+
 		const std::vector<uint16_t> m_Indices = {
-			0, 1, 2, 2, 3, 0,       // Left face
-			4, 5, 6, 6, 7, 4,       // Right face
-			8, 9, 10, 10, 11, 8,    // Top face
-			12, 13, 14, 14, 15, 12, // Bottom face
-			16, 17, 18, 18, 19, 16, // Front face
-			20, 21, 22, 22, 23, 20, // Back face
+			0, 1, 2, 2, 3, 0
 		};
 
 		std::vector<VkBuffer> m_VkUniformBuffers;
 		std::vector<VkDeviceMemory> m_VkUniformBuffersMemory;
 		VkDescriptorPool m_VkDescriptorPool;
 		std::vector<VkDescriptorSet> m_VkDescriptorSets;
+
+		VkImage m_VkTextureImage;
+		VkDeviceMemory m_VkTextureImageMemory;
+		VkImageView m_vkTextureImageView;
+		VkSampler m_vkTextureSampler;
 	};
 }
