@@ -75,6 +75,7 @@ namespace Pelican
 
 		void CreateFramebuffers();
 		void CreateCommandPool();
+		void CreateDepthResources();
 		void CreateTextureImage();
 		void CreateTextureImageView();
 		void CreateTextureSampler();
@@ -104,7 +105,11 @@ namespace Pelican
 			VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 		void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-		VkImageView CreateImageView(VkImage image, VkFormat format);
+		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+
+		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+		VkFormat FindDepthFormat();
+		bool HasStencilComponent(VkFormat format);
 
 	private:
 		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
@@ -211,6 +216,11 @@ namespace Pelican
 		// };
 
 		const std::vector<Vertex> m_Vertices = {
+			{{-0.5f,  0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+			{{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+			{{ 0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+			{{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+
 			{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
 			{{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 			{{ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
@@ -218,7 +228,8 @@ namespace Pelican
 		};
 
 		const std::vector<uint16_t> m_Indices = {
-			0, 1, 2, 2, 3, 0
+			0, 1, 2, 2, 3, 0,
+			4, 5, 6, 6, 7, 4
 		};
 
 		std::vector<VkBuffer> m_VkUniformBuffers;
@@ -230,5 +241,9 @@ namespace Pelican
 		VkDeviceMemory m_VkTextureImageMemory;
 		VkImageView m_vkTextureImageView;
 		VkSampler m_vkTextureSampler;
+
+		VkImage m_VkDepthImage;
+		VkDeviceMemory m_VkDepthImageMemory;
+		VkImageView m_VkDepthImageView;
 	};
 }
