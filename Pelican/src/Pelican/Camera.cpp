@@ -44,8 +44,11 @@ namespace Pelican
 		glm::vec2 mouseMov = Input::GetMouseMovement();
 		if (Input::GetMouseButton(MouseCode::ButtonRight))
 		{
-			m_Yaw -= mouseMov.x * Time::GetDeltaTime() * m_MouseSpeed;
-			m_Pitch += mouseMov.y * Time::GetDeltaTime() * m_MouseSpeed;
+			// m_Yaw -= mouseMov.x * Time::GetDeltaTime() * m_MouseSpeed;
+			// m_Pitch += mouseMov.y * Time::GetDeltaTime() * m_MouseSpeed;
+
+			m_Yaw -= mouseMov.x * 0.3f;
+			m_Pitch += mouseMov.y * 0.3f;
 
 			Input::SetCursorMode(false);
 		}
@@ -55,10 +58,10 @@ namespace Pelican
 		}
 
 		// constrain pitch
-		if (m_Pitch > 89.0f)
-			m_Pitch = 89.0f;
-		if (m_Pitch < -89.0f)
-			m_Pitch = -89.0f;
+		if (m_Pitch > 89.9f)
+			m_Pitch = 89.9f;
+		if (m_Pitch < -89.9f)
+			m_Pitch = -89.9f;
 
 		glm::vec3 front;
 		front.x = cos(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));

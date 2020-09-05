@@ -5,6 +5,8 @@
 
 namespace Pelican
 {
+	class Mesh;
+
 	class Application
 	{
 	public:
@@ -25,6 +27,7 @@ namespace Pelican
 		Window* m_pWindow{};
 		VulkanRenderer* m_pRenderer{};
 		Camera* m_pCamera{};
+		Mesh* m_pMesh{};
 
 		static Application* m_Instance;
 	};

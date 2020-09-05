@@ -1,5 +1,6 @@
 ﻿#include "PelicanPCH.h"
 #include "VulkanRenderer.h"
+#include "VulkanHelpers.h"
 
 #include <fstream>
 #include <algorithm>
@@ -23,6 +24,15 @@
 
 namespace Pelican
 {
+	VulkanRenderer* VulkanRenderer::m_pInstance{};
+
+	VulkanRenderer::VulkanRenderer()
+	{
+		ASSERT_MSG(!m_pInstance, "VulkanRenderer::m_pInstance is not nullptr, there can only be one instance at a time!");
+
+		m_pInstance = this;
+	}
+
 	void VulkanRenderer::Initialize()
 	{
 		CreateInstance();
@@ -41,8 +51,6 @@ namespace Pelican
 		CreateTextureImage();
 		CreateTextureImageView();
 		CreateTextureSampler();
-		CreateVertexBuffer();
-		CreateIndexBuffer();
 		CreateUniformBuffers();
 		CreateDescriptorPool();
 		CreateDescriptorSets();
@@ -50,12 +58,15 @@ namespace Pelican
 		CreateSyncObjects();
 	}
 
-	void VulkanRenderer::Cleanup()
+	void VulkanRenderer::BeforeSceneCleanup()
 	{
 		vkDeviceWaitIdle(m_VkDevice);
 
 		CleanupSwapChain();
+	}
 
+	void VulkanRenderer::AfterSceneCleanup()
+	{
 		vkDestroySampler(m_VkDevice, m_vkTextureSampler, nullptr);
 		vkDestroyImageView(m_VkDevice, m_vkTextureImageView, nullptr);
 
@@ -63,12 +74,6 @@ namespace Pelican
 		vkFreeMemory(m_VkDevice, m_VkTextureImageMemory, nullptr);
 
 		vkDestroyDescriptorSetLayout(m_VkDevice, m_VkDescriptorSetLayout, nullptr);
-
-		vkDestroyBuffer(m_VkDevice, m_VkIndexBuffer, nullptr);
-		vkFreeMemory(m_VkDevice, m_VkIndexBufferMemory, nullptr);
-
-		vkDestroyBuffer(m_VkDevice, m_VkVertexBuffer, nullptr);
-		vkFreeMemory(m_VkDevice, m_VkVertexBufferMemory, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
@@ -89,12 +94,11 @@ namespace Pelican
 		vkDestroyInstance(m_VkInstance, nullptr);
 	}
 
-	void VulkanRenderer::Draw()
+	void VulkanRenderer::BeginScene()
 	{
 		vkWaitForFences(m_VkDevice, 1, &m_VkInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
 
-		uint32_t imageIndex;
-		VkResult result = vkAcquireNextImageKHR(m_VkDevice, m_VkSwapchain, UINT64_MAX, m_VkImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(m_VkDevice, m_VkSwapchain, UINT64_MAX, m_VkImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &m_CurrentBuffer);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || m_FrameBufferResized)
 		{
@@ -107,13 +111,22 @@ namespace Pelican
 			ASSERT_MSG(false, "failed to acquire swap chain image!");
 		}
 
-		if (m_VkImagesInFlight[imageIndex] != VK_NULL_HANDLE)
+		if (m_VkImagesInFlight[m_CurrentBuffer] != VK_NULL_HANDLE)
 		{
-			vkWaitForFences(m_VkDevice, 1, &m_VkImagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+			vkWaitForFences(m_VkDevice, 1, &m_VkImagesInFlight[m_CurrentBuffer], VK_TRUE, UINT64_MAX);
 		}
-		m_VkImagesInFlight[imageIndex] = m_VkInFlightFences[m_CurrentFrame];
+		m_VkImagesInFlight[m_CurrentBuffer] = m_VkInFlightFences[m_CurrentFrame];
 
-		UpdateUniformBuffer(imageIndex);
+		UpdateUniformBuffer(m_CurrentBuffer);
+
+
+		BeginCommandBuffers();
+	}
+
+	void VulkanRenderer::EndScene()
+	{
+		EndCommandBuffers();
+
 
 		VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 
@@ -124,7 +137,7 @@ namespace Pelican
 		submitInfo.pWaitDstStageMask = waitStages;
 
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_VkCommandBuffers[imageIndex];
+		submitInfo.pCommandBuffers = &m_VkCommandBuffers[m_CurrentBuffer];
 
 		VkSemaphore signalSemaphores[] = { m_VkRenderFinishedSemaphores[m_CurrentFrame] };
 		submitInfo.signalSemaphoreCount = 1;
@@ -144,10 +157,10 @@ namespace Pelican
 		VkSwapchainKHR swapChains[] = { m_VkSwapchain };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
-		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pImageIndices = &m_CurrentBuffer;
 		presentInfo.pResults = nullptr;
 
-		result = vkQueuePresentKHR(m_VkPresentQueue, &presentInfo);
+		VkResult result = vkQueuePresentKHR(m_VkPresentQueue, &presentInfo);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		{
@@ -492,6 +505,8 @@ namespace Pelican
 
 	VkPresentModeKHR VulkanRenderer::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
 	{
+		// TODO: return FIFO if we want VSync, otherwise return the next best thing.
+
 		for (const auto& availablePresentMode : availablePresentModes)
 		{
 			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
@@ -864,7 +879,7 @@ namespace Pelican
 
 		VkCommandPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-		poolInfo.flags = 0;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		if (vkCreateCommandPool(m_VkDevice, &poolInfo, nullptr, &m_VkCommandPool) != VK_SUCCESS)
 		{
@@ -898,7 +913,7 @@ namespace Pelican
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
 
-		CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VulkanHelpers::CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			stagingBuffer, stagingBufferMemory);
 
 		void* data;
@@ -954,52 +969,6 @@ namespace Pelican
 		}
 	}
 
-	void VulkanRenderer::CreateVertexBuffer()
-	{
-		VkDeviceSize bufferSize = sizeof(m_Vertices[0]) * m_Vertices.size();
-
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingBuffer, stagingBufferMemory);
-
-		void* data;
-		vkMapMemory(m_VkDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-			memcpy(data, m_Vertices.data(), static_cast<size_t>(bufferSize));
-		vkUnmapMemory(m_VkDevice, stagingBufferMemory);
-
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			m_VkVertexBuffer, m_VkVertexBufferMemory);
-
-		CopyBuffer(stagingBuffer, m_VkVertexBuffer, bufferSize);
-
-		vkDestroyBuffer(m_VkDevice, stagingBuffer, nullptr);
-		vkFreeMemory(m_VkDevice, stagingBufferMemory, nullptr);
-	}
-
-	void VulkanRenderer::CreateIndexBuffer()
-	{
-		VkDeviceSize bufferSize = sizeof(m_Indices[0]) * m_Indices.size();
-
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingBuffer, stagingBufferMemory);
-
-		void* data;
-		vkMapMemory(m_VkDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
-			memcpy(data, m_Indices.data(), static_cast<size_t>(bufferSize));
-		vkUnmapMemory(m_VkDevice, stagingBufferMemory);
-
-		CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			m_VkIndexBuffer, m_VkIndexBufferMemory);
-
-		CopyBuffer(stagingBuffer, m_VkIndexBuffer, bufferSize);
-
-		vkDestroyBuffer(m_VkDevice, stagingBuffer, nullptr);
-		vkFreeMemory(m_VkDevice, stagingBufferMemory, nullptr);
-	}
-
 	void VulkanRenderer::CreateUniformBuffers()
 	{
 		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -1009,7 +978,7 @@ namespace Pelican
 
 		for (size_t i = 0; i < m_VkSwapChainImages.size(); i++)
 		{
-			CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			VulkanHelpers::CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				m_VkUniformBuffers[i], m_VkUniformBuffersMemory[i]);
 		}
 	}
@@ -1095,50 +1064,6 @@ namespace Pelican
 		if (vkAllocateCommandBuffers(m_VkDevice, &allocInfo, m_VkCommandBuffers.data()) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to allocate command buffers!");
-		}
-
-		for (size_t i = 0; i < m_VkCommandBuffers.size(); i++)
-		{
-			VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-			beginInfo.flags = 0;
-			beginInfo.pInheritanceInfo = nullptr;
-
-			if (vkBeginCommandBuffer(m_VkCommandBuffers[i], &beginInfo) != VK_SUCCESS)
-			{
-				ASSERT_MSG(false, "failed to begin recording command buffer!");
-			}
-
-			VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
-			renderPassInfo.renderPass = m_VkRenderPass;
-			renderPassInfo.framebuffer = m_VkSwapChainFramebuffers[i];
-			renderPassInfo.renderArea.offset = { 0, 0 };
-			renderPassInfo.renderArea.extent = m_VkSwapChainExtent;
-
-			std::array<VkClearValue, 2> clearValues{};
-			clearValues[0].color = { {0.0f,0.0f,0.0f,1.0f} };
-			clearValues[1].depthStencil = { 1.0f, 0 };
-
-			renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-			renderPassInfo.pClearValues = clearValues.data();
-
-			vkCmdBeginRenderPass(m_VkCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-				vkCmdBindPipeline(m_VkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkGraphicsPipeline);
-
-				VkBuffer vertexBuffers[] = { m_VkVertexBuffer };
-				VkDeviceSize offsets[] = { 0 };
-				vkCmdBindVertexBuffers(m_VkCommandBuffers[i], 0, 1, vertexBuffers, offsets);
-				vkCmdBindIndexBuffer(m_VkCommandBuffers[i], m_VkIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
-
-				vkCmdBindDescriptorSets(m_VkCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkPipelineLayout, 0, 1,
-					&m_VkDescriptorSets[i], 0, nullptr);
-
-				vkCmdDrawIndexed(m_VkCommandBuffers[i], static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
-			vkCmdEndRenderPass(m_VkCommandBuffers[i]);
-
-			if (vkEndCommandBuffer(m_VkCommandBuffers[i]) != VK_SUCCESS)
-			{
-				ASSERT_MSG(false, "failed to record command buffer!");
-			}
 		}
 	}
 
@@ -1226,94 +1151,6 @@ namespace Pelican
 		CreateCommandBuffers();
 	}
 
-	uint32_t VulkanRenderer::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
-	{
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(m_VkPhysicalDevice, &memProperties);
-
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
-		{
-			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-			{
-				return i;
-			}
-		}
-
-		ASSERT_MSG(false, "failed to find suitable memory type!");
-		return 0; // TODO: make sure that the assert fails in all configurations!
-	}
-
-	void VulkanRenderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-		VkBuffer& buffer, VkDeviceMemory& bufferMemory)
-	{
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.size = size;
-		bufferInfo.usage = usage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		if (vkCreateBuffer(m_VkDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create buffer!");
-		}
-
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(m_VkDevice, buffer, &memRequirements);
-
-		VkMemoryAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
-
-		if (vkAllocateMemory(m_VkDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to allocate vertex buffer memory!");
-		}
-
-		vkBindBufferMemory(m_VkDevice, buffer, bufferMemory, 0);
-	}
-
-	void VulkanRenderer::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
-	{
-		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
-
-		VkBufferCopy copyRegion{};
-		copyRegion.size = size;
-		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-		EndSingleTimeCommands(commandBuffer);
-	}
-
-	VkCommandBuffer VulkanRenderer::BeginSingleTimeCommands()
-	{
-		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = m_VkCommandPool;
-		allocInfo.commandBufferCount = 1;
-
-		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(m_VkDevice, &allocInfo, &commandBuffer);
-
-		VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-		return commandBuffer;
-	}
-
-	void VulkanRenderer::EndSingleTimeCommands(VkCommandBuffer commandBuffer)
-	{
-		vkEndCommandBuffer(commandBuffer);
-
-		VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-
-		vkQueueSubmit(m_VkGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(m_VkGraphicsQueue);
-
-		vkFreeCommandBuffers(m_VkDevice, m_VkCommandPool, 1, &commandBuffer);
-	}
-
 	void VulkanRenderer::UpdateUniformBuffer(uint32_t currentImage)
 	{
 		ASSERT_MSG(m_pCamera, "Current camera is nullptr!");
@@ -1358,7 +1195,7 @@ namespace Pelican
 
 		VkMemoryAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
 		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
+		allocInfo.memoryTypeIndex = VulkanHelpers::FindMemoryType(memRequirements.memoryTypeBits, properties);
 
 		if (vkAllocateMemory(m_VkDevice, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
 		{
@@ -1371,7 +1208,7 @@ namespace Pelican
 	void VulkanRenderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout,
 		VkImageLayout newLayout)
 	{
-		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+		VkCommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
 
 		VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 		barrier.oldLayout = oldLayout;
@@ -1440,12 +1277,12 @@ namespace Pelican
 			1, &barrier
 		);
 
-		EndSingleTimeCommands(commandBuffer);
+		VulkanHelpers::EndSingleTimeCommands(commandBuffer);
 	}
 
 	void VulkanRenderer::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 	{
-		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+		VkCommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
 
 		VkBufferImageCopy region{};
 		region.bufferOffset = 0;
@@ -1460,7 +1297,7 @@ namespace Pelican
 
 		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-		EndSingleTimeCommands(commandBuffer);
+		VulkanHelpers::EndSingleTimeCommands(commandBuffer);
 	}
 
 	VkImageView VulkanRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
@@ -1518,6 +1355,47 @@ namespace Pelican
 	bool VulkanRenderer::HasStencilComponent(VkFormat format)
 	{
 		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+	}
+
+	void VulkanRenderer::BeginCommandBuffers()
+	{
+		VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		if (vkBeginCommandBuffer(m_VkCommandBuffers[m_CurrentBuffer], &beginInfo) != VK_SUCCESS)
+		{
+			ASSERT_MSG(false, "failed to begin recording command buffer!");
+		}
+
+		VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+		renderPassInfo.renderPass = m_VkRenderPass;
+		renderPassInfo.framebuffer = m_VkSwapChainFramebuffers[m_CurrentBuffer];
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = m_VkSwapChainExtent;
+
+		std::array<VkClearValue, 2> clearValues{};
+		clearValues[0].color = { {0.0f,0.0f,0.0f,1.0f} };
+		clearValues[1].depthStencil = { 1.0f, 0 };
+
+		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		renderPassInfo.pClearValues = clearValues.data();
+
+		vkCmdBeginRenderPass(m_VkCommandBuffers[m_CurrentBuffer], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBindPipeline(m_VkCommandBuffers[m_CurrentBuffer], VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkGraphicsPipeline);
+
+			vkCmdBindDescriptorSets(m_VkCommandBuffers[m_CurrentBuffer], VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkPipelineLayout, 0, 1,
+				&m_VkDescriptorSets[m_CurrentBuffer], 0, nullptr);
+	}
+
+	void VulkanRenderer::EndCommandBuffers()
+	{
+		vkCmdEndRenderPass(m_VkCommandBuffers[m_CurrentBuffer]);
+
+		if (vkEndCommandBuffer(m_VkCommandBuffers[m_CurrentBuffer]) != VK_SUCCESS)
+		{
+			ASSERT_MSG(false, "failed to record command buffer!");
+		}
 	}
 
 	VkBool32 VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,

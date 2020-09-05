@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.h>
 
 #include "Vertex.h"
+#include "Mesh.h"
 
 namespace Pelican
 {
@@ -32,14 +33,24 @@ namespace Pelican
 	class VulkanRenderer final
 	{
 	public:
-		VulkanRenderer() = default;
+		VulkanRenderer();
 
 		void Initialize();
-		void Cleanup();
+		void BeforeSceneCleanup();
+		void AfterSceneCleanup();
 
-		void Draw();
+		void BeginScene();
+		void EndScene();
+
 		void FlagWindowResized() { m_FrameBufferResized = true; }
 		void SetCamera(Camera* pCamera);
+
+	public:
+		static VkDevice GetDevice() { return m_pInstance->m_VkDevice; }
+		static VkPhysicalDevice GetPhysicalDevice() { return m_pInstance->m_VkPhysicalDevice; }
+		static VkQueue GetGraphicsQueue() { return m_pInstance->m_VkGraphicsQueue; }
+		static VkCommandPool GetCommandPool() { return m_pInstance->m_VkCommandPool; }
+		static VkCommandBuffer GetCurrentBuffer() { return m_pInstance->m_VkCommandBuffers[m_pInstance->m_CurrentBuffer]; }
 
 	private:
 		void CreateInstance();
@@ -79,8 +90,6 @@ namespace Pelican
 		void CreateTextureImage();
 		void CreateTextureImageView();
 		void CreateTextureSampler();
-		void CreateVertexBuffer();
-		void CreateIndexBuffer();
 		void CreateUniformBuffers();
 		void CreateDescriptorPool();
 		void CreateDescriptorSets();
@@ -90,14 +99,6 @@ namespace Pelican
 
 		void CleanupSwapChain();
 		void RecreateSwapChain();
-
-		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-		void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-			VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-		void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-
-		VkCommandBuffer BeginSingleTimeCommands();
-		void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
 
 		void UpdateUniformBuffer(uint32_t currentImage);
 
@@ -110,6 +111,9 @@ namespace Pelican
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 		VkFormat FindDepthFormat();
 		bool HasStencilComponent(VkFormat format);
+
+		void BeginCommandBuffers();
+		void EndCommandBuffers();
 
 	private:
 		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
@@ -125,6 +129,8 @@ namespace Pelican
 		Camera* m_pCamera = nullptr;
 
 	private:
+		static VulkanRenderer* m_pInstance;
+
 		VkInstance m_VkInstance{};
 #ifdef PELICAN_DEBUG
 		const bool m_EnableValidationLayers = true;
@@ -157,80 +163,13 @@ namespace Pelican
 		std::vector<VkCommandBuffer> m_VkCommandBuffers;
 		const int MAX_FRAMES_IN_FLIGHT = 2;
 		size_t m_CurrentFrame = 0;
+		uint32_t m_CurrentBuffer;
 		std::vector<VkSemaphore> m_VkImageAvailableSemaphores;
 		std::vector<VkSemaphore> m_VkRenderFinishedSemaphores;
 		std::vector<VkFence> m_VkInFlightFences;
 		std::vector<VkFence> m_VkImagesInFlight;
 
 		bool m_FrameBufferResized = false;
-
-		VkBuffer m_VkVertexBuffer;
-		VkDeviceMemory m_VkVertexBufferMemory;
-		VkBuffer m_VkIndexBuffer;
-		VkDeviceMemory m_VkIndexBufferMemory;
-
-		// const std::vector<Vertex> m_Vertices = {
-		// 	// Left face
-		// 	{{-5.0f, -5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-		// 	{{ 5.0f, -5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-		// 	{{ 5.0f,  5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-		// 	{{-5.0f,  5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-		//
-		// 	// Right face
-		// 	{{-5.0f, -5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-		// 	{{-5.0f,  5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-		// 	{{ 5.0f,  5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-		// 	{{ 5.0f, -5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-		//
-		// 	// Top face
-		// 	{{-5.0f,  5.0f, -5.0f}, {0.0f, 1.0f, 0.0f}},
-		// 	{{ 5.0f,  5.0f, -5.0f}, {0.0f, 1.0f, 0.0f}},
-		// 	{{ 5.0f,  5.0f,  5.0f}, {0.0f, 1.0f, 0.0f}},
-		// 	{{-5.0f,  5.0f,  5.0f}, {0.0f, 1.0f, 0.0f}},
-		//
-		// 	// Bottom face
-		// 	{{-5.0f, -5.0f, -5.0f}, {0.0f, 0.0f, 1.0f}},
-		// 	{{-5.0f, -5.0f,  5.0f}, {0.0f, 0.0f, 1.0f}},
-		// 	{{ 5.0f, -5.0f,  5.0f}, {0.0f, 0.0f, 1.0f}},
-		// 	{{ 5.0f, -5.0f, -5.0f}, {0.0f, 0.0f, 1.0f}},
-		//
-		// 	// Front face
-		// 	{{-5.0f, -5.0f, -5.0f}, {1.0f, 0.0f, 0.0f}},
-		// 	{{-5.0f,  5.0f, -5.0f}, {1.0f, 0.0f, 0.0f}},
-		// 	{{-5.0f,  5.0f,  5.0f}, {1.0f, 0.0f, 0.0f}},
-		// 	{{-5.0f, -5.0f,  5.0f}, {1.0f, 0.0f, 0.0f}},
-		//
-		// 	// Back face
-		// 	{{ 5.0f, -5.0f, -5.0f}, {1.0f, 0.5f, 0.0f}},
-		// 	{{ 5.0f, -5.0f,  5.0f}, {1.0f, 0.5f, 0.0f}},
-		// 	{{ 5.0f,  5.0f,  5.0f}, {1.0f, 0.5f, 0.0f}},
-		// 	{{ 5.0f,  5.0f, -5.0f}, {1.0f, 0.5f, 0.0f}},
-		// };
-		// const std::vector<uint16_t> m_Indices = {
-		// 	0, 1, 2, 2, 3, 0,       // Left face
-		// 	4, 5, 6, 6, 7, 4,       // Right face
-		// 	8, 9, 10, 10, 11, 8,    // Top face
-		// 	12, 13, 14, 14, 15, 12, // Bottom face
-		// 	16, 17, 18, 18, 19, 16, // Front face
-		// 	20, 21, 22, 22, 23, 20, // Back face
-		// };
-
-		const std::vector<Vertex> m_Vertices = {
-			{{-0.5f,  0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-			{{-0.5f,  0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-			{{ 0.5f,  0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{ 0.5f,  0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-
-			{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-			{{-0.5f, -0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-			{{ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		};
-
-		const std::vector<uint16_t> m_Indices = {
-			0, 1, 2, 2, 3, 0,
-			4, 5, 6, 6, 7, 4
-		};
 
 		std::vector<VkBuffer> m_VkUniformBuffers;
 		std::vector<VkDeviceMemory> m_VkUniformBuffersMemory;
