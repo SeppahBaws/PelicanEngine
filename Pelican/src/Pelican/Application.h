@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Window.h"
 
-#include "VulkanRenderer.h"
+#include "Pelican/Renderer/VulkanRenderer.h"
 
 namespace Pelican
 {

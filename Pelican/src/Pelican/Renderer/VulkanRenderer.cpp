@@ -14,8 +14,9 @@
 
 #include <chrono>
 
+#include "Pelican/Application.h"
+
 #include "VulkanProxy.h"
-#include "Application.h"
 #include "UniformBufferObject.h"
 #include "Camera.h"
 

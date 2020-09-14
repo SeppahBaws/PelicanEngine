@@ -1,8 +1,8 @@
 ﻿#include "PelicanPCH.h"
 #include "Camera.h"
-#include "Time.h"
+#include "Pelican/Time.h"
 
-#include "Input/Input.h"
+#include "Pelican/Input/Input.h"
 
 #include <iostream>
 
