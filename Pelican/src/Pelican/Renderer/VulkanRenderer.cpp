@@ -5,14 +5,15 @@
 #include <fstream>
 #include <algorithm>
 #include <cstdint>
+#include <array>
+#include <chrono>
+
 #include <GLFW/glfw3.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
-#include <chrono>
 
 #include "Pelican/Application.h"
 
@@ -22,6 +23,8 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+#include "Vertex.h"
 
 namespace Pelican
 {
@@ -38,9 +41,15 @@ namespace Pelican
 	{
 		CreateInstance();
 		SetupDebugMessenger();
+
+		m_pDevice = new VulkanDevice(m_VkInstance);
+
+		/*
 		CreateSurface();
 		PickPhysicalDevice();
 		CreateLogicalDevice();
+		*/
+
 		CreateSwapChain();
 		CreateImageViews();
 		CreateRenderPass();
@@ -61,45 +70,46 @@ namespace Pelican
 
 	void VulkanRenderer::BeforeSceneCleanup()
 	{
-		vkDeviceWaitIdle(m_VkDevice);
+		m_pDevice->WaitIdle();
 
 		CleanupSwapChain();
 	}
 
 	void VulkanRenderer::AfterSceneCleanup()
 	{
-		vkDestroySampler(m_VkDevice, m_vkTextureSampler, nullptr);
-		vkDestroyImageView(m_VkDevice, m_vkTextureImageView, nullptr);
+		vkDestroySampler(m_pDevice->GetDevice(), m_vkTextureSampler, nullptr);
+		vkDestroyImageView(m_pDevice->GetDevice(), m_vkTextureImageView, nullptr);
 
-		vkDestroyImage(m_VkDevice, m_VkTextureImage, nullptr);
-		vkFreeMemory(m_VkDevice, m_VkTextureImageMemory, nullptr);
+		vkDestroyImage(m_pDevice->GetDevice(), m_VkTextureImage, nullptr);
+		vkFreeMemory(m_pDevice->GetDevice(), m_VkTextureImageMemory, nullptr);
 
-		vkDestroyDescriptorSetLayout(m_VkDevice, m_VkDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(m_pDevice->GetDevice(), m_VkDescriptorSetLayout, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			vkDestroySemaphore(m_VkDevice, m_VkRenderFinishedSemaphores[i], nullptr);
-			vkDestroySemaphore(m_VkDevice, m_VkImageAvailableSemaphores[i], nullptr);
-			vkDestroyFence(m_VkDevice, m_VkInFlightFences[i], nullptr);
+			vkDestroySemaphore(m_pDevice->GetDevice(), m_VkRenderFinishedSemaphores[i], nullptr);
+			vkDestroySemaphore(m_pDevice->GetDevice(), m_VkImageAvailableSemaphores[i], nullptr);
+			vkDestroyFence(m_pDevice->GetDevice(), m_VkInFlightFences[i], nullptr);
 		}
 
-		vkDestroyCommandPool(m_VkDevice, m_VkCommandPool, nullptr);
-		vkDestroyDevice(m_VkDevice, nullptr);
+		vkDestroyCommandPool(m_pDevice->GetDevice(), m_VkCommandPool, nullptr);
+
+		delete m_pDevice;
+		m_pDevice = nullptr;
 
 		if (m_EnableValidationLayers)
 		{
 			VulkanProxy::DestroyDebugUtilsMessenger(m_VkInstance, m_VkDebugMessenger, nullptr);
 		}
 
-		vkDestroySurfaceKHR(m_VkInstance, m_VkSurface, nullptr);
 		vkDestroyInstance(m_VkInstance, nullptr);
 	}
 
 	void VulkanRenderer::BeginScene()
 	{
-		vkWaitForFences(m_VkDevice, 1, &m_VkInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(m_pDevice->GetDevice(), 1, &m_VkInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
 
-		VkResult result = vkAcquireNextImageKHR(m_VkDevice, m_VkSwapchain, UINT64_MAX, m_VkImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &m_CurrentBuffer);
+		VkResult result = vkAcquireNextImageKHR(m_pDevice->GetDevice(), m_VkSwapchain, UINT64_MAX, m_VkImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &m_CurrentBuffer);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || m_FrameBufferResized)
 		{
@@ -114,7 +124,7 @@ namespace Pelican
 
 		if (m_VkImagesInFlight[m_CurrentBuffer] != VK_NULL_HANDLE)
 		{
-			vkWaitForFences(m_VkDevice, 1, &m_VkImagesInFlight[m_CurrentBuffer], VK_TRUE, UINT64_MAX);
+			vkWaitForFences(m_pDevice->GetDevice(), 1, &m_VkImagesInFlight[m_CurrentBuffer], VK_TRUE, UINT64_MAX);
 		}
 		m_VkImagesInFlight[m_CurrentBuffer] = m_VkInFlightFences[m_CurrentFrame];
 
@@ -144,9 +154,9 @@ namespace Pelican
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		vkResetFences(m_VkDevice, 1, &m_VkInFlightFences[m_CurrentFrame]);
+		vkResetFences(m_pDevice->GetDevice(), 1, &m_VkInFlightFences[m_CurrentFrame]);
 
-		if (vkQueueSubmit(m_VkGraphicsQueue, 1, &submitInfo, m_VkInFlightFences[m_CurrentFrame]) != VK_SUCCESS)
+		if (vkQueueSubmit(m_pDevice->GetGraphicsQueue(), 1, &submitInfo, m_VkInFlightFences[m_CurrentFrame]) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to submit draw command buffer!");
 		}
@@ -161,7 +171,7 @@ namespace Pelican
 		presentInfo.pImageIndices = &m_CurrentBuffer;
 		presentInfo.pResults = nullptr;
 
-		VkResult result = vkQueuePresentKHR(m_VkPresentQueue, &presentInfo);
+		VkResult result = vkQueuePresentKHR(m_pDevice->GetPresentQueue(), &presentInfo);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		{
@@ -310,187 +320,6 @@ namespace Pelican
 		createInfo.pfnUserCallback = DebugCallback;
 	}
 
-	void VulkanRenderer::CreateSurface()
-	{
-		if (glfwCreateWindowSurface(m_VkInstance, Application::Get().GetWindow()->GetGLFWWindow(), nullptr, &m_VkSurface) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create window surface");
-		}
-	}
-
-	void VulkanRenderer::PickPhysicalDevice()
-	{
-		uint32_t deviceCount = 0;
-		vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, nullptr);
-
-		if (deviceCount == 0)
-		{
-			ASSERT_MSG(false, "failed to find GPUs with Vulkan support!");
-		}
-
-		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, devices.data());
-
-		for (const auto& device : devices)
-		{
-			if (IsDeviceSuitable(device))
-			{
-				m_VkPhysicalDevice = device;
-				break;
-			}
-		}
-
-		if (m_VkPhysicalDevice == VK_NULL_HANDLE)
-		{
-			ASSERT_MSG(false, "failed to find a suitable GPU!");
-		}
-	}
-
-	bool VulkanRenderer::IsDeviceSuitable(VkPhysicalDevice device)
-	{
-		VkPhysicalDeviceProperties deviceProperties;
-		VkPhysicalDeviceFeatures deviceFeatures;
-		vkGetPhysicalDeviceProperties(device, &deviceProperties);
-		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-
-		QueueFamilyIndices indices = FindQueueFamilies(device);
-
-		bool extensionsSupported = CheckDeviceExtensionSupport(device);
-
-		bool swapChainAdequate = false;
-		if (extensionsSupported)
-		{
-			SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
-			swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-		}
-
-		VkPhysicalDeviceFeatures supportedFeatures;
-		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
-
-		return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
-			indices.IsComplete() && extensionsSupported && swapChainAdequate &&
-			supportedFeatures.samplerAnisotropy;
-	}
-
-	QueueFamilyIndices VulkanRenderer::FindQueueFamilies(VkPhysicalDevice device)
-	{
-		QueueFamilyIndices indices;
-
-		uint32_t queueFamilyCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-		int i = 0;
-		for (const auto& queueFamily : queueFamilies)
-		{
-			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-			{
-				indices.graphicsFamily = i;
-			}
-
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_VkSurface, &presentSupport);
-			if (presentSupport)
-			{
-				indices.presentFamily = i;
-			}
-
-			if (indices.IsComplete())
-			{
-				break;
-			}
-
-			i++;
-		}
-
-		return indices;
-	}
-
-	void VulkanRenderer::CreateLogicalDevice()
-	{
-		QueueFamilyIndices indices = FindQueueFamilies(m_VkPhysicalDevice);
-
-		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(),indices.presentFamily.value() };
-
-		float queuePriority = 1.0f;
-		for (uint32_t queueFamily : uniqueQueueFamilies)
-		{
-			VkDeviceQueueCreateInfo queueCreateInfo = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };
-			queueCreateInfo.queueFamilyIndex = queueFamily;
-			queueCreateInfo.queueCount = 1;
-			queueCreateInfo.pQueuePriorities = &queuePriority;
-			queueCreateInfos.push_back(queueCreateInfo);
-		}
-
-		VkPhysicalDeviceFeatures deviceFeatures{};
-		deviceFeatures.samplerAnisotropy = VK_TRUE;
-
-		VkDeviceCreateInfo createInfo = { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
-		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-		createInfo.pQueueCreateInfos = queueCreateInfos.data();
-
-		createInfo.pEnabledFeatures = &deviceFeatures;
-
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-
-		if (vkCreateDevice(m_VkPhysicalDevice, &createInfo, nullptr, &m_VkDevice) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create logical device!");
-		}
-
-		vkGetDeviceQueue(m_VkDevice, indices.graphicsFamily.value(), 0, &m_VkGraphicsQueue);
-		vkGetDeviceQueue(m_VkDevice, indices.presentFamily.value(), 0, &m_VkPresentQueue);
-	}
-
-	bool VulkanRenderer::CheckDeviceExtensionSupport(VkPhysicalDevice device)
-	{
-		uint32_t extensionCount;
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
-
-		std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
-
-		for (const auto& extension : availableExtensions)
-		{
-			requiredExtensions.erase(extension.extensionName);
-		}
-
-		return requiredExtensions.empty();
-	}
-
-	SwapChainSupportDetails VulkanRenderer::QuerySwapChainSupport(VkPhysicalDevice device)
-	{
-		SwapChainSupportDetails details;
-
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_VkSurface, &details.capabilities);
-
-		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_VkSurface, &formatCount, nullptr);
-
-		if (formatCount != 0)
-		{
-			details.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_VkSurface, &formatCount, details.formats.data());
-		}
-
-		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_VkSurface, &presentModeCount, nullptr);
-
-		if (presentModeCount != 0)
-		{
-			details.presentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_VkSurface, &presentModeCount, details.presentModes.data());
-		}
-
-		return details;
-	}
-
 	VkSurfaceFormatKHR VulkanRenderer::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 	{
 		for (const auto& availableFormat : availableFormats)
@@ -538,7 +367,7 @@ namespace Pelican
 
 	void VulkanRenderer::CreateSwapChain()
 	{
-		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_VkPhysicalDevice);
+		SwapChainSupportDetails swapChainSupport = VulkanHelpers::QuerySwapChainSupport(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
 
 		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
 		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
@@ -552,7 +381,7 @@ namespace Pelican
 		}
 
 		VkSwapchainCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
-		createInfo.surface = m_VkSurface;
+		createInfo.surface = m_pDevice->GetSurface();
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -560,7 +389,7 @@ namespace Pelican
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		QueueFamilyIndices indices = FindQueueFamilies(m_VkPhysicalDevice);
+		QueueFamilyIndices indices = m_pDevice->FindQueueFamilies();
 		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 		if (indices.graphicsFamily != indices.presentFamily)
@@ -582,14 +411,14 @@ namespace Pelican
 		createInfo.clipped = VK_TRUE;
 		createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-		if (vkCreateSwapchainKHR(m_VkDevice, &createInfo, nullptr, &m_VkSwapchain) != VK_SUCCESS)
+		if (vkCreateSwapchainKHR(m_pDevice->GetDevice(), &createInfo, nullptr, &m_VkSwapchain) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create swap chain!");
 		}
 
-		vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapchain, &imageCount, nullptr);
+		vkGetSwapchainImagesKHR(m_pDevice->GetDevice(), m_VkSwapchain, &imageCount, nullptr);
 		m_VkSwapChainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(m_VkDevice, m_VkSwapchain, &imageCount, m_VkSwapChainImages.data());
+		vkGetSwapchainImagesKHR(m_pDevice->GetDevice(), m_VkSwapchain, &imageCount, m_VkSwapChainImages.data());
 		m_VkSwapChainImageFormat = surfaceFormat.format;
 		m_VkSwapChainExtent = extent;
 	}
@@ -657,7 +486,7 @@ namespace Pelican
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		if (vkCreateRenderPass(m_VkDevice, &renderPassInfo, nullptr, &m_VkRenderPass) != VK_SUCCESS)
+		if (vkCreateRenderPass(m_pDevice->GetDevice(), &renderPassInfo, nullptr, &m_VkRenderPass) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create render pass!");
 		}
@@ -685,7 +514,7 @@ namespace Pelican
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 		layoutInfo.pBindings = bindings.data();
 
-		if (vkCreateDescriptorSetLayout(m_VkDevice, &layoutInfo, nullptr, &m_VkDescriptorSetLayout) != VK_SUCCESS)
+		if (vkCreateDescriptorSetLayout(m_pDevice->GetDevice(), &layoutInfo, nullptr, &m_VkDescriptorSetLayout) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create descriptor set layout");
 		}
@@ -799,7 +628,7 @@ namespace Pelican
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-		if (vkCreatePipelineLayout(m_VkDevice, &pipelineLayoutInfo, nullptr, &m_VkPipelineLayout) != VK_SUCCESS)
+		if (vkCreatePipelineLayout(m_pDevice->GetDevice(), &pipelineLayoutInfo, nullptr, &m_VkPipelineLayout) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create pipeline layout!");
 		}
@@ -824,13 +653,13 @@ namespace Pelican
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
 
-		if (vkCreateGraphicsPipelines(m_VkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_VkGraphicsPipeline) != VK_SUCCESS)
+		if (vkCreateGraphicsPipelines(m_pDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_VkGraphicsPipeline) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create graphics pipeline!");
 		}
 
-		vkDestroyShaderModule(m_VkDevice, vertShaderModule, nullptr);
-		vkDestroyShaderModule(m_VkDevice, fragShaderModule, nullptr);
+		vkDestroyShaderModule(m_pDevice->GetDevice(), vertShaderModule, nullptr);
+		vkDestroyShaderModule(m_pDevice->GetDevice(), fragShaderModule, nullptr);
 	}
 
 	VkShaderModule VulkanRenderer::CreateShaderModule(const std::vector<char>& code)
@@ -840,7 +669,7 @@ namespace Pelican
 		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
 		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(m_VkDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
+		if (vkCreateShaderModule(m_pDevice->GetDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create shader module!");
 		}
@@ -867,7 +696,7 @@ namespace Pelican
 			framebufferInfo.height = m_VkSwapChainExtent.height;
 			framebufferInfo.layers = 1;
 
-			if (vkCreateFramebuffer(m_VkDevice, &framebufferInfo, nullptr, &m_VkSwapChainFramebuffers[i]) != VK_SUCCESS)
+			if (vkCreateFramebuffer(m_pDevice->GetDevice(), &framebufferInfo, nullptr, &m_VkSwapChainFramebuffers[i]) != VK_SUCCESS)
 			{
 				ASSERT_MSG(false, "failed to create framebuffer!");
 			}
@@ -876,13 +705,13 @@ namespace Pelican
 
 	void VulkanRenderer::CreateCommandPool()
 	{
-		QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_VkPhysicalDevice);
+		QueueFamilyIndices queueFamilyIndices = m_pDevice->FindQueueFamilies();
 
 		VkCommandPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-		if (vkCreateCommandPool(m_VkDevice, &poolInfo, nullptr, &m_VkCommandPool) != VK_SUCCESS)
+		if (vkCreateCommandPool(m_pDevice->GetDevice(), &poolInfo, nullptr, &m_VkCommandPool) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create command pool!");
 		}
@@ -918,9 +747,9 @@ namespace Pelican
 			stagingBuffer, stagingBufferMemory);
 
 		void* data;
-		vkMapMemory(m_VkDevice, stagingBufferMemory, 0, size, 0, &data);
+		vkMapMemory(m_pDevice->GetDevice(), stagingBufferMemory, 0, size, 0, &data);
 			memcpy(data, pixels, static_cast<size_t>(size));
-		vkUnmapMemory(m_VkDevice, stagingBufferMemory);
+		vkUnmapMemory(m_pDevice->GetDevice(), stagingBufferMemory);
 
 		stbi_image_free(pixels);
 
@@ -936,8 +765,8 @@ namespace Pelican
 		TransitionImageLayout(m_VkTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		vkDestroyBuffer(m_VkDevice, stagingBuffer, nullptr);
-		vkFreeMemory(m_VkDevice, stagingBufferMemory, nullptr);
+		vkDestroyBuffer(m_pDevice->GetDevice(), stagingBuffer, nullptr);
+		vkFreeMemory(m_pDevice->GetDevice(), stagingBufferMemory, nullptr);
 	}
 
 	void VulkanRenderer::CreateTextureImageView()
@@ -964,7 +793,7 @@ namespace Pelican
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = 0.0f;
 
-		if (vkCreateSampler(m_VkDevice, &samplerInfo, nullptr, &m_vkTextureSampler) != VK_SUCCESS)
+		if (vkCreateSampler(m_pDevice->GetDevice(), &samplerInfo, nullptr, &m_vkTextureSampler) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create texture sampler!");
 		}
@@ -999,7 +828,7 @@ namespace Pelican
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(m_VkSwapChainImages.size());
 
-		if (vkCreateDescriptorPool(m_VkDevice, &poolInfo, nullptr, &m_VkDescriptorPool) != VK_SUCCESS)
+		if (vkCreateDescriptorPool(m_pDevice->GetDevice(), &poolInfo, nullptr, &m_VkDescriptorPool) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create descriptor pool!");
 		}
@@ -1014,7 +843,7 @@ namespace Pelican
 		allocInfo.pSetLayouts = layouts.data();
 
 		m_VkDescriptorSets.resize(m_VkSwapChainImages.size());
-		if (vkAllocateDescriptorSets(m_VkDevice, &allocInfo, m_VkDescriptorSets.data()) != VK_SUCCESS)
+		if (vkAllocateDescriptorSets(m_pDevice->GetDevice(), &allocInfo, m_VkDescriptorSets.data()) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to allocate descriptor sets!");
 		}
@@ -1049,7 +878,7 @@ namespace Pelican
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].pImageInfo = &imageInfo;
 
-			vkUpdateDescriptorSets(m_VkDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+			vkUpdateDescriptorSets(m_pDevice->GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}
 	}
 
@@ -1062,7 +891,7 @@ namespace Pelican
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = static_cast<uint32_t>(m_VkCommandBuffers.size());
 
-		if (vkAllocateCommandBuffers(m_VkDevice, &allocInfo, m_VkCommandBuffers.data()) != VK_SUCCESS)
+		if (vkAllocateCommandBuffers(m_pDevice->GetDevice(), &allocInfo, m_VkCommandBuffers.data()) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to allocate command buffers!");
 		}
@@ -1082,9 +911,9 @@ namespace Pelican
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			if (vkCreateSemaphore(m_VkDevice, &semaphoreInfo, nullptr, &m_VkImageAvailableSemaphores[i]) != VK_SUCCESS ||
-				vkCreateSemaphore(m_VkDevice, &semaphoreInfo, nullptr, &m_VkRenderFinishedSemaphores[i]) != VK_SUCCESS ||
-				vkCreateFence(m_VkDevice, &fenceInfo, nullptr, &m_VkInFlightFences[i]) != VK_SUCCESS)
+			if (vkCreateSemaphore(m_pDevice->GetDevice(), &semaphoreInfo, nullptr, &m_VkImageAvailableSemaphores[i]) != VK_SUCCESS ||
+				vkCreateSemaphore(m_pDevice->GetDevice(), &semaphoreInfo, nullptr, &m_VkRenderFinishedSemaphores[i]) != VK_SUCCESS ||
+				vkCreateFence(m_pDevice->GetDevice(), &fenceInfo, nullptr, &m_VkInFlightFences[i]) != VK_SUCCESS)
 			{
 				ASSERT_MSG(false, "failed to create synchronization objects for a frame!");
 			}
@@ -1093,35 +922,35 @@ namespace Pelican
 
 	void VulkanRenderer::CleanupSwapChain()
 	{
-		vkDestroyImageView(m_VkDevice, m_VkDepthImageView, nullptr);
-		vkDestroyImage(m_VkDevice, m_VkDepthImage, nullptr);
-		vkFreeMemory(m_VkDevice, m_VkDepthImageMemory, nullptr);
+		vkDestroyImageView(m_pDevice->GetDevice(), m_VkDepthImageView, nullptr);
+		vkDestroyImage(m_pDevice->GetDevice(), m_VkDepthImage, nullptr);
+		vkFreeMemory(m_pDevice->GetDevice(), m_VkDepthImageMemory, nullptr);
 
 		for (size_t i = 0; i < m_VkSwapChainFramebuffers.size(); i++)
 		{
-			vkDestroyFramebuffer(m_VkDevice, m_VkSwapChainFramebuffers[i], nullptr);
+			vkDestroyFramebuffer(m_pDevice->GetDevice(), m_VkSwapChainFramebuffers[i], nullptr);
 		}
 
-		vkFreeCommandBuffers(m_VkDevice, m_VkCommandPool, static_cast<uint32_t>(m_VkCommandBuffers.size()), m_VkCommandBuffers.data());
+		vkFreeCommandBuffers(m_pDevice->GetDevice(), m_VkCommandPool, static_cast<uint32_t>(m_VkCommandBuffers.size()), m_VkCommandBuffers.data());
 
-		vkDestroyPipeline(m_VkDevice, m_VkGraphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(m_VkDevice, m_VkPipelineLayout, nullptr);
-		vkDestroyRenderPass(m_VkDevice, m_VkRenderPass, nullptr);
+		vkDestroyPipeline(m_pDevice->GetDevice(), m_VkGraphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(m_pDevice->GetDevice(), m_VkPipelineLayout, nullptr);
+		vkDestroyRenderPass(m_pDevice->GetDevice(), m_VkRenderPass, nullptr);
 
 		for (size_t i = 0; i < m_VkSwapChainImageViews.size(); i++)
 		{
-			vkDestroyImageView(m_VkDevice, m_VkSwapChainImageViews[i], nullptr);
+			vkDestroyImageView(m_pDevice->GetDevice(), m_VkSwapChainImageViews[i], nullptr);
 		}
 
-		vkDestroySwapchainKHR(m_VkDevice, m_VkSwapchain, nullptr);
+		vkDestroySwapchainKHR(m_pDevice->GetDevice(), m_VkSwapchain, nullptr);
 
 		for (size_t i = 0; i < m_VkSwapChainImages.size(); i++)
 		{
-			vkDestroyBuffer(m_VkDevice, m_VkUniformBuffers[i], nullptr);
-			vkFreeMemory(m_VkDevice, m_VkUniformBuffersMemory[i], nullptr);
+			vkDestroyBuffer(m_pDevice->GetDevice(), m_VkUniformBuffers[i], nullptr);
+			vkFreeMemory(m_pDevice->GetDevice(), m_VkUniformBuffersMemory[i], nullptr);
 		}
 
-		vkDestroyDescriptorPool(m_VkDevice, m_VkDescriptorPool, nullptr);
+		vkDestroyDescriptorPool(m_pDevice->GetDevice(), m_VkDescriptorPool, nullptr);
 	}
 
 	void VulkanRenderer::RecreateSwapChain()
@@ -1136,7 +965,7 @@ namespace Pelican
 
 		std::cout << "framebuffer resized, recreating swap chain!" << std::endl;
 
-		vkDeviceWaitIdle(m_VkDevice);
+		vkDeviceWaitIdle(m_pDevice->GetDevice());
 
 		CleanupSwapChain();
 
@@ -1163,9 +992,9 @@ namespace Pelican
 		ubo.proj[1][1] *= -1;
 
 		void* data;
-		vkMapMemory(m_VkDevice, m_VkUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+		vkMapMemory(m_pDevice->GetDevice(), m_VkUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
 			memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(m_VkDevice, m_VkUniformBuffersMemory[currentImage]);
+		vkUnmapMemory(m_pDevice->GetDevice(), m_VkUniformBuffersMemory[currentImage]);
 	}
 
 	void VulkanRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
@@ -1186,24 +1015,24 @@ namespace Pelican
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.flags = 0;
 
-		if (vkCreateImage(m_VkDevice, &imageInfo, nullptr, &image) != VK_SUCCESS)
+		if (vkCreateImage(m_pDevice->GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create image!");
 		}
 
 		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(m_VkDevice, image, &memRequirements);
+		vkGetImageMemoryRequirements(m_pDevice->GetDevice(), image, &memRequirements);
 
 		VkMemoryAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = VulkanHelpers::FindMemoryType(memRequirements.memoryTypeBits, properties);
 
-		if (vkAllocateMemory(m_VkDevice, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
+		if (vkAllocateMemory(m_pDevice->GetDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to allocate image memory!");
 		}
 
-		vkBindImageMemory(m_VkDevice, image, imageMemory, 0);
+		vkBindImageMemory(m_pDevice->GetDevice(), image, imageMemory, 0);
 	}
 
 	void VulkanRenderer::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout,
@@ -1314,7 +1143,7 @@ namespace Pelican
 		viewInfo.subresourceRange.layerCount = 1;
 
 		VkImageView imageView;
-		if (vkCreateImageView(m_VkDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+		if (vkCreateImageView(m_pDevice->GetDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create texture image view!");
 		}
@@ -1328,7 +1157,7 @@ namespace Pelican
 		for (VkFormat format : candidates)
 		{
 			VkFormatProperties props;
-			vkGetPhysicalDeviceFormatProperties(m_VkPhysicalDevice, format, &props);
+			vkGetPhysicalDeviceFormatProperties(m_pDevice->GetPhysicalDevice(), format, &props);
 
 			if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
 			{

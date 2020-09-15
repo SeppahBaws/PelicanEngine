@@ -1,34 +1,13 @@
 ﻿#pragma once
-#include <optional>
 
 #include <vulkan/vulkan.h>
 
-#include "Vertex.h"
-#include "Mesh.h"
+#include "VulkanDevice.h"
 
 namespace Pelican
 {
 	// Forward declarations
 	class Camera;
-
-
-	struct QueueFamilyIndices
-	{
-		std::optional<uint32_t> graphicsFamily;
-		std::optional<uint32_t> presentFamily;
-
-		bool IsComplete() const
-		{
-			return graphicsFamily.has_value() && presentFamily.has_value();
-		}
-	};
-
-	struct SwapChainSupportDetails
-	{
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> presentModes;
-	};
 
 	class VulkanRenderer final
 	{
@@ -46,9 +25,9 @@ namespace Pelican
 		void SetCamera(Camera* pCamera);
 
 	public:
-		static VkDevice GetDevice() { return m_pInstance->m_VkDevice; }
-		static VkPhysicalDevice GetPhysicalDevice() { return m_pInstance->m_VkPhysicalDevice; }
-		static VkQueue GetGraphicsQueue() { return m_pInstance->m_VkGraphicsQueue; }
+		static VkDevice GetDevice() { return m_pInstance->m_pDevice->GetDevice(); }
+		static VkPhysicalDevice GetPhysicalDevice() { return m_pInstance->m_pDevice->GetPhysicalDevice(); }
+		static VkQueue GetGraphicsQueue() { return m_pInstance->m_pDevice->GetGraphicsQueue(); }
 		static VkCommandPool GetCommandPool() { return m_pInstance->m_VkCommandPool; }
 		static VkCommandBuffer GetCurrentBuffer() { return m_pInstance->m_VkCommandBuffers[m_pInstance->m_CurrentBuffer]; }
 
@@ -61,15 +40,6 @@ namespace Pelican
 		void SetupDebugMessenger();
 		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
-		void CreateSurface();
-
-		void PickPhysicalDevice();
-		bool IsDeviceSuitable(VkPhysicalDevice device);
-		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
-		void CreateLogicalDevice();
-
-		bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
-		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
@@ -132,6 +102,7 @@ namespace Pelican
 		static VulkanRenderer* m_pInstance;
 
 		VkInstance m_VkInstance{};
+
 #ifdef PELICAN_DEBUG
 		const bool m_EnableValidationLayers = true;
 #else
@@ -141,14 +112,9 @@ namespace Pelican
 			"VK_LAYER_KHRONOS_validation"
 		};
 		VkDebugUtilsMessengerEXT m_VkDebugMessenger{};
-		VkPhysicalDevice m_VkPhysicalDevice{};
-		VkDevice m_VkDevice{};
-		VkQueue m_VkGraphicsQueue;
-		VkSurfaceKHR m_VkSurface;
-		VkQueue m_VkPresentQueue;
-		const std::vector<const char*> deviceExtensions = {
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME
-		};
+
+		VulkanDevice* m_pDevice{};
+
 		VkSwapchainKHR m_VkSwapchain;
 		std::vector<VkImage> m_VkSwapChainImages;
 		VkFormat m_VkSwapChainImageFormat;
