@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 
 #include "VulkanDevice.h"
+#include "VulkanSwapChain.h"
 
 namespace Pelican
 {
@@ -39,13 +40,6 @@ namespace Pelican
 
 		void SetupDebugMessenger();
 		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
-		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-
-		void CreateSwapChain();
-		void CreateImageViews();
 
 		void CreateRenderPass();
 
@@ -114,17 +108,13 @@ namespace Pelican
 		VkDebugUtilsMessengerEXT m_VkDebugMessenger{};
 
 		VulkanDevice* m_pDevice{};
+		VulkanSwapChain* m_pSwapChain{};
 
-		VkSwapchainKHR m_VkSwapchain;
-		std::vector<VkImage> m_VkSwapChainImages;
-		VkFormat m_VkSwapChainImageFormat;
-		VkExtent2D m_VkSwapChainExtent;
-		std::vector<VkImageView> m_VkSwapChainImageViews;
 		VkRenderPass m_VkRenderPass;
 		VkDescriptorSetLayout m_VkDescriptorSetLayout;
 		VkPipelineLayout m_VkPipelineLayout;
 		VkPipeline m_VkGraphicsPipeline;
-		std::vector<VkFramebuffer> m_VkSwapChainFramebuffers;
+		std::vector<VkFramebuffer> m_VkSwapChainFramebuffers; // TODO: move this in VulkanSwapChain as well.
 		VkCommandPool m_VkCommandPool;
 		std::vector<VkCommandBuffer> m_VkCommandBuffers;
 		const int MAX_FRAMES_IN_FLIGHT = 2;
