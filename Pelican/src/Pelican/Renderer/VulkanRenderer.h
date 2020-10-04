@@ -4,6 +4,7 @@
 
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
+#include "VulkanTexture.h"
 
 namespace Pelican
 {
@@ -51,9 +52,6 @@ namespace Pelican
 		void CreateFramebuffers();
 		void CreateCommandPool();
 		void CreateDepthResources();
-		void CreateTextureImage();
-		void CreateTextureImageView();
-		void CreateTextureSampler();
 		void CreateUniformBuffers();
 		void CreateDescriptorPool();
 		void CreateDescriptorSets();
@@ -132,10 +130,7 @@ namespace Pelican
 		VkDescriptorPool m_VkDescriptorPool;
 		std::vector<VkDescriptorSet> m_VkDescriptorSets;
 
-		VkImage m_VkTextureImage;
-		VkDeviceMemory m_VkTextureImageMemory;
-		VkImageView m_vkTextureImageView;
-		VkSampler m_vkTextureSampler;
+		VulkanTexture* m_pTexture;
 
 		VkImage m_VkDepthImage;
 		VkDeviceMemory m_VkDepthImageMemory;

@@ -25,6 +25,7 @@
 #include <stb_image.h>
 
 #include "Vertex.h"
+#include "VulkanTexture.h"
 
 namespace Pelican
 {
@@ -51,9 +52,9 @@ namespace Pelican
 		CreateCommandPool();
 		CreateDepthResources();
 		CreateFramebuffers();
-		CreateTextureImage();
-		CreateTextureImageView();
-		CreateTextureSampler();
+
+		m_pTexture = new VulkanTexture("res/textures/Rock/Rock_Color.jpg");
+
 		CreateUniformBuffers();
 		CreateDescriptorPool();
 		CreateDescriptorSets();
@@ -70,11 +71,8 @@ namespace Pelican
 
 	void VulkanRenderer::AfterSceneCleanup()
 	{
-		vkDestroySampler(m_pDevice->GetDevice(), m_vkTextureSampler, nullptr);
-		vkDestroyImageView(m_pDevice->GetDevice(), m_vkTextureImageView, nullptr);
-
-		vkDestroyImage(m_pDevice->GetDevice(), m_VkTextureImage, nullptr);
-		vkFreeMemory(m_pDevice->GetDevice(), m_VkTextureImageMemory, nullptr);
+		delete m_pTexture;
+		m_pTexture = nullptr;
 
 		vkDestroyDescriptorSetLayout(m_pDevice->GetDevice(), m_VkDescriptorSetLayout, nullptr);
 
@@ -612,76 +610,6 @@ namespace Pelican
 		TransitionImageLayout(m_VkDepthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	}
 
-	void VulkanRenderer::CreateTextureImage()
-	{
-		int width, height, channels;
-		stbi_uc* pixels = stbi_load("res/textures/Rock/Rock_Color.jpg", &width, &height, &channels, STBI_rgb_alpha);
-		VkDeviceSize size = width * height * 4;
-
-		if (!pixels)
-		{
-			ASSERT_MSG(false, "failed to load texture image!");
-		}
-
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
-
-		VulkanHelpers::CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			stagingBuffer, stagingBufferMemory);
-
-		void* data;
-		vkMapMemory(m_pDevice->GetDevice(), stagingBufferMemory, 0, size, 0, &data);
-			memcpy(data, pixels, static_cast<size_t>(size));
-		vkUnmapMemory(m_pDevice->GetDevice(), stagingBufferMemory);
-
-		stbi_image_free(pixels);
-
-		CreateImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-			m_VkTextureImage, m_VkTextureImageMemory);
-
-		TransitionImageLayout(m_VkTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-		CopyBufferToImage(stagingBuffer, m_VkTextureImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
-
-		TransitionImageLayout(m_VkTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		vkDestroyBuffer(m_pDevice->GetDevice(), stagingBuffer, nullptr);
-		vkFreeMemory(m_pDevice->GetDevice(), stagingBufferMemory, nullptr);
-	}
-
-	void VulkanRenderer::CreateTextureImageView()
-	{
-		m_vkTextureImageView = CreateImageView(m_VkTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-	}
-
-	void VulkanRenderer::CreateTextureSampler()
-	{
-		VkSamplerCreateInfo samplerInfo = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.anisotropyEnable = VK_TRUE;
-		samplerInfo.maxAnisotropy = 16.0f;
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.mipLodBias = 0.0f;
-		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 0.0f;
-
-		if (vkCreateSampler(m_pDevice->GetDevice(), &samplerInfo, nullptr, &m_vkTextureSampler) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create texture sampler!");
-		}
-	}
-
 	void VulkanRenderer::CreateUniformBuffers()
 	{
 		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -740,8 +668,10 @@ namespace Pelican
 
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = m_vkTextureImageView;
-			imageInfo.sampler = m_vkTextureSampler;
+			// imageInfo.imageView = m_vkTextureImageView;
+			// imageInfo.sampler = m_vkTextureSampler;
+			imageInfo.imageView = m_pTexture->GetImageView();
+			imageInfo.sampler = m_pTexture->GetSampler();
 
 			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
@@ -892,24 +822,24 @@ namespace Pelican
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.flags = 0;
-
+		
 		if (vkCreateImage(m_pDevice->GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create image!");
 		}
-
+		
 		VkMemoryRequirements memRequirements;
 		vkGetImageMemoryRequirements(m_pDevice->GetDevice(), image, &memRequirements);
-
+		
 		VkMemoryAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = VulkanHelpers::FindMemoryType(memRequirements.memoryTypeBits, properties);
-
+		
 		if (vkAllocateMemory(m_pDevice->GetDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to allocate image memory!");
 		}
-
+		
 		vkBindImageMemory(m_pDevice->GetDevice(), image, imageMemory, 0);
 	}
 
@@ -917,7 +847,7 @@ namespace Pelican
 		VkImageLayout newLayout)
 	{
 		VkCommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
-
+		
 		VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
 		barrier.oldLayout = oldLayout;
 		barrier.newLayout = newLayout;
@@ -929,14 +859,14 @@ namespace Pelican
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
-
+		
 		VkPipelineStageFlags sourceStage{};
 		VkPipelineStageFlags destinationStage{};
-
+		
 		if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 		{
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
+		
 			if (HasStencilComponent(format))
 			{
 				barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -946,12 +876,12 @@ namespace Pelican
 		{
 			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		}
-
+		
 		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 		{
 			barrier.srcAccessMask = 0;
 			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
+		
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		}
@@ -959,7 +889,7 @@ namespace Pelican
 		{
 			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
+		
 			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 		}
@@ -967,7 +897,7 @@ namespace Pelican
 		{
 			barrier.srcAccessMask = 0;
 			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
+		
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		}
@@ -975,7 +905,7 @@ namespace Pelican
 		{
 			ASSERT_MSG(false, "unsupported layout transition!");
 		}
-
+		
 		vkCmdPipelineBarrier(
 			commandBuffer,
 			sourceStage, destinationStage,
@@ -984,14 +914,14 @@ namespace Pelican
 			0, nullptr,
 			1, &barrier
 		);
-
+		
 		VulkanHelpers::EndSingleTimeCommands(commandBuffer);
 	}
-
+	
 	void VulkanRenderer::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 	{
 		VkCommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
-
+		
 		VkBufferImageCopy region{};
 		region.bufferOffset = 0;
 		region.bufferRowLength = 0;
@@ -1002,12 +932,12 @@ namespace Pelican
 		region.imageSubresource.layerCount = 1;
 		region.imageOffset = { 0, 0, 0 };
 		region.imageExtent = { width, height, 1 };
-
+		
 		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
+		
 		VulkanHelpers::EndSingleTimeCommands(commandBuffer);
 	}
-
+	
 	VkImageView VulkanRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 	{
 		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
@@ -1019,13 +949,13 @@ namespace Pelican
 		viewInfo.subresourceRange.levelCount = 1;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
-
+	
 		VkImageView imageView;
 		if (vkCreateImageView(m_pDevice->GetDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to create texture image view!");
 		}
-
+	
 		return imageView;
 	}
 
