@@ -26,6 +26,7 @@
 
 #include "Vertex.h"
 #include "VulkanTexture.h"
+#include "VulkanShader.h"
 
 namespace Pelican
 {
@@ -403,23 +404,7 @@ namespace Pelican
 
 	void VulkanRenderer::CreateGraphicsPipeline()
 	{
-		std::vector<char> vertShaderCode = ReadFile("res/shaders/vert.spv");
-		std::vector<char> fragShaderCode = ReadFile("res/shaders/frag.spv");
-
-		VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
-		VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
-
-		VkPipelineShaderStageCreateInfo vertShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
-		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertShaderStageInfo.module = vertShaderModule;
-		vertShaderStageInfo.pName = "main";
-
-		VkPipelineShaderStageCreateInfo fragShaderStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
-		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragShaderStageInfo.module = fragShaderModule;
-		fragShaderStageInfo.pName = "main";
-
-		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+		VulkanShader* pShader = new VulkanShader("res/shaders/vert.spv", "res/shaders/frag.spv");
 
 		auto bindingDescription = Vertex::GetBindingDescription();
 		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
@@ -515,8 +500,9 @@ namespace Pelican
 		}
 
 		VkGraphicsPipelineCreateInfo pipelineInfo = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
-		pipelineInfo.stageCount = 2;
-		pipelineInfo.pStages = shaderStages;
+		std::vector<VkPipelineShaderStageCreateInfo> stages = pShader->GetShaderStages();
+		pipelineInfo.stageCount = static_cast<uint32_t>(stages.size());
+		pipelineInfo.pStages = stages.data();
 
 		pipelineInfo.pVertexInputState = &vertexInputInfo;
 		pipelineInfo.pInputAssemblyState = &inputAssembly;
@@ -539,23 +525,8 @@ namespace Pelican
 			ASSERT_MSG(false, "failed to create graphics pipeline!");
 		}
 
-		vkDestroyShaderModule(m_pDevice->GetDevice(), vertShaderModule, nullptr);
-		vkDestroyShaderModule(m_pDevice->GetDevice(), fragShaderModule, nullptr);
-	}
-
-	VkShaderModule VulkanRenderer::CreateShaderModule(const std::vector<char>& code)
-	{
-		VkShaderModuleCreateInfo createInfo = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
-		createInfo.codeSize = code.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(m_pDevice->GetDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create shader module!");
-		}
-
-		return shaderModule;
+		delete pShader;
+		pShader = nullptr;
 	}
 
 	void VulkanRenderer::CreateFramebuffers()

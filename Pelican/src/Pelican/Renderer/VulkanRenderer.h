@@ -47,7 +47,6 @@ namespace Pelican
 		void CreateDescriptorSetLayout();
 
 		void CreateGraphicsPipeline();
-		VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
 		void CreateFramebuffers();
 		void CreateCommandPool();
