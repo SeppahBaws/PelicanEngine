@@ -54,7 +54,7 @@ namespace Pelican
 		CreateDepthResources();
 		CreateFramebuffers();
 
-		m_pTexture = new VulkanTexture("res/textures/Rock/Rock_Color.jpg");
+		m_pTexture = new VulkanTexture("res/textures/Brick/Brick_Color.jpg");
 
 		CreateUniformBuffers();
 		CreateDescriptorPool();
@@ -639,8 +639,6 @@ namespace Pelican
 
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			// imageInfo.imageView = m_vkTextureImageView;
-			// imageInfo.sampler = m_vkTextureSampler;
 			imageInfo.imageView = m_pTexture->GetImageView();
 			imageInfo.sampler = m_pTexture->GetSampler();
 

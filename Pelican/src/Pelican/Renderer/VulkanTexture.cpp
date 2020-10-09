@@ -37,7 +37,7 @@ namespace Pelican
 	void VulkanTexture::CreateTextureImage()
 	{
 		int width, height, channels;
-		stbi_uc* pixels = stbi_load("res/textures/Rock/Rock_Color.jpg", &width, &height, &channels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load(m_TexturePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 		VkDeviceSize size = width * height * 4;
 
 		if (!pixels)
