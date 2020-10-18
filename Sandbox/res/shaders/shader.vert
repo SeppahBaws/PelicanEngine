@@ -14,10 +14,12 @@ layout(location = 2) in vec2 inTexCoord;
 
 layout(location = 0) out vec3 vColor;
 layout(location = 1) out vec2 vTexCoord;
+layout(location = 2) out vec3 vPos;
 
 void main()
 {
     gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
+    vPos = inPosition;
     vColor = inColor;
     vTexCoord = inTexCoord;
 }

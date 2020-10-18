@@ -21,6 +21,8 @@ IncludeDir["GLFW"] = "Pelican/dependencies/GLFW/include"
 IncludeDir["Glm"] = "Pelican/dependencies/glm"
 IncludeDir["Logtools"] = "Pelican/dependencies/logtools/logtools/src"
 IncludeDir["stb"] = "Pelican/dependencies/stb"
+IncludeDir["json_hpp"] = "Pelican/dependencies/json_hpp/include"
+IncludeDir["tiny_gltf"] = "Pelican/dependencies/tiny_gltf/include"
 IncludeDir["Vulkan"] = "%VULKAN_SDK%/Include"
 
 LibDir = {}
@@ -62,6 +64,8 @@ project "Pelican"
         "%{IncludeDir.Glm}",
         "%{IncludeDir.Logtools}",
         "%{IncludeDir.stb}",
+        "%{IncludeDir.json_hpp}",
+        "%{IncludeDir.tiny_gltf}",
         "%{IncludeDir.Vulkan}"
     }
 

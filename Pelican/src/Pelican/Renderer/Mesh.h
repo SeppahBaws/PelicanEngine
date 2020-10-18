@@ -8,7 +8,8 @@ namespace Pelican
 	class Mesh
 	{
 	public:
-		Mesh(std::vector<Vertex> vertices, std::vector<uint16_t> indices);
+		Mesh(const std::string& filename);
+		Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 		void Cleanup();
 
 		void CreateBuffers();
@@ -16,7 +17,7 @@ namespace Pelican
 
 	private:
 		std::vector<Vertex> m_Vertices;
-		std::vector<uint16_t> m_Indices;
+		std::vector<uint32_t> m_Indices;
 
 		VkBuffer m_VkVertexBuffer{};
 		VkDeviceMemory m_VkVertexBufferMemory{};
