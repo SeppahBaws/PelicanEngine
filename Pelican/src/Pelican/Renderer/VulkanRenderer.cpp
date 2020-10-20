@@ -54,7 +54,9 @@ namespace Pelican
 		CreateDepthResources();
 		CreateFramebuffers();
 
-		m_pTexture = new VulkanTexture("res/textures/Brick/Brick_Color.jpg");
+		// m_pTexture = new VulkanTexture("res/textures/Brick/Brick_Color.jpg");
+		m_pTexture = new VulkanTexture("res/models/pony_cartoon/textures/Body_SG1_baseColor.png");
+		// m_pTexture = new VulkanTexture("res/models/tactical_flashlight/textures/glass_baseColor.png");
 
 		CreateUniformBuffers();
 		CreateDescriptorPool();
@@ -442,8 +444,7 @@ namespace Pelican
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizer.lineWidth = 1.0f;
-		// rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.cullMode = VK_CULL_MODE_NONE;
+		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f;
@@ -765,6 +766,8 @@ namespace Pelican
 
 		UniformBufferObject ubo{};
 		ubo.model = glm::mat4(1.0f); // just stay still for now
+		ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
+			glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f));
 		ubo.view = m_pCamera->GetView();
 		ubo.proj = m_pCamera->GetProjection();
 		ubo.proj[1][1] *= -1;
@@ -983,7 +986,7 @@ namespace Pelican
 		renderPassInfo.renderArea.extent = m_pSwapChain->GetExtent();
 
 		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { {0.0f,0.0f,0.0f,1.0f} };
+		clearValues[0].color = { {0.1f,0.1f,0.1f,1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());

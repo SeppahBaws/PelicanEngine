@@ -82,14 +82,15 @@ namespace Pelican
 		for (size_t i = 0; i < mesh.primitives.size(); i++)
 		{
 			tinygltf::Primitive primitive = mesh.primitives[i];
+
 			// const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes["POSITION"]];
 			// const tinygltf::BufferView& posBufView = model.bufferViews[posAccessor.bufferView];
 			// const tinygltf::Buffer& posBuf = model.buffers[posBufView.buffer];
-			//
+			
 			// const float* positions = reinterpret_cast<const float*>(&posBuf.data[posBufView.byteOffset + posAccessor.byteOffset]);
 			// // posAccessor.ByteStride(posBufView) ? (posAccessor.ByteStride(posBufView) / sizeof(float) : tinygltf::)
 			// int posByteStride = posAccessor.ByteStride(posBufView);
-			// for (size_t i = 0; i < posAccessor.count; i++)
+			// for (size_t v = 0; v < posAccessor.count; v++)
 			// {
 			// 	// Vertex vert = {
 			// 	// 	{
@@ -105,7 +106,7 @@ namespace Pelican
 			// 	vert.pos = glm::make_vec3(&positions[i * posByteStride]);
 			// 	m_Vertices.push_back(vert);
 			// }
-			//
+
 			// if (primitive.indices <= 0)
 			// {
 			// 	Logger::LogError("No vertex indices were found!");
@@ -161,7 +162,8 @@ namespace Pelican
 			// }
 	
 			// uint32_t indexStart = static_cast<uint32_t>(m_Indices.size());
-			uint32_t vertexStart = static_cast<uint32_t>(m_Vertices.size());
+			// uint32_t vertexStart = static_cast<uint32_t>(m_Vertices.size());
+			uint16_t vertexStart = static_cast<uint16_t>(m_Vertices.size());
 			uint32_t indexCount = 0;
 			uint32_t vertexCount = 0;
 			glm::vec3 posMin{};
@@ -172,21 +174,21 @@ namespace Pelican
 			{
 				const float* bufferPos = nullptr;
 				// const float* bufferNormals = nullptr;
-				// const float* bufferTexCoordSet0 = nullptr;
+				const float* bufferTexCoordSet0 = nullptr;
 				// const float* bufferTexCoordSet1 = nullptr;
 				// const uint16_t* bufferJoints = nullptr;
 				// const float* bufferWeights = nullptr;
-	
-				int posByteStride;
+			
+				int posByteStride{};
 				// int normByteStride;
-				// int uv0ByteStride;
+				int uv0ByteStride{};
 				// int uv1ByteStride;
 				// int jointByteStride;
 				// int weightByteStride;
-	
+			
 				// Position attribute is required
 				assert(primitive.attributes.find("POSITION") != primitive.attributes.end());
-	
+			
 				const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
 				const tinygltf::BufferView& posView = model.bufferViews[posAccessor.bufferView];
 				bufferPos = reinterpret_cast<const float*>(&(model.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]));
@@ -194,7 +196,7 @@ namespace Pelican
 				posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
 				vertexCount = static_cast<uint32_t>(posAccessor.count);
 				posByteStride = posAccessor.ByteStride(posView) ? (posAccessor.ByteStride(posView) / sizeof(float)) : tinygltf::GetTypeSizeInBytes(TINYGLTF_TYPE_VEC3);
-	
+			
 				// if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) {
 				// 	const tinygltf::Accessor& normAccessor = model.accessors[primitive.attributes.find("NORMAL")->second];
 				// 	const tinygltf::BufferView& normView = model.bufferViews[normAccessor.bufferView];
@@ -202,12 +204,12 @@ namespace Pelican
 				// 	normByteStride = normAccessor.ByteStride(normView) ? (normAccessor.ByteStride(normView) / sizeof(float)) : tinygltf::GetTypeSizeInBytes(TINYGLTF_TYPE_VEC3);
 				// }
 				//
-				// if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
-				// 	const tinygltf::Accessor& uvAccessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
-				// 	const tinygltf::BufferView& uvView = model.bufferViews[uvAccessor.bufferView];
-				// 	bufferTexCoordSet0 = reinterpret_cast<const float*>(&(model.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]));
-				// 	uv0ByteStride = uvAccessor.ByteStride(uvView) ? (uvAccessor.ByteStride(uvView) / sizeof(float)) : tinygltf::GetTypeSizeInBytes(TINYGLTF_TYPE_VEC2);
-				// }
+				if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
+					const tinygltf::Accessor& uvAccessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
+					const tinygltf::BufferView& uvView = model.bufferViews[uvAccessor.bufferView];
+					bufferTexCoordSet0 = reinterpret_cast<const float*>(&(model.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]));
+					uv0ByteStride = uvAccessor.ByteStride(uvView) ? (uvAccessor.ByteStride(uvView) / sizeof(float)) : tinygltf::GetTypeSizeInBytes(TINYGLTF_TYPE_VEC2);
+				}
 				// if (primitive.attributes.find("TEXCOORD_1") != primitive.attributes.end()) {
 				// 	const tinygltf::Accessor& uvAccessor = model.accessors[primitive.attributes.find("TEXCOORD_1")->second];
 				// 	const tinygltf::BufferView& uvView = model.bufferViews[uvAccessor.bufferView];
@@ -232,12 +234,12 @@ namespace Pelican
 				// }
 				//
 				// hasSkin = (bufferJoints && bufferWeights);
-	
+			
 				for (size_t v = 0; v < posAccessor.count; v++) {
 					Vertex vert{};
-					vert.pos = glm::vec4(glm::make_vec3(&bufferPos[v * posByteStride]), 1.0f);
+					vert.pos = glm::make_vec3(&bufferPos[v * posByteStride]);
 					// vert.normal = glm::normalize(glm::vec3(bufferNormals ? glm::make_vec3(&bufferNormals[v * normByteStride]) : glm::vec3(0.0f)));
-					// vert.uv0 = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
+					vert.texCoord = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
 					// vert.uv1 = bufferTexCoordSet1 ? glm::make_vec2(&bufferTexCoordSet1[v * uv1ByteStride]) : glm::vec3(0.0f);
 					//
 					// vert.joint0 = hasSkin ? glm::vec4(glm::make_vec4(&bufferJoints[v * jointByteStride])) : glm::vec4(0.0f);
@@ -249,6 +251,25 @@ namespace Pelican
 					m_Vertices.push_back(vert);
 				}
 			}
+
+			// m_Vertices = {
+			// 	Vertex{
+			// 		{ -1.0f, 0.0f, -1.0f },
+			// 		{ 0.0f, 0.0, 0.0f },
+			// 		{ 0.0f, 0.0f }
+			// 	},
+			// 	Vertex{
+			// 		{ 1.0f, 0.0f, -1.0f },
+			// 		{ 0.0f, 0.0, 0.0f },
+			// 		{ 0.0f, 0.0f }
+			// 	},
+			// 	Vertex{
+			// 		{ 0.0f, 0.0f, 1.0f },
+			// 		{ 0.0f, 0.0, 0.0f },
+			// 		{ 0.0f, 0.0f }
+			// 	}
+			// };
+
 			// Indices
 			if (hasIndices)
 			{
@@ -259,32 +280,32 @@ namespace Pelican
 				indexCount = static_cast<uint32_t>(accessor.count);
 				const void* dataPtr = &(buffer.data[accessor.byteOffset + bufferView.byteOffset]);
 	
-				switch (accessor.componentType) {
-				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
+				// switch (accessor.componentType) {
+				// case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
 					const uint32_t* buf = static_cast<const uint32_t*>(dataPtr);
 					for (size_t index = 0; index < accessor.count; index++) {
-						m_Indices.push_back(buf[index] + vertexStart);
+						m_Indices.push_back(static_cast<uint16_t>(buf[index] + vertexStart));
 					}
-					break;
-				}
-				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
-					const uint16_t* buf = static_cast<const uint16_t*>(dataPtr);
-					for (size_t index = 0; index < accessor.count; index++) {
-						m_Indices.push_back(buf[index] + vertexStart);
-					}
-					break;
-				}
-				case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
-					const uint8_t* buf = static_cast<const uint8_t*>(dataPtr);
-					for (size_t index = 0; index < accessor.count; index++) {
-						m_Indices.push_back(buf[index] + vertexStart);
-					}
-					break;
-				}
-				default:
-					std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
-					return;
-				}
+				// 	break;
+				// }
+				// case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
+				// 	const uint16_t* buf = static_cast<const uint16_t*>(dataPtr);
+				// 	for (size_t index = 0; index < accessor.count; index++) {
+				// 		m_Indices.push_back(buf[index] + vertexStart);
+				// 	}
+				// 	break;
+				// }
+				// case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
+				// 	const uint8_t* buf = static_cast<const uint8_t*>(dataPtr);
+				// 	for (size_t index = 0; index < accessor.count; index++) {
+				// 		m_Indices.push_back(buf[index] + vertexStart);
+				// 	}
+				// 	break;
+				// }
+				// default:
+				// 	std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+				// 	return;
+				// }
 			}
 			// Primitive* newPrimitive = new Primitive(indexStart, indexCount, vertexCount, primitive.material > -1 ? materials[primitive.material] : materials.back());
 			// newPrimitive->setBoundingBox(posMin, posMax);
@@ -313,7 +334,7 @@ namespace Pelican
 		VkBuffer vertexBuffers[] = { m_VkVertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, m_VkIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffer, m_VkIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
 	}
