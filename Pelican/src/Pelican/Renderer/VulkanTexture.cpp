@@ -8,6 +8,11 @@
 
 namespace Pelican
 {
+	VulkanTexture::VulkanTexture()
+		: m_TexturePath()
+	{
+	}
+
 	VulkanTexture::VulkanTexture(const std::string& path)
 		: m_TexturePath(path)
 	{
@@ -17,6 +22,12 @@ namespace Pelican
 	VulkanTexture::~VulkanTexture()
 	{
 		Cleanup();
+	}
+
+	void VulkanTexture::InitFromFile(const std::string& path)
+	{
+		m_TexturePath = path;
+		Init();
 	}
 
 	void VulkanTexture::Init()
@@ -36,8 +47,8 @@ namespace Pelican
 
 	void VulkanTexture::CreateTextureImage()
 	{
-		int width, height, channels;
-		stbi_uc* pixels = stbi_load(m_TexturePath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+		int width, height, nrChannels;
+		stbi_uc* pixels = stbi_load(m_TexturePath.c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
 		VkDeviceSize size = width * height * 4;
 
 		if (!pixels)

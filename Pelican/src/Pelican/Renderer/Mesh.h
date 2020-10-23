@@ -8,9 +8,12 @@ namespace Pelican
 	class Mesh
 	{
 	public:
+		Mesh();
 		Mesh(const std::string& filename);
 		Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 		void Cleanup();
+
+		void SetupVerticesIndices(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 
 		void CreateBuffers();
 		void Draw();

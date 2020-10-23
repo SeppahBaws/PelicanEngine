@@ -55,6 +55,11 @@ namespace tinygltf
 
 namespace Pelican
 {
+	Mesh::Mesh()
+		: m_Vertices(), m_Indices()
+	{
+	}
+
 	Mesh::Mesh(const std::string& filename)
 	{
 		tinygltf::Model model;
@@ -77,6 +82,7 @@ namespace Pelican
 			Logger::LogWarning("Failed to load glTF: %s", filename.c_str());
 		else
 			Logger::LogDebug("Loaded glTF: %s", filename.c_str());
+
 	
 		tinygltf::Mesh mesh = model.meshes[0];
 		for (size_t i = 0; i < mesh.primitives.size(); i++)
@@ -162,7 +168,6 @@ namespace Pelican
 			// }
 	
 			// uint32_t indexStart = static_cast<uint32_t>(m_Indices.size());
-			// uint32_t vertexStart = static_cast<uint32_t>(m_Vertices.size());
 			uint16_t vertexStart = static_cast<uint16_t>(m_Vertices.size());
 			uint32_t indexCount = 0;
 			uint32_t vertexCount = 0;
@@ -325,6 +330,14 @@ namespace Pelican
 
 		vkDestroyBuffer(VulkanRenderer::GetDevice(), m_VkVertexBuffer, nullptr);
 		vkFreeMemory(VulkanRenderer::GetDevice(), m_VkVertexBufferMemory, nullptr);
+	}
+
+	void Mesh::SetupVerticesIndices(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
+	{
+		m_Vertices = vertices;
+		m_Indices = indices;
+
+		CreateBuffers();
 	}
 
 	void Mesh::Draw()

@@ -6,8 +6,11 @@ namespace Pelican
 	class VulkanTexture
 	{
 	public:
+		VulkanTexture();
 		VulkanTexture(const std::string& path);
 		~VulkanTexture();
+
+		void InitFromFile(const std::string& path);
 
 		VkImageView GetImageView() const { return m_ImageView; }
 		VkSampler GetSampler() const { return m_ImageSampler; }

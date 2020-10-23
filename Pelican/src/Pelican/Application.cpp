@@ -3,11 +3,13 @@
 #include "Time.h"
 #include "Pelican/Renderer/Camera.h"
 #include "Pelican/Renderer/Mesh.h"
+#include "Pelican/Renderer/Gltf/GltfModel.h"
 
 #include "Input/Input.h"
 
 #include <thread>
 #include <logtools.h>
+#include <filesystem>
 
 namespace Pelican
 {
@@ -113,31 +115,33 @@ namespace Pelican
 		// };
 
 		/* ===== Two Planes ===== */
-		// const std::vector<Vertex> vertices = {
-		// 	{{-2.0f,  2.0f, -2.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		// 	{{-2.0f,  2.0f,  2.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-		// 	{{ 2.0f,  2.0f,  2.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		// 	{{ 2.0f,  2.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		//
-		// 	{{-2.0f, -2.0f, -2.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		// 	{{-2.0f, -2.0f,  2.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-		// 	{{ 2.0f, -2.0f,  2.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		// 	{{ 2.0f, -2.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		// };
-		// const std::vector<uint32_t> indices = {
-		// 	0, 1, 2, 2, 3, 0,
-		// 	4, 5, 6, 6, 7, 4
-		// };
-		//
-		// m_pMesh = new Mesh(vertices, indices);
+		const std::vector<Vertex> vertices = {
+			{{-2.0f,  2.0f, -2.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+			{{-2.0f,  2.0f,  2.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+			{{ 2.0f,  2.0f,  2.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+			{{ 2.0f,  2.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		
+			{{-2.0f, -2.0f, -2.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+			{{-2.0f, -2.0f,  2.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+			{{ 2.0f, -2.0f,  2.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+			{{ 2.0f, -2.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		};
+		const std::vector<uint32_t> indices = {
+			0, 1, 2, 2, 3, 0,
+			4, 5, 6, 6, 7, 4
+		};
+		
+		m_pMesh = new Mesh(vertices, indices);
 
 		// m_pMesh = new Mesh("res/models/triangle.gltf");
 		// m_pMesh = new Mesh("res/models/quad.gltf");
 		// m_pMesh = new Mesh("res/models/cube.gltf");
 		// m_pMesh = new Mesh("res/models/icoSphere.gltf");
-		m_pMesh = new Mesh("res/models/pony_cartoon/scene.gltf");
+		// m_pMesh = new Mesh("res/models/pony_cartoon/scene.gltf");
 
 		m_pMesh->CreateBuffers();
+
+		// GltfModel model = GltfModel("res/models/pony_cartoon/scene.gltf");
 	}
 
 	void Application::Cleanup()
