@@ -22,11 +22,14 @@ namespace Pelican
 		GltfModel(const std::string& file);
 		~GltfModel();
 
+		void Draw();
+
 	private:
 		void Initialize(const std::string& file);
 		void Load(const tinygltf::Model& model);
 
 	private:
-		std::map<Mesh, VulkanTexture> m_Meshes;
+		// std::map<Mesh, VulkanTexture> m_Meshes;
+		std::vector<Mesh> m_Meshes;
 	};
 }

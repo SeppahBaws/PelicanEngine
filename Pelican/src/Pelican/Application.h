@@ -6,6 +6,7 @@
 namespace Pelican
 {
 	class Mesh;
+	class GltfModel;
 
 	class Application
 	{
@@ -27,7 +28,8 @@ namespace Pelican
 		Window* m_pWindow{};
 		VulkanRenderer* m_pRenderer{};
 		Camera* m_pCamera{};
-		Mesh* m_pMesh{};
+		// Mesh* m_pMesh{};
+		GltfModel* m_pModel{};
 
 		static Application* m_Instance;
 	};

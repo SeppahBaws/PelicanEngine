@@ -28,7 +28,18 @@ namespace Pelican
 
 	GltfModel::~GltfModel()
 	{
-		
+		for (size_t i = 0; i < m_Meshes.size(); i++)
+		{
+			m_Meshes[i].Cleanup();
+		}
+	}
+
+	void GltfModel::Draw()
+	{
+		for (size_t i = 0; i < m_Meshes.size(); i++)
+		{
+			m_Meshes[i].Draw();
+		}
 	}
 
 	void GltfModel::Initialize(const std::string& file)
@@ -93,68 +104,72 @@ namespace Pelican
 			Logger::LogInfo("  name: %s", node.name.c_str());
 			Logger::LogInfo("  child count: %d", node.children.size());
 
-			// if (node.mesh > -1)
-			// {
-			// 	tinygltf::Mesh mesh = model.meshes[node.mesh];
-			// 	tinygltf::Primitive primitive = mesh.primitives[0];
-			//
-			// 	std::vector<Vertex> vertices;
-			// 	std::vector<uint32_t> indices;
-			//
-			// 	uint16_t vertexStart = static_cast<uint16_t>(vertices.size());
-			// 	uint32_t indexCount = 0;
-			// 	uint32_t vertexCount = 0;
-			// 	glm::vec3 posMin{};
-			// 	glm::vec3 posMax{};
-			// 	bool hasIndices = primitive.indices > -1;
-			//
-			// 	// Vertices
-			// 	{
-			// 		const float* bufferPos = nullptr;
-			// 		const float* bufferTexCoordSet0 = nullptr;
-			//
-			// 		int posByteStride{};
-			// 		int uv0ByteStride{};
-			//
-			// 		const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
-			// 		const tinygltf::BufferView& posView = model.bufferViews[posAccessor.bufferView];
-			// 		bufferPos = reinterpret_cast<const float*>(&(model.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]));
-			// 		posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
-			// 		posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
-			// 		vertexCount = static_cast<uint32_t>(posAccessor.count);
-			// 		posByteStride = posAccessor.ByteStride(posView) ? (posAccessor.ByteStride(posView) / sizeof(float)) : GetTypeSizeInBytes(TINYGLTF_TYPE_VEC3);
-			//
-			// 		if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
-			// 			const tinygltf::Accessor& uvAccessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
-			// 			const tinygltf::BufferView& uvView = model.bufferViews[uvAccessor.bufferView];
-			// 			bufferTexCoordSet0 = reinterpret_cast<const float*>(&(model.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]));
-			// 			uv0ByteStride = uvAccessor.ByteStride(uvView) ? (uvAccessor.ByteStride(uvView) / sizeof(float)) : GetTypeSizeInBytes(TINYGLTF_TYPE_VEC2);
-			// 		}
-			//
-			// 		for (size_t v = 0; v < posAccessor.count; v++)
-			// 		{
-			// 			Vertex vert{};
-			// 			vert.pos = glm::make_vec3(&bufferPos[v * posByteStride]);
-			// 			vert.texCoord = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
-			// 			vertices.push_back(vert);
-			// 		}
-			// 	}
-			//
-			// 	// Indices
-			// 	{
-			// 		const tinygltf::Accessor& accessor = model.accessors[primitive.indices > -1 ? primitive.indices : 0];
-			// 		const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-			// 		const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-			//
-			// 		indexCount = static_cast<uint32_t>(accessor.count);
-			// 		const void* dataPtr = &(buffer.data[accessor.byteOffset + bufferView.byteOffset]);
-			//
-			// 		const uint32_t* buf = static_cast<const uint32_t*>(dataPtr);
-			// 		for (size_t index = 0; index < accessor.count; index++) {
-			// 			indices.push_back(static_cast<uint16_t>(buf[index] + vertexStart));
-			// 		}
-			// 	}
-			// }
+			if (node.mesh > -1)
+			{
+				tinygltf::Mesh mesh = model.meshes[node.mesh];
+				tinygltf::Primitive primitive = mesh.primitives[0];
+			
+				std::vector<Vertex> vertices;
+				std::vector<uint32_t> indices;
+			
+				uint16_t vertexStart = static_cast<uint16_t>(vertices.size());
+				uint32_t indexCount = 0;
+				uint32_t vertexCount = 0;
+				glm::vec3 posMin{};
+				glm::vec3 posMax{};
+				bool hasIndices = primitive.indices > -1;
+			
+				// Vertices
+				{
+					const float* bufferPos = nullptr;
+					const float* bufferTexCoordSet0 = nullptr;
+			
+					int posByteStride{};
+					int uv0ByteStride{};
+			
+					const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
+					const tinygltf::BufferView& posView = model.bufferViews[posAccessor.bufferView];
+					bufferPos = reinterpret_cast<const float*>(&(model.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]));
+					posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
+					posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
+					vertexCount = static_cast<uint32_t>(posAccessor.count);
+					posByteStride = posAccessor.ByteStride(posView) ? (posAccessor.ByteStride(posView) / sizeof(float)) : GetTypeSizeInBytes(TINYGLTF_TYPE_VEC3);
+			
+					if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
+						const tinygltf::Accessor& uvAccessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
+						const tinygltf::BufferView& uvView = model.bufferViews[uvAccessor.bufferView];
+						bufferTexCoordSet0 = reinterpret_cast<const float*>(&(model.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]));
+						uv0ByteStride = uvAccessor.ByteStride(uvView) ? (uvAccessor.ByteStride(uvView) / sizeof(float)) : GetTypeSizeInBytes(TINYGLTF_TYPE_VEC2);
+					}
+			
+					for (size_t v = 0; v < posAccessor.count; v++)
+					{
+						Vertex vert{};
+						vert.pos = glm::make_vec3(&bufferPos[v * posByteStride]);
+						vert.texCoord = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
+						vertices.push_back(vert);
+					}
+				}
+			
+				// Indices
+				if (hasIndices)
+				{
+					const tinygltf::Accessor& accessor = model.accessors[primitive.indices > -1 ? primitive.indices : 0];
+					const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+					const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+			
+					indexCount = static_cast<uint32_t>(accessor.count);
+					const void* dataPtr = &(buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+			
+					const uint32_t* buf = static_cast<const uint32_t*>(dataPtr);
+					for (size_t index = 0; index < accessor.count; index++) {
+						indices.push_back(static_cast<uint16_t>(buf[index] + vertexStart));
+					}
+				}
+
+				m_Meshes.push_back({ vertices, indices });
+				m_Meshes[m_Meshes.size() - 1].CreateBuffers();
+			}
 		}
 
 		// Let's leave textures for now, it's too complicated to implement this all at once

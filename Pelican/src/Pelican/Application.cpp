@@ -42,7 +42,8 @@ namespace Pelican
 			m_pCamera->Update();
 
 			m_pRenderer->BeginScene();
-			m_pMesh->Draw();
+			// m_pMesh->Draw();
+			m_pModel->Draw();
 			m_pRenderer->EndScene();
 		}
 
@@ -115,23 +116,23 @@ namespace Pelican
 		// };
 
 		/* ===== Two Planes ===== */
-		const std::vector<Vertex> vertices = {
-			{{-2.0f,  2.0f, -2.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-			{{-2.0f,  2.0f,  2.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-			{{ 2.0f,  2.0f,  2.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{ 2.0f,  2.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		// const std::vector<Vertex> vertices = {
+		// 	{{-2.0f,  2.0f, -2.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		// 	{{-2.0f,  2.0f,  2.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+		// 	{{ 2.0f,  2.0f,  2.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		// 	{{ 2.0f,  2.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		//
+		// 	{{-2.0f, -2.0f, -2.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		// 	{{-2.0f, -2.0f,  2.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+		// 	{{ 2.0f, -2.0f,  2.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		// 	{{ 2.0f, -2.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		// };
+		// const std::vector<uint32_t> indices = {
+		// 	0, 1, 2, 2, 3, 0,
+		// 	4, 5, 6, 6, 7, 4
+		// };
 		
-			{{-2.0f, -2.0f, -2.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-			{{-2.0f, -2.0f,  2.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-			{{ 2.0f, -2.0f,  2.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{ 2.0f, -2.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		};
-		const std::vector<uint32_t> indices = {
-			0, 1, 2, 2, 3, 0,
-			4, 5, 6, 6, 7, 4
-		};
-		
-		m_pMesh = new Mesh(vertices, indices);
+		// m_pMesh = new Mesh(vertices, indices);
 
 		// m_pMesh = new Mesh("res/models/triangle.gltf");
 		// m_pMesh = new Mesh("res/models/quad.gltf");
@@ -139,21 +140,28 @@ namespace Pelican
 		// m_pMesh = new Mesh("res/models/icoSphere.gltf");
 		// m_pMesh = new Mesh("res/models/pony_cartoon/scene.gltf");
 
-		m_pMesh->CreateBuffers();
+		// m_pMesh->CreateBuffers();
 
-		// GltfModel model = GltfModel("res/models/pony_cartoon/scene.gltf");
+		m_pModel = new GltfModel("res/models/pony_cartoon/scene.gltf");
 	}
 
 	void Application::Cleanup()
 	{
 		m_pRenderer->BeforeSceneCleanup();
-		m_pMesh->Cleanup();
+		delete m_pModel;
+		// m_pMesh->Cleanup();
 		m_pRenderer->AfterSceneCleanup();
 		m_pWindow->Cleanup();
 
-		delete m_pMesh;
+		// delete m_pMesh;
 		delete m_pCamera;
 		delete m_pRenderer;
 		delete m_pWindow;
+
+		m_pModel = nullptr;
+		// m_pMesh = nullptr;
+		m_pCamera = nullptr;
+		m_pRenderer = nullptr;
+		m_pWindow = nullptr;
 	}
 }
