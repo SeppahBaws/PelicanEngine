@@ -30,8 +30,11 @@ namespace Pelican
 		static VkDevice GetDevice() { return m_pInstance->m_pDevice->GetDevice(); }
 		static VkPhysicalDevice GetPhysicalDevice() { return m_pInstance->m_pDevice->GetPhysicalDevice(); }
 		static VkQueue GetGraphicsQueue() { return m_pInstance->m_pDevice->GetGraphicsQueue(); }
+		static VkDescriptorPool GetDescriptorPool() { return m_pInstance->m_VkDescriptorPool; }
+		static VkDescriptorSetLayout& GetDescriptorSetLayout() { return m_pInstance->m_VkDescriptorSetLayout; }
 		static VkCommandPool GetCommandPool() { return m_pInstance->m_VkCommandPool; }
 		static VkCommandBuffer GetCurrentBuffer() { return m_pInstance->m_VkCommandBuffers[m_pInstance->m_CurrentBuffer]; }
+		static VkPipelineLayout GetPipelineLayout() { return m_pInstance->m_VkPipelineLayout; }
 
 	private:
 		void CreateInstance();
@@ -53,7 +56,7 @@ namespace Pelican
 		void CreateDepthResources();
 		void CreateUniformBuffers();
 		void CreateDescriptorPool();
-		void CreateDescriptorSets();
+		// void CreateDescriptorSets();
 		void CreateCommandBuffers();
 
 		void CreateSyncObjects();
@@ -127,7 +130,7 @@ namespace Pelican
 		std::vector<VkBuffer> m_VkUniformBuffers;
 		std::vector<VkDeviceMemory> m_VkUniformBuffersMemory;
 		VkDescriptorPool m_VkDescriptorPool;
-		std::vector<VkDescriptorSet> m_VkDescriptorSets;
+		// std::vector<VkDescriptorSet> m_VkDescriptorSets;
 
 		VulkanTexture* m_pTexture;
 

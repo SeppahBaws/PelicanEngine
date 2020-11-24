@@ -1,6 +1,7 @@
 ﻿#include "PelicanPCH.h"
 #include "Mesh.h"
 
+#include "Pelican/Renderer/Camera.h"
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 
@@ -19,6 +20,8 @@
 #pragma warning(push)
 #pragma warning(disable:4201)
 #include <glm/gtc/type_ptr.hpp>
+
+#include "UniformBufferObject.h"
 #pragma warning(pop)
 
 namespace tinygltf
@@ -325,11 +328,17 @@ namespace Pelican
 
 	void Mesh::Cleanup()
 	{
+		delete m_pTexture;
+		m_pTexture = nullptr;
+
 		vkDestroyBuffer(VulkanRenderer::GetDevice(), m_VkIndexBuffer, nullptr);
 		vkFreeMemory(VulkanRenderer::GetDevice(), m_VkIndexBufferMemory, nullptr);
 
 		vkDestroyBuffer(VulkanRenderer::GetDevice(), m_VkVertexBuffer, nullptr);
 		vkFreeMemory(VulkanRenderer::GetDevice(), m_VkVertexBufferMemory, nullptr);
+
+		vkDestroyBuffer(VulkanRenderer::GetDevice(), m_UniformBuffer, nullptr);
+		vkFreeMemory(VulkanRenderer::GetDevice(), m_UniformBufferMemory, nullptr);
 	}
 
 	void Mesh::SetupVerticesIndices(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
@@ -338,11 +347,34 @@ namespace Pelican
 		m_Indices = indices;
 
 		CreateBuffers();
+		// CreateDescriptorSet();
 	}
 
-	void Mesh::Draw()
+	void Mesh::SetupTexture(const std::string& path)
+	{
+		m_pTexture = new VulkanTexture(path);
+	}
+
+	void Mesh::Update(Camera* pCamera)
+	{
+		UniformBufferObject ubo{};
+		ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
+			glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f));
+		ubo.view = pCamera->GetView();
+		ubo.proj = pCamera->GetProjection();
+		ubo.proj[1][1] *= -1;
+
+		void* data;
+		vkMapMemory(VulkanRenderer::GetDevice(), m_UniformBufferMemory, 0, sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(VulkanRenderer::GetDevice(), m_UniformBufferMemory);
+	}
+
+	void Mesh::Draw() const
 	{
 		VkCommandBuffer commandBuffer = VulkanRenderer::GetCurrentBuffer();
+
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, VulkanRenderer::GetPipelineLayout(), 0, 1, &m_DescriptorSet, 0, nullptr);
 
 		VkBuffer vertexBuffers[] = { m_VkVertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
@@ -354,6 +386,13 @@ namespace Pelican
 
 	void Mesh::CreateBuffers()
 	{
+		// Uniform buffer
+		{
+			VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+			VulkanHelpers::CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				m_UniformBuffer, m_UniformBufferMemory);
+		}
+
 		// Vertex Buffer
 		{
 			VkDeviceSize bufferSize = sizeof(m_Vertices[0]) * m_Vertices.size();
@@ -399,5 +438,46 @@ namespace Pelican
 			vkDestroyBuffer(VulkanRenderer::GetDevice(), stagingBuffer, nullptr);
 			vkFreeMemory(VulkanRenderer::GetDevice(), stagingBufferMemory, nullptr);
 		}
+	}
+
+	void Mesh::CreateDescriptorSet(const VkDescriptorPool& pool)
+	{
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = m_UniformBuffer;
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(UniformBufferObject);
+		
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = m_pTexture->GetImageView();
+		imageInfo.sampler = m_pTexture->GetSampler();
+
+		VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+		allocInfo.descriptorPool = pool;
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = &VulkanRenderer::GetDescriptorSetLayout();
+
+		const VkResult result = vkAllocateDescriptorSets(VulkanRenderer::GetDevice(), &allocInfo, &m_DescriptorSet);
+		ASSERT_MSG(result == VK_SUCCESS, "failed to allocate descriptor sets!");
+
+		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[0].dstSet = m_DescriptorSet;
+		descriptorWrites[0].dstBinding = 0;
+		descriptorWrites[0].dstArrayElement = 0;
+		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[0].descriptorCount = 1;
+		descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[1].dstSet = m_DescriptorSet;
+		descriptorWrites[1].dstBinding = 1;
+		descriptorWrites[1].dstArrayElement = 0;
+		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrites[1].descriptorCount = 1;
+		descriptorWrites[1].pImageInfo = &imageInfo;
+
+		vkUpdateDescriptorSets(VulkanRenderer::GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 }

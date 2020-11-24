@@ -10,10 +10,11 @@ namespace tinygltf
 
 namespace Pelican
 {
-	struct GltfModelTextureBinding
+	class Camera;
+
+	struct GltfMaterial
 	{
-		Mesh mesh;
-		VulkanTexture texture;
+		int ColorTextureIdx;
 	};
 
 	class GltfModel
@@ -22,14 +23,21 @@ namespace Pelican
 		GltfModel(const std::string& file);
 		~GltfModel();
 
+		void Update(Camera* pCamera);
 		void Draw();
 
 	private:
 		void Initialize(const std::string& file);
 		void Load(const tinygltf::Model& model);
 
+		void CreateDescriptorPool();
+
 	private:
-		// std::map<Mesh, VulkanTexture> m_Meshes;
 		std::vector<Mesh> m_Meshes;
+		std::vector<VulkanTexture*> m_pTextures;
+
+		std::string m_AssetPath{};
+
+		VkDescriptorPool m_DescriptorPool{};
 	};
 }

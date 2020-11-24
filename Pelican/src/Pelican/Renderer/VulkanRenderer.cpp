@@ -60,7 +60,7 @@ namespace Pelican
 
 		CreateUniformBuffers();
 		CreateDescriptorPool();
-		CreateDescriptorSets();
+		// CreateDescriptorSets();
 		CreateCommandBuffers();
 		CreateSyncObjects();
 	}
@@ -618,53 +618,53 @@ namespace Pelican
 		}
 	}
 
-	void VulkanRenderer::CreateDescriptorSets()
-	{
-		std::vector<VkDescriptorSetLayout> layouts(m_pSwapChain->GetImages().size(), m_VkDescriptorSetLayout);
-		VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
-		allocInfo.descriptorPool = m_VkDescriptorPool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(m_pSwapChain->GetImages().size());
-		allocInfo.pSetLayouts = layouts.data();
-
-		m_VkDescriptorSets.resize(m_pSwapChain->GetImages().size());
-		if (vkAllocateDescriptorSets(m_pDevice->GetDevice(), &allocInfo, m_VkDescriptorSets.data()) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to allocate descriptor sets!");
-		}
-
-		for (size_t i = 0; i < m_pSwapChain->GetImages().size(); i++)
-		{
-			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = m_VkUniformBuffers[i];
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UniformBufferObject);
-
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = m_pTexture->GetImageView();
-			imageInfo.sampler = m_pTexture->GetSampler();
-
-			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = m_VkDescriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = m_VkDescriptorSets[i];
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &imageInfo;
-
-			vkUpdateDescriptorSets(m_pDevice->GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-		}
-	}
+	// void VulkanRenderer::CreateDescriptorSets()
+	// {
+	// 	std::vector<VkDescriptorSetLayout> layouts(m_pSwapChain->GetImages().size(), m_VkDescriptorSetLayout);
+	// 	VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+	// 	allocInfo.descriptorPool = m_VkDescriptorPool;
+	// 	allocInfo.descriptorSetCount = static_cast<uint32_t>(m_pSwapChain->GetImages().size());
+	// 	allocInfo.pSetLayouts = layouts.data();
+	//
+	// 	m_VkDescriptorSets.resize(m_pSwapChain->GetImages().size());
+	// 	if (vkAllocateDescriptorSets(m_pDevice->GetDevice(), &allocInfo, m_VkDescriptorSets.data()) != VK_SUCCESS)
+	// 	{
+	// 		ASSERT_MSG(false, "failed to allocate descriptor sets!");
+	// 	}
+	//
+	// 	for (size_t i = 0; i < m_pSwapChain->GetImages().size(); i++)
+	// 	{
+	// 		VkDescriptorBufferInfo bufferInfo{};
+	// 		bufferInfo.buffer = m_VkUniformBuffers[i];
+	// 		bufferInfo.offset = 0;
+	// 		bufferInfo.range = sizeof(UniformBufferObject);
+	//
+	// 		VkDescriptorImageInfo imageInfo{};
+	// 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	// 		imageInfo.imageView = m_pTexture->GetImageView();
+	// 		imageInfo.sampler = m_pTexture->GetSampler();
+	//
+	// 		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+	//
+	// 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	// 		descriptorWrites[0].dstSet = m_VkDescriptorSets[i];
+	// 		descriptorWrites[0].dstBinding = 0;
+	// 		descriptorWrites[0].dstArrayElement = 0;
+	// 		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	// 		descriptorWrites[0].descriptorCount = 1;
+	// 		descriptorWrites[0].pBufferInfo = &bufferInfo;
+	//
+	// 		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	// 		descriptorWrites[1].dstSet = m_VkDescriptorSets[i];
+	// 		descriptorWrites[1].dstBinding = 1;
+	// 		descriptorWrites[1].dstArrayElement = 0;
+	// 		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	// 		descriptorWrites[1].descriptorCount = 1;
+	// 		descriptorWrites[1].pImageInfo = &imageInfo;
+	//
+	// 		vkUpdateDescriptorSets(m_pDevice->GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	// 	}
+	// }
 
 	void VulkanRenderer::CreateCommandBuffers()
 	{
@@ -756,7 +756,7 @@ namespace Pelican
 		CreateFramebuffers();
 		CreateUniformBuffers();
 		CreateDescriptorPool();
-		CreateDescriptorSets();
+		// CreateDescriptorSets();
 		CreateCommandBuffers();
 	}
 
@@ -995,8 +995,8 @@ namespace Pelican
 		vkCmdBeginRenderPass(m_VkCommandBuffers[m_CurrentBuffer], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(m_VkCommandBuffers[m_CurrentBuffer], VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkGraphicsPipeline);
 
-			vkCmdBindDescriptorSets(m_VkCommandBuffers[m_CurrentBuffer], VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkPipelineLayout, 0, 1,
-				&m_VkDescriptorSets[m_CurrentBuffer], 0, nullptr);
+			// vkCmdBindDescriptorSets(m_VkCommandBuffers[m_CurrentBuffer], VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkPipelineLayout, 0, 1,
+			// 	&m_VkDescriptorSets[m_CurrentBuffer], 0, nullptr);
 	}
 
 	void VulkanRenderer::EndCommandBuffers()

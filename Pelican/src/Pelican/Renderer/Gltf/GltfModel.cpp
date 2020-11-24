@@ -1,8 +1,10 @@
 ﻿#include "PelicanPCH.h"
 #include "GltfModel.h"
 
+#include "Pelican/Renderer/Camera.h"
 #include "Pelican/Renderer/Mesh.h"
 #include "Pelican/Renderer/VulkanTexture.h"
+#include "Pelican/Renderer/VulkanRenderer.h"
 
 #include <logtools.h>
 
@@ -22,15 +24,33 @@
 namespace Pelican
 {
 	GltfModel::GltfModel(const std::string& file)
+		: m_AssetPath(file)
 	{
 		Initialize(file);
 	}
 
 	GltfModel::~GltfModel()
 	{
+		vkDestroyDescriptorPool(VulkanRenderer::GetDevice(), m_DescriptorPool, nullptr);
+
 		for (size_t i = 0; i < m_Meshes.size(); i++)
 		{
 			m_Meshes[i].Cleanup();
+		}
+
+		for (size_t i = 0; i < m_pTextures.size(); i++)
+		{
+			delete m_pTextures[i];
+			m_pTextures[i] = nullptr;
+		}
+		m_pTextures.clear();
+	}
+
+	void GltfModel::Update(Camera* pCamera)
+	{
+		for (size_t i = 0; i < m_Meshes.size(); i++)
+		{
+			m_Meshes[i].Update(pCamera);
 		}
 	}
 
@@ -106,8 +126,8 @@ namespace Pelican
 
 			if (node.mesh > -1)
 			{
-				tinygltf::Mesh mesh = model.meshes[node.mesh];
-				tinygltf::Primitive primitive = mesh.primitives[0];
+				tinygltf::Mesh gltfMesh = model.meshes[node.mesh];
+				tinygltf::Primitive primitive = gltfMesh.primitives[0];
 			
 				std::vector<Vertex> vertices;
 				std::vector<uint32_t> indices;
@@ -167,17 +187,40 @@ namespace Pelican
 					}
 				}
 
-				m_Meshes.push_back({ vertices, indices });
-				m_Meshes[m_Meshes.size() - 1].CreateBuffers();
+				Mesh mesh{ vertices, indices };
+
+				tinygltf::Material material = model.materials[primitive.material];
+				tinygltf::Image image = model.images[material.pbrMetallicRoughness.baseColorTexture.index];
+				std::string absolutePath = m_AssetPath;
+				absolutePath = absolutePath.substr(0, m_AssetPath.find_last_of('/') + 1);
+				absolutePath += image.uri;
+				mesh.SetupTexture(absolutePath);
+
+				mesh.CreateBuffers();
+				m_Meshes.push_back(mesh);
 			}
 		}
 
-		// Let's leave textures for now, it's too complicated to implement this all at once
-		//  when ready => take a look at the descriptorsets example in Sascha Willems' Vulkan samples
-		// for (tinygltf::Texture texture : model.textures)
-		// {
-		// 	
-		// 	texture.name;
-		// }
+		CreateDescriptorPool();
+	}
+
+	void GltfModel::CreateDescriptorPool()
+	{
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = static_cast<uint32_t>(m_Meshes.size());
+
+		VkDescriptorPoolCreateInfo createInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+		createInfo.poolSizeCount = 1;
+		createInfo.pPoolSizes = &poolSize;
+		createInfo.maxSets = static_cast<uint32_t>(m_Meshes.size());
+
+		VkResult result = vkCreateDescriptorPool(VulkanRenderer::GetDevice(), &createInfo, nullptr, &m_DescriptorPool);
+		ASSERT_MSG(result == VK_SUCCESS, "Failed to create descriptor pool!");
+
+		for (size_t i = 0; i < m_Meshes.size(); i++)
+		{
+			m_Meshes[i].CreateDescriptorSet(m_DescriptorPool);
+		}
 	}
 }

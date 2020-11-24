@@ -40,6 +40,7 @@ namespace Pelican
 			m_pWindow->Update();
 
 			m_pCamera->Update();
+			m_pModel->Update(m_pCamera);
 
 			m_pRenderer->BeginScene();
 			// m_pMesh->Draw();
@@ -143,6 +144,7 @@ namespace Pelican
 		// m_pMesh->CreateBuffers();
 
 		m_pModel = new GltfModel("res/models/pony_cartoon/scene.gltf");
+		// m_pModel = new GltfModel("res/models/tactical_flashlight/scene.gltf");
 	}
 
 	void Application::Cleanup()
