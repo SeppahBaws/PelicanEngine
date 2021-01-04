@@ -4,12 +4,17 @@
 #include "Pelican/Renderer/Camera.h"
 #include "Pelican/Renderer/Mesh.h"
 #include "Pelican/Renderer/Gltf/GltfModel.h"
+#include "Pelican/Renderer/ImGui/ImGuiWrapper.h"
 
 #include "Input/Input.h"
 
 #include <thread>
 #include <logtools.h>
 #include <filesystem>
+
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
 
 namespace Pelican
 {
@@ -29,6 +34,8 @@ namespace Pelican
 	{
 		Init();
 
+		InitImGui();
+
 		auto t = std::chrono::high_resolution_clock::now();
 		auto lastTime = std::chrono::high_resolution_clock::now();
 		while (!m_pWindow->ShouldClose())
@@ -39,13 +46,48 @@ namespace Pelican
 
 			m_pWindow->Update();
 
+			// ImGui Update and drawing. All ImGui drawing should go in between NewFrame() and Render()
+			{
+				m_ImGui->UpdateIO();
+				m_ImGui->NewFrame(); // ImGui elements get drawn inside of here.
+
+				ImGui::ShowDemoWindow();
+
+				if (ImGui::Begin("Hello Pelican Engine!"))
+				{
+					ImGui::Text("Hello there!");
+
+					if (ImGui::Button("Log something"))
+					{
+						Logger::LogDebug("[IMGUI] Test Test!");
+					}
+				}
+				ImGui::End();
+
+				m_ImGui->Render();
+				m_ImGui->UpdateBuffers();
+			}
+
 			m_pCamera->Update();
+			
 			m_pModel->Update(m_pCamera);
 
 			m_pRenderer->BeginScene();
-			// m_pMesh->Draw();
-			m_pModel->Draw();
+
+			// Draw scene
+			{
+				// m_pMesh->Draw();
+				m_pModel->Draw();
+			}
+
+			// Draw UI
+			{
+				m_ImGui->DrawFrame();
+			}
+
 			m_pRenderer->EndScene();
+
+			Input::Update();
 		}
 
 		Cleanup();
@@ -147,11 +189,24 @@ namespace Pelican
 		// m_pModel = new GltfModel("res/models/tactical_flashlight/scene.gltf");
 	}
 
+	void Application::InitImGui()
+	{
+		m_ImGui = new ImGuiWrapper(m_pRenderer->GetVulkanDevice());
+		const Window::Params windowParams = m_pWindow->GetParams();
+		m_ImGui->Init(static_cast<float>(windowParams.width), static_cast<float>(windowParams.height));
+
+		ImGuiInitInfo initInfo = m_pRenderer->GetImGuiInitInfo();
+		m_ImGui->InitResources(initInfo.renderPass, initInfo.queue, "res/shaders/imgui");
+	}
+
 	void Application::Cleanup()
 	{
 		m_pRenderer->BeforeSceneCleanup();
+		delete m_ImGui;
+
 		delete m_pModel;
 		// m_pMesh->Cleanup();
+
 		m_pRenderer->AfterSceneCleanup();
 		m_pWindow->Cleanup();
 

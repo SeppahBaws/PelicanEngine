@@ -8,3 +8,7 @@
 [submodule "Pelican/dependencies/logtools"]
 	path = Pelican/dependencies/logtools
 	url = https://github.com/SeppahBaws/logtools.git
+[submodule "Pelican/dependencies/imgui"]
+	path = Pelican/dependencies/imgui
+	url = https://github.com/SeppahBaws/imgui
+	branch = docking

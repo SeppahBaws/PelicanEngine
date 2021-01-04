@@ -8,6 +8,16 @@ namespace Pelican
 	void Input::Init(GLFWwindow* window)
 	{
 		GetInstance().m_pWindow = window;
+
+		glfwSetScrollCallback(window, [](GLFWwindow* /*pWindow*/, double /*x*/, double y)
+		{
+			GetInstance().m_Scroll = static_cast<float>(y);
+		});
+	}
+
+	void Input::Update()
+	{
+		GetInstance().m_Scroll = 0.0f;
 	}
 
 	bool Input::GetKey(KeyCode key)
@@ -20,6 +30,14 @@ namespace Pelican
 		return glfwGetMouseButton(GetInstance().m_pWindow, static_cast<int>(code)) == GLFW_PRESS;
 	}
 
+	glm::vec2 Input::GetMousePos()
+	{
+		double x, y;
+		glfwGetCursorPos(GetInstance().m_pWindow, &x, &y);
+
+		return glm::vec2(static_cast<float>(x), static_cast<float>(y));
+	}
+
 	glm::vec2 Input::GetMouseMovement()
 	{
 		double x, y;
@@ -30,6 +48,11 @@ namespace Pelican
 		GetInstance().m_LastMousePos = { x, y };
 
 		return mov;
+	}
+
+	float Input::GetScroll()
+	{
+		return GetInstance().m_Scroll;
 	}
 
 	void Input::SetCursorMode(bool enabled)

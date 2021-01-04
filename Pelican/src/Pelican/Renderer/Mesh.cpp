@@ -4,6 +4,7 @@
 #include "Pelican/Renderer/Camera.h"
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
+#include "VulkanTexture.h"
 
 #include <logtools.h>
 

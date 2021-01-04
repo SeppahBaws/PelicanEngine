@@ -13,11 +13,14 @@ namespace Pelican
 	{
 	public:
 		static void Init(GLFWwindow* window);
+		static void Update();
 
 		static bool GetKey(KeyCode key);
 
 		static bool GetMouseButton(MouseCode code);
+		static glm::vec2 GetMousePos();
 		static glm::vec2 GetMouseMovement();
+		static float GetScroll();
 
 		static void SetCursorMode(bool enabled);
 
@@ -33,5 +36,6 @@ namespace Pelican
 		GLFWwindow* m_pWindow{};
 
 		glm::vec2 m_LastMousePos{};
+		float m_Scroll{};
 	};
 }

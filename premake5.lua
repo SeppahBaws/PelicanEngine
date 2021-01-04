@@ -24,12 +24,14 @@ IncludeDir["stb"] = "Pelican/dependencies/stb"
 IncludeDir["json_hpp"] = "Pelican/dependencies/json_hpp/include"
 IncludeDir["tiny_gltf"] = "Pelican/dependencies/tiny_gltf/include"
 IncludeDir["Vulkan"] = "%VULKAN_SDK%/Include"
+IncludeDir["ImGui"] = "Pelican/dependencies/imgui"
 
 LibDir = {}
 LibDir["Vulkan"] = "%VULKAN_SDK%/Lib"
 
 group "Dependencies"
     include "Pelican/dependencies/glfw"
+    include "Pelican/dependencies/imgui"
 group ""
 
 project "Pelican"
@@ -66,7 +68,8 @@ project "Pelican"
         "%{IncludeDir.stb}",
         "%{IncludeDir.json_hpp}",
         "%{IncludeDir.tiny_gltf}",
-        "%{IncludeDir.Vulkan}"
+        "%{IncludeDir.Vulkan}",
+        "%{IncludeDir.ImGui}",
     }
 
     libdirs
@@ -77,6 +80,7 @@ project "Pelican"
     links
     {
         "GLFW",
+        "ImGui",
         "vulkan-1"
     }
 

@@ -215,8 +215,10 @@ namespace Pelican
 		createInfo.pPoolSizes = &poolSize;
 		createInfo.maxSets = static_cast<uint32_t>(m_Meshes.size());
 
-		VkResult result = vkCreateDescriptorPool(VulkanRenderer::GetDevice(), &createInfo, nullptr, &m_DescriptorPool);
-		ASSERT_MSG(result == VK_SUCCESS, "Failed to create descriptor pool!");
+		if (vkCreateDescriptorPool(VulkanRenderer::GetDevice(), &createInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
+		{
+			ASSERT_MSG(false, "Failed to create descriptor pool!");
+		}
 
 		for (size_t i = 0; i < m_Meshes.size(); i++)
 		{

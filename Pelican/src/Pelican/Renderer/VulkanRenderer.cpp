@@ -2,8 +2,9 @@
 #include "VulkanRenderer.h"
 #include "VulkanHelpers.h"
 
+#include <logtools.h>
+
 #include <fstream>
-#include <algorithm>
 #include <cstdint>
 #include <array>
 #include <chrono>
@@ -25,7 +26,6 @@
 #include <stb_image.h>
 
 #include "Vertex.h"
-#include "VulkanTexture.h"
 #include "VulkanShader.h"
 
 namespace Pelican
@@ -54,15 +54,18 @@ namespace Pelican
 		CreateDepthResources();
 		CreateFramebuffers();
 
-		// m_pTexture = new VulkanTexture("res/textures/Brick/Brick_Color.jpg");
-		m_pTexture = new VulkanTexture("res/models/pony_cartoon/textures/Body_SG1_baseColor.png");
-		// m_pTexture = new VulkanTexture("res/models/tactical_flashlight/textures/glass_baseColor.png");
-
 		CreateUniformBuffers();
 		CreateDescriptorPool();
-		// CreateDescriptorSets();
 		CreateCommandBuffers();
 		CreateSyncObjects();
+	}
+
+	ImGuiInitInfo VulkanRenderer::GetImGuiInitInfo()
+	{
+		ImGuiInitInfo initInfo = {};
+		initInfo.renderPass = m_VkRenderPass;
+		initInfo.queue = GetGraphicsQueue();
+		return initInfo;
 	}
 
 	void VulkanRenderer::BeforeSceneCleanup()
@@ -74,9 +77,6 @@ namespace Pelican
 
 	void VulkanRenderer::AfterSceneCleanup()
 	{
-		delete m_pTexture;
-		m_pTexture = nullptr;
-
 		vkDestroyDescriptorSetLayout(m_pDevice->GetDevice(), m_VkDescriptorSetLayout, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -618,54 +618,6 @@ namespace Pelican
 		}
 	}
 
-	// void VulkanRenderer::CreateDescriptorSets()
-	// {
-	// 	std::vector<VkDescriptorSetLayout> layouts(m_pSwapChain->GetImages().size(), m_VkDescriptorSetLayout);
-	// 	VkDescriptorSetAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
-	// 	allocInfo.descriptorPool = m_VkDescriptorPool;
-	// 	allocInfo.descriptorSetCount = static_cast<uint32_t>(m_pSwapChain->GetImages().size());
-	// 	allocInfo.pSetLayouts = layouts.data();
-	//
-	// 	m_VkDescriptorSets.resize(m_pSwapChain->GetImages().size());
-	// 	if (vkAllocateDescriptorSets(m_pDevice->GetDevice(), &allocInfo, m_VkDescriptorSets.data()) != VK_SUCCESS)
-	// 	{
-	// 		ASSERT_MSG(false, "failed to allocate descriptor sets!");
-	// 	}
-	//
-	// 	for (size_t i = 0; i < m_pSwapChain->GetImages().size(); i++)
-	// 	{
-	// 		VkDescriptorBufferInfo bufferInfo{};
-	// 		bufferInfo.buffer = m_VkUniformBuffers[i];
-	// 		bufferInfo.offset = 0;
-	// 		bufferInfo.range = sizeof(UniformBufferObject);
-	//
-	// 		VkDescriptorImageInfo imageInfo{};
-	// 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	// 		imageInfo.imageView = m_pTexture->GetImageView();
-	// 		imageInfo.sampler = m_pTexture->GetSampler();
-	//
-	// 		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-	//
-	// 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	// 		descriptorWrites[0].dstSet = m_VkDescriptorSets[i];
-	// 		descriptorWrites[0].dstBinding = 0;
-	// 		descriptorWrites[0].dstArrayElement = 0;
-	// 		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	// 		descriptorWrites[0].descriptorCount = 1;
-	// 		descriptorWrites[0].pBufferInfo = &bufferInfo;
-	//
-	// 		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	// 		descriptorWrites[1].dstSet = m_VkDescriptorSets[i];
-	// 		descriptorWrites[1].dstBinding = 1;
-	// 		descriptorWrites[1].dstArrayElement = 0;
-	// 		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	// 		descriptorWrites[1].descriptorCount = 1;
-	// 		descriptorWrites[1].pImageInfo = &imageInfo;
-	//
-	// 		vkUpdateDescriptorSets(m_pDevice->GetDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-	// 	}
-	// }
-
 	void VulkanRenderer::CreateCommandBuffers()
 	{
 		m_VkCommandBuffers.resize(m_VkSwapChainFramebuffers.size());
@@ -756,7 +708,6 @@ namespace Pelican
 		CreateFramebuffers();
 		CreateUniformBuffers();
 		CreateDescriptorPool();
-		// CreateDescriptorSets();
 		CreateCommandBuffers();
 	}
 
@@ -994,9 +945,6 @@ namespace Pelican
 
 		vkCmdBeginRenderPass(m_VkCommandBuffers[m_CurrentBuffer], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(m_VkCommandBuffers[m_CurrentBuffer], VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkGraphicsPipeline);
-
-			// vkCmdBindDescriptorSets(m_VkCommandBuffers[m_CurrentBuffer], VK_PIPELINE_BIND_POINT_GRAPHICS, m_VkPipelineLayout, 0, 1,
-			// 	&m_VkDescriptorSets[m_CurrentBuffer], 0, nullptr);
 	}
 
 	void VulkanRenderer::EndCommandBuffers()
@@ -1009,10 +957,28 @@ namespace Pelican
 		}
 	}
 
-	VkBool32 VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
+	VkBool32 VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT,
 	                                       const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
 	{
-		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+		switch (severity)
+		{
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+			Logger::LogTrace("[VULKAN] %s", pCallbackData->pMessage);
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+			Logger::LogInfo("[VULKAN] %s", pCallbackData->pMessage);
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+			Logger::LogWarning("[VULKAN] %s", pCallbackData->pMessage);
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+			Logger::LogError("[VULKAN] %s", pCallbackData->pMessage);
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
+			Logger::LogDebug("[VULKAN] %s", pCallbackData->pMessage);
+			break;
+		default: break;
+		}
 
 		return VK_FALSE;
 	}

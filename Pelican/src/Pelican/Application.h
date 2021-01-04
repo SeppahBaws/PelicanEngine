@@ -7,6 +7,7 @@ namespace Pelican
 {
 	class Mesh;
 	class GltfModel;
+	class ImGuiWrapper;
 
 	class Application
 	{
@@ -22,6 +23,7 @@ namespace Pelican
 
 	private:
 		void Init();
+		void InitImGui();
 		void Cleanup();
 
 	private:
@@ -30,6 +32,8 @@ namespace Pelican
 		Camera* m_pCamera{};
 		// Mesh* m_pMesh{};
 		GltfModel* m_pModel{};
+
+		ImGuiWrapper* m_ImGui{};
 
 		static Application* m_Instance;
 	};
