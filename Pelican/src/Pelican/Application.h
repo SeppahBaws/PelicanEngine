@@ -23,17 +23,13 @@ namespace Pelican
 
 	private:
 		void Init();
-		void InitImGui();
 		void Cleanup();
 
 	private:
 		Window* m_pWindow{};
 		VulkanRenderer* m_pRenderer{};
 		Camera* m_pCamera{};
-		// Mesh* m_pMesh{};
 		GltfModel* m_pModel{};
-
-		ImGuiWrapper* m_ImGui{};
 
 		static Application* m_Instance;
 	};

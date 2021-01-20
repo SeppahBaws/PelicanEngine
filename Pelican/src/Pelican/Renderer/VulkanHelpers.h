@@ -17,6 +17,17 @@ namespace Pelican
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
+#pragma warning(push, 0)
+	static void VkCheckResult(VkResult err)
+	{
+		if (err == 0)
+			return;
+		std::cerr << "[vulkan] Error: VkResult = " << err << std::endl;
+		if (err < 0)
+			abort();
+	}
+#pragma warning(pop)
+
 	class VulkanHelpers
 	{
 	public:

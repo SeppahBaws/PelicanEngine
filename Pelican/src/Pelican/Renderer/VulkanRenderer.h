@@ -9,12 +9,7 @@ namespace Pelican
 {
 	// Forward declarations
 	class Camera;
-
-	struct ImGuiInitInfo
-	{
-		VkRenderPass renderPass;
-		VkQueue queue;
-	};
+	class ImGuiWrapper;
 
 	class VulkanRenderer final
 	{
@@ -22,7 +17,7 @@ namespace Pelican
 		VulkanRenderer();
 
 		void Initialize();
-		ImGuiInitInfo GetImGuiInitInfo();
+		// ImGuiInitInfo GetImGuiInitInfo();
 		void BeforeSceneCleanup();
 		void AfterSceneCleanup();
 
@@ -33,8 +28,11 @@ namespace Pelican
 		void SetCamera(Camera* pCamera);
 
 	public:
+		static int GetMaxImages() { return m_pInstance->MAX_FRAMES_IN_FLIGHT; }
+		static VkInstance GetInstance() { return m_pInstance->m_VkInstance; }
 		static VulkanDevice* GetVulkanDevice() { return m_pInstance->m_pDevice; }
 		static VkDevice GetDevice() { return m_pInstance->m_pDevice->GetDevice(); }
+		static VkRenderPass GetRenderPass() { return m_pInstance->m_VkRenderPass; }
 		static VkPhysicalDevice GetPhysicalDevice() { return m_pInstance->m_pDevice->GetPhysicalDevice(); }
 		static VkQueue GetGraphicsQueue() { return m_pInstance->m_pDevice->GetGraphicsQueue(); }
 		static VkDescriptorPool GetDescriptorPool() { return m_pInstance->m_VkDescriptorPool; }
@@ -140,5 +138,10 @@ namespace Pelican
 		VkImage m_VkDepthImage;
 		VkDeviceMemory m_VkDepthImageMemory;
 		VkImageView m_VkDepthImageView;
+
+
+
+		// ImGui
+		ImGuiWrapper* m_pImGui{};
 	};
 }

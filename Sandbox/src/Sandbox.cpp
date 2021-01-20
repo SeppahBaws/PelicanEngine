@@ -1,6 +1,5 @@
 // ReSharper disable once CppUnusedIncludeDirective
 #include <vld.h>
-#include <iostream>
 #include <Pelican.h>
 
 class MyApp final : public Pelican::Application

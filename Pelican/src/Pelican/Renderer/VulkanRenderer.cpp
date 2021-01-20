@@ -15,6 +15,8 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 #include "Pelican/Application.h"
 
@@ -22,11 +24,11 @@
 #include "UniformBufferObject.h"
 #include "Camera.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 #include "Vertex.h"
 #include "VulkanShader.h"
+#include "VulkanHelpers.h"
+#include "ImGui/ImGuiWrapper.h"
+
 
 namespace Pelican
 {
@@ -58,14 +60,16 @@ namespace Pelican
 		CreateDescriptorPool();
 		CreateCommandBuffers();
 		CreateSyncObjects();
-	}
 
-	ImGuiInitInfo VulkanRenderer::GetImGuiInitInfo()
-	{
-		ImGuiInitInfo initInfo = {};
-		initInfo.renderPass = m_VkRenderPass;
-		initInfo.queue = GetGraphicsQueue();
-		return initInfo;
+		m_pImGui = new ImGuiWrapper();
+
+		ImGuiInitInfo imGuiInit = {};
+		imGuiInit.instance = m_VkInstance;
+		imGuiInit.physicalDevice = m_pDevice->GetPhysicalDevice();
+		imGuiInit.device = m_pDevice->GetDevice();
+		imGuiInit.queue = GetGraphicsQueue();
+		imGuiInit.renderPass = m_VkRenderPass;
+		m_pImGui->Init(imGuiInit);
 	}
 
 	void VulkanRenderer::BeforeSceneCleanup()
@@ -77,6 +81,10 @@ namespace Pelican
 
 	void VulkanRenderer::AfterSceneCleanup()
 	{
+		m_pImGui->Cleanup();
+		delete m_pImGui;
+		m_pImGui = nullptr;
+
 		vkDestroyDescriptorSetLayout(m_pDevice->GetDevice(), m_VkDescriptorSetLayout, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -129,12 +137,16 @@ namespace Pelican
 
 
 		BeginCommandBuffers();
+
+		m_pImGui->NewFrame();
 	}
 
 	void VulkanRenderer::EndScene()
 	{
-		EndCommandBuffers();
+		m_pImGui->Render(m_VkCommandBuffers[m_CurrentBuffer]);
 
+		// Submit our main scene rendering commands.
+		EndCommandBuffers();
 
 		VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
 
@@ -158,6 +170,7 @@ namespace Pelican
 			ASSERT_MSG(false, "failed to submit draw command buffer!");
 		}
 
+		// Present the image to the window
 		VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;

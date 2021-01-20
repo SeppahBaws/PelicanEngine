@@ -34,8 +34,6 @@ namespace Pelican
 	{
 		Init();
 
-		InitImGui();
-
 		auto t = std::chrono::high_resolution_clock::now();
 		auto lastTime = std::chrono::high_resolution_clock::now();
 		while (!m_pWindow->ShouldClose())
@@ -46,28 +44,6 @@ namespace Pelican
 
 			m_pWindow->Update();
 
-			// ImGui Update and drawing. All ImGui drawing should go in between NewFrame() and Render()
-			{
-				m_ImGui->UpdateIO();
-				m_ImGui->NewFrame(); // ImGui elements get drawn inside of here.
-
-				ImGui::ShowDemoWindow();
-
-				if (ImGui::Begin("Hello Pelican Engine!"))
-				{
-					ImGui::Text("Hello there!");
-
-					if (ImGui::Button("Log something"))
-					{
-						Logger::LogDebug("[IMGUI] Test Test!");
-					}
-				}
-				ImGui::End();
-
-				m_ImGui->Render();
-				m_ImGui->UpdateBuffers();
-			}
-
 			m_pCamera->Update();
 			
 			m_pModel->Update(m_pCamera);
@@ -76,13 +52,23 @@ namespace Pelican
 
 			// Draw scene
 			{
-				// m_pMesh->Draw();
 				m_pModel->Draw();
 			}
 
 			// Draw UI
 			{
-				m_ImGui->DrawFrame();
+				ImGui::ShowDemoWindow();
+
+				// Show some frame time results.
+				ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f));
+				ImGui::SetNextWindowBgAlpha(0.35f);
+				if (ImGui::Begin("Frame timings", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove))
+				{
+					ImGui::Text("Frame time: %fms", Time::GetDeltaTime() * 1000.0f);
+					glm::vec2 pos = Input::GetMousePos();
+					ImGui::Text("Mouse position: (%.0f, %.0f)", pos.x, pos.y);
+				}
+				ImGui::End();
 			}
 
 			m_pRenderer->EndScene();
@@ -111,98 +97,12 @@ namespace Pelican
 
 		m_pRenderer->SetCamera(m_pCamera);
 
-		/* ===== Inside Cube ===== */
-		// const std::vector<Vertex> vertices = {
-		// 	// Left face
-		// 	{{-5.0f, -5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-		// 	{{ 5.0f, -5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-		// 	{{ 5.0f,  5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-		// 	{{-5.0f,  5.0f, -5.0f}, {1.0f, 1.0f, 1.0f}},
-		//
-		// 	// Right face
-		// 	{{-5.0f, -5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-		// 	{{-5.0f,  5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-		// 	{{ 5.0f,  5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-		// 	{{ 5.0f, -5.0f,  5.0f}, {1.0f, 1.0f, 0.0f}},
-		//
-		// 	// Top face
-		// 	{{-5.0f,  5.0f, -5.0f}, {0.0f, 1.0f, 0.0f}},
-		// 	{{ 5.0f,  5.0f, -5.0f}, {0.0f, 1.0f, 0.0f}},
-		// 	{{ 5.0f,  5.0f,  5.0f}, {0.0f, 1.0f, 0.0f}},
-		// 	{{-5.0f,  5.0f,  5.0f}, {0.0f, 1.0f, 0.0f}},
-		//
-		// 	// Bottom face
-		// 	{{-5.0f, -5.0f, -5.0f}, {0.0f, 0.0f, 1.0f}},
-		// 	{{-5.0f, -5.0f,  5.0f}, {0.0f, 0.0f, 1.0f}},
-		// 	{{ 5.0f, -5.0f,  5.0f}, {0.0f, 0.0f, 1.0f}},
-		// 	{{ 5.0f, -5.0f, -5.0f}, {0.0f, 0.0f, 1.0f}},
-		//
-		// 	// Front face
-		// 	{{-5.0f, -5.0f, -5.0f}, {1.0f, 0.0f, 0.0f}},
-		// 	{{-5.0f,  5.0f, -5.0f}, {1.0f, 0.0f, 0.0f}},
-		// 	{{-5.0f,  5.0f,  5.0f}, {1.0f, 0.0f, 0.0f}},
-		// 	{{-5.0f, -5.0f,  5.0f}, {1.0f, 0.0f, 0.0f}},
-		//
-		// 	// Back face
-		// 	{{ 5.0f, -5.0f, -5.0f}, {1.0f, 0.5f, 0.0f}},
-		// 	{{ 5.0f, -5.0f,  5.0f}, {1.0f, 0.5f, 0.0f}},
-		// 	{{ 5.0f,  5.0f,  5.0f}, {1.0f, 0.5f, 0.0f}},
-		// 	{{ 5.0f,  5.0f, -5.0f}, {1.0f, 0.5f, 0.0f}},
-		// };
-		// const std::vector<uint16_t> indices = {
-		// 	0, 1, 2, 2, 3, 0,       // Left face
-		// 	4, 5, 6, 6, 7, 4,       // Right face
-		// 	8, 9, 10, 10, 11, 8,    // Top face
-		// 	12, 13, 14, 14, 15, 12, // Bottom face
-		// 	16, 17, 18, 18, 19, 16, // Front face
-		// 	20, 21, 22, 22, 23, 20, // Back face
-		// };
-
-		/* ===== Two Planes ===== */
-		// const std::vector<Vertex> vertices = {
-		// 	{{-2.0f,  2.0f, -2.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		// 	{{-2.0f,  2.0f,  2.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-		// 	{{ 2.0f,  2.0f,  2.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		// 	{{ 2.0f,  2.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		//
-		// 	{{-2.0f, -2.0f, -2.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		// 	{{-2.0f, -2.0f,  2.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-		// 	{{ 2.0f, -2.0f,  2.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		// 	{{ 2.0f, -2.0f, -2.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		// };
-		// const std::vector<uint32_t> indices = {
-		// 	0, 1, 2, 2, 3, 0,
-		// 	4, 5, 6, 6, 7, 4
-		// };
-		
-		// m_pMesh = new Mesh(vertices, indices);
-
-		// m_pMesh = new Mesh("res/models/triangle.gltf");
-		// m_pMesh = new Mesh("res/models/quad.gltf");
-		// m_pMesh = new Mesh("res/models/cube.gltf");
-		// m_pMesh = new Mesh("res/models/icoSphere.gltf");
-		// m_pMesh = new Mesh("res/models/pony_cartoon/scene.gltf");
-
-		// m_pMesh->CreateBuffers();
-
 		m_pModel = new GltfModel("res/models/pony_cartoon/scene.gltf");
-		// m_pModel = new GltfModel("res/models/tactical_flashlight/scene.gltf");
-	}
-
-	void Application::InitImGui()
-	{
-		m_ImGui = new ImGuiWrapper(m_pRenderer->GetVulkanDevice());
-		const Window::Params windowParams = m_pWindow->GetParams();
-		m_ImGui->Init(static_cast<float>(windowParams.width), static_cast<float>(windowParams.height));
-
-		ImGuiInitInfo initInfo = m_pRenderer->GetImGuiInitInfo();
-		m_ImGui->InitResources(initInfo.renderPass, initInfo.queue, "res/shaders/imgui");
 	}
 
 	void Application::Cleanup()
 	{
 		m_pRenderer->BeforeSceneCleanup();
-		delete m_ImGui;
 
 		delete m_pModel;
 		// m_pMesh->Cleanup();
