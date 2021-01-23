@@ -10,3 +10,8 @@
 #include <functional>
 
 #include "Pelican/Util/Defines.h"
+
+// Configuration
+
+// Whether or not to use validation layers.
+#define PELICAN_VALIDATE true

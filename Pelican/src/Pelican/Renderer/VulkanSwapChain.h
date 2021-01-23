@@ -13,6 +13,7 @@ namespace Pelican
 		~VulkanSwapChain();
 
 		void Initialize();
+		void CreateFramebuffers(VkImageView depthImageView, VkRenderPass renderPass);
 		void Cleanup();
 
 		VkSwapchainKHR GetSwapChain() const { return m_SwapChain; }
@@ -20,6 +21,7 @@ namespace Pelican
 		VkExtent2D GetExtent() const { return m_SwapChainExtent; }
 		std::vector<VkImageView> GetImageViews() const { return m_SwapChainImageViews; }
 		std::vector<VkImage> GetImages() const { return m_SwapChainImages; }
+		std::vector<VkFramebuffer> GetFramebuffers() const { return m_Framebuffers; }
 
 	private:
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -40,5 +42,6 @@ namespace Pelican
 		VkFormat m_SwapChainImageFormat{};
 		VkExtent2D m_SwapChainExtent{};
 		std::vector<VkImageView> m_SwapChainImageViews{};
+		std::vector<VkFramebuffer> m_Framebuffers{};
 	};
 }

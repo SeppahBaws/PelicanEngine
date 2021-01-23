@@ -26,12 +26,43 @@ namespace Pelican
 		CreateImageViews();
 	}
 
+	void VulkanSwapChain::CreateFramebuffers(VkImageView depthImageView, VkRenderPass renderPass)
+	{
+		m_Framebuffers.resize(m_SwapChainImageViews.size());
+
+		for (size_t i = 0; i < m_SwapChainImageViews.size(); i++)
+		{
+			std::array<VkImageView, 2> attachments = {
+				m_SwapChainImageViews[i],
+				depthImageView
+			};
+
+			VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+			framebufferInfo.renderPass = renderPass;
+			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+			framebufferInfo.pAttachments = attachments.data();
+			framebufferInfo.width = m_SwapChainExtent.width;
+			framebufferInfo.height = m_SwapChainExtent.height;
+			framebufferInfo.layers = 1;
+
+			if (vkCreateFramebuffer(m_pDevice->GetDevice(), &framebufferInfo, nullptr, &m_Framebuffers[i]) != VK_SUCCESS)
+			{
+				ASSERT_MSG(false, "failed to create framebuffer!");
+			}
+		}
+	}
+
 	void VulkanSwapChain::Cleanup()
 	{
 		// Due to RAII, when closing the window this function gets called twice
 		// hence why we check if the SwapChain has been cleared already.
 		if (m_SwapChain == VK_NULL_HANDLE)
 			return;
+
+		for (VkFramebuffer framebuffer : m_Framebuffers)
+		{
+			vkDestroyFramebuffer(m_pDevice->GetDevice(), framebuffer, nullptr);
+		}
 
 		for (size_t i = 0; i < m_SwapChainImageViews.size(); i++)
 		{

@@ -17,11 +17,13 @@ namespace Pelican
 		VulkanRenderer();
 
 		void Initialize();
-		// ImGuiInitInfo GetImGuiInitInfo();
 		void BeforeSceneCleanup();
 		void AfterSceneCleanup();
 
-		void BeginScene();
+		// Very important: returns true when the scene is ready to be rendered.
+		// For example: when the window gets resized, we want to skip this frame, because we'll be recreating the command buffers
+		// so we won't be able to record to them.
+		bool BeginScene();
 		void EndScene();
 
 		void FlagWindowResized() { m_FrameBufferResized = true; }
@@ -56,7 +58,6 @@ namespace Pelican
 
 		void CreateGraphicsPipeline();
 
-		void CreateFramebuffers();
 		void CreateCommandPool();
 		void CreateDepthResources();
 		void CreateUniformBuffers();
@@ -101,11 +102,8 @@ namespace Pelican
 
 		VkInstance m_VkInstance{};
 
-#ifdef PELICAN_DEBUG
-		const bool m_EnableValidationLayers = true;
-#else
-		const bool m_EnableValidationLayers = false;
-#endif
+		const bool m_EnableValidationLayers = PELICAN_VALIDATE;
+
 		const std::vector<const char*> m_ValidationLayers = {
 			"VK_LAYER_KHRONOS_validation"
 		};
@@ -118,7 +116,7 @@ namespace Pelican
 		VkDescriptorSetLayout m_VkDescriptorSetLayout;
 		VkPipelineLayout m_VkPipelineLayout;
 		VkPipeline m_VkGraphicsPipeline;
-		std::vector<VkFramebuffer> m_VkSwapChainFramebuffers; // TODO: move this in VulkanSwapChain as well.
+
 		VkCommandPool m_VkCommandPool;
 		std::vector<VkCommandBuffer> m_VkCommandBuffers;
 		const int MAX_FRAMES_IN_FLIGHT = 2;

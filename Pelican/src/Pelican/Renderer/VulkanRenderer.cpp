@@ -54,8 +54,7 @@ namespace Pelican
 		CreateGraphicsPipeline();
 		CreateCommandPool();
 		CreateDepthResources();
-		CreateFramebuffers();
-
+		m_pSwapChain->CreateFramebuffers(m_VkDepthImageView, m_VkRenderPass);
 		CreateUniformBuffers();
 		CreateDescriptorPool();
 		CreateCommandBuffers();
@@ -110,17 +109,16 @@ namespace Pelican
 		vkDestroyInstance(m_VkInstance, nullptr);
 	}
 
-	void VulkanRenderer::BeginScene()
+	bool VulkanRenderer::BeginScene()
 	{
 		vkWaitForFences(m_pDevice->GetDevice(), 1, &m_VkInFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
 
 		VkResult result = vkAcquireNextImageKHR(m_pDevice->GetDevice(), m_pSwapChain->GetSwapChain(), UINT64_MAX, m_VkImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &m_CurrentBuffer);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || m_FrameBufferResized)
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
-			m_FrameBufferResized = false;
 			RecreateSwapChain();
-			return;
+			return false;
 		}
 		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
 		{
@@ -139,6 +137,8 @@ namespace Pelican
 		BeginCommandBuffers();
 
 		m_pImGui->NewFrame();
+
+		return true;
 	}
 
 	void VulkanRenderer::EndScene()
@@ -183,8 +183,9 @@ namespace Pelican
 
 		VkResult result = vkQueuePresentKHR(m_pDevice->GetPresentQueue(), &presentInfo);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_FrameBufferResized)
 		{
+			m_FrameBufferResized = false;
 			RecreateSwapChain();
 		}
 		else if (result != VK_SUCCESS)
@@ -544,32 +545,6 @@ namespace Pelican
 		pShader = nullptr;
 	}
 
-	void VulkanRenderer::CreateFramebuffers()
-	{
-		m_VkSwapChainFramebuffers.resize(m_pSwapChain->GetImageViews().size());
-
-		for (size_t i = 0; i < m_pSwapChain->GetImageViews().size(); i++)
-		{
-			std::array<VkImageView, 2> attachments = {
-				m_pSwapChain->GetImageViews()[i],
-				m_VkDepthImageView
-			};
-
-			VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-			framebufferInfo.renderPass = m_VkRenderPass;
-			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-			framebufferInfo.pAttachments = attachments.data();
-			framebufferInfo.width = m_pSwapChain->GetExtent().width;
-			framebufferInfo.height = m_pSwapChain->GetExtent().height;
-			framebufferInfo.layers = 1;
-
-			if (vkCreateFramebuffer(m_pDevice->GetDevice(), &framebufferInfo, nullptr, &m_VkSwapChainFramebuffers[i]) != VK_SUCCESS)
-			{
-				ASSERT_MSG(false, "failed to create framebuffer!");
-			}
-		}
-	}
-
 	void VulkanRenderer::CreateCommandPool()
 	{
 		QueueFamilyIndices queueFamilyIndices = m_pDevice->FindQueueFamilies();
@@ -633,7 +608,7 @@ namespace Pelican
 
 	void VulkanRenderer::CreateCommandBuffers()
 	{
-		m_VkCommandBuffers.resize(m_VkSwapChainFramebuffers.size());
+		m_VkCommandBuffers.resize(m_pSwapChain->GetFramebuffers().size());
 
 		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
 		allocInfo.commandPool = m_VkCommandPool;
@@ -675,11 +650,6 @@ namespace Pelican
 		vkDestroyImage(m_pDevice->GetDevice(), m_VkDepthImage, nullptr);
 		vkFreeMemory(m_pDevice->GetDevice(), m_VkDepthImageMemory, nullptr);
 
-		for (size_t i = 0; i < m_VkSwapChainFramebuffers.size(); i++)
-		{
-			vkDestroyFramebuffer(m_pDevice->GetDevice(), m_VkSwapChainFramebuffers[i], nullptr);
-		}
-
 		vkFreeCommandBuffers(m_pDevice->GetDevice(), m_VkCommandPool, static_cast<uint32_t>(m_VkCommandBuffers.size()), m_VkCommandBuffers.data());
 
 		vkDestroyPipeline(m_pDevice->GetDevice(), m_VkGraphicsPipeline, nullptr);
@@ -718,7 +688,7 @@ namespace Pelican
 		CreateRenderPass();
 		CreateGraphicsPipeline();
 		CreateDepthResources();
-		CreateFramebuffers();
+		m_pSwapChain->CreateFramebuffers(m_VkDepthImageView, m_VkRenderPass);
 		CreateUniformBuffers();
 		CreateDescriptorPool();
 		CreateCommandBuffers();
@@ -945,7 +915,7 @@ namespace Pelican
 
 		VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
 		renderPassInfo.renderPass = m_VkRenderPass;
-		renderPassInfo.framebuffer = m_VkSwapChainFramebuffers[m_CurrentBuffer];
+		renderPassInfo.framebuffer = m_pSwapChain->GetFramebuffers()[m_CurrentBuffer];
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = m_pSwapChain->GetExtent();
 

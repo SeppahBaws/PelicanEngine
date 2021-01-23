@@ -13,8 +13,6 @@
 #include <filesystem>
 
 #include <imgui.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
 
 namespace Pelican
 {
@@ -48,7 +46,8 @@ namespace Pelican
 			
 			m_pModel->Update(m_pCamera);
 
-			m_pRenderer->BeginScene();
+			if (!m_pRenderer->BeginScene())
+				continue;
 
 			// Draw scene
 			{
@@ -84,7 +83,7 @@ namespace Pelican
 		Logger::Init();
 		Logger::Configure({ true, true });
 
-		m_pWindow = new Window(Window::Params{ 1280, 720, "Sandbox", false }); // TODO: fix window resize crash.
+		m_pWindow = new Window(Window::Params{ 1280, 720, "Sandbox", true });
 		m_pRenderer = new VulkanRenderer();
 		m_pCamera = new Camera(/*90.0f*/ 120.0f,
 			static_cast<float>(m_pWindow->GetParams().width),
@@ -105,18 +104,15 @@ namespace Pelican
 		m_pRenderer->BeforeSceneCleanup();
 
 		delete m_pModel;
-		// m_pMesh->Cleanup();
 
 		m_pRenderer->AfterSceneCleanup();
 		m_pWindow->Cleanup();
 
-		// delete m_pMesh;
 		delete m_pCamera;
 		delete m_pRenderer;
 		delete m_pWindow;
 
 		m_pModel = nullptr;
-		// m_pMesh = nullptr;
 		m_pCamera = nullptr;
 		m_pRenderer = nullptr;
 		m_pWindow = nullptr;
