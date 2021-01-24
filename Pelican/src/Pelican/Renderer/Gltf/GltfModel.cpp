@@ -47,11 +47,11 @@ namespace Pelican
 		m_pTextures.clear();
 	}
 
-	void GltfModel::Update(Camera* pCamera)
+	void GltfModel::Update(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj)
 	{
 		for (size_t i = 0; i < m_Meshes.size(); i++)
 		{
-			m_Meshes[i].Update(pCamera);
+			m_Meshes[i].Update(model, view, proj);
 		}
 	}
 

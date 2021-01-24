@@ -25,6 +25,7 @@ IncludeDir["json_hpp"] = "Pelican/dependencies/json_hpp/include"
 IncludeDir["tiny_gltf"] = "Pelican/dependencies/tiny_gltf/include"
 IncludeDir["Vulkan"] = "%VULKAN_SDK%/Include"
 IncludeDir["ImGui"] = "Pelican/dependencies/imgui"
+IncludeDir["entt"] = "Pelican/dependencies/entt/include"
 
 LibDir = {}
 LibDir["Vulkan"] = "%VULKAN_SDK%/Lib"
@@ -42,8 +43,8 @@ project "Pelican"
     staticruntime "on"
     warnings "extra"
 
-    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
-    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+    targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
     pchheader "PelicanPCH.h"
     pchsource "Pelican/src/PelicanPCH.cpp"
@@ -70,6 +71,7 @@ project "Pelican"
         "%{IncludeDir.tiny_gltf}",
         "%{IncludeDir.Vulkan}",
         "%{IncludeDir.ImGui}",
+        "%{IncludeDir.entt}",
     }
 
     libdirs
@@ -119,8 +121,8 @@ project "Sandbox"
     staticruntime "on"
     warnings "extra"
 
-    targetdir ("bin/" .. outputdir .. "/%{prj.name}")
-    objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+    targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+    objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
     files
     {

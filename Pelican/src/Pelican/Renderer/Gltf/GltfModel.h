@@ -1,5 +1,11 @@
 ﻿#pragma once
 
+#include "Pelican/Renderer/Camera.h"
+#include "Pelican/Renderer/Camera.h"
+#include "Pelican/Renderer/Camera.h"
+#include "Pelican/Renderer/Camera.h"
+#include "Pelican/Renderer/Camera.h"
+#include "Pelican/Renderer/Camera.h"
 #include "Pelican/Renderer/Mesh.h"
 #include "Pelican/Renderer/VulkanTexture.h"
 
@@ -23,7 +29,7 @@ namespace Pelican
 		GltfModel(const std::string& file);
 		~GltfModel();
 
-		void Update(Camera* pCamera);
+		void Update(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj);
 		void Draw();
 
 	private:

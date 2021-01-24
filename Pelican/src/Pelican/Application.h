@@ -5,6 +5,7 @@
 
 namespace Pelican
 {
+	class Scene;
 	class Mesh;
 	class GltfModel;
 	class ImGuiWrapper;
@@ -28,8 +29,9 @@ namespace Pelican
 	private:
 		Window* m_pWindow{};
 		VulkanRenderer* m_pRenderer{};
-		Camera* m_pCamera{};
-		GltfModel* m_pModel{};
+		// Camera* m_pCamera{};
+		// GltfModel* m_pModel{};
+		Scene* m_pScene{};
 
 		static Application* m_Instance;
 	};

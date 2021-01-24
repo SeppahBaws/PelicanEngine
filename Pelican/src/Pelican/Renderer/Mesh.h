@@ -3,6 +3,15 @@
 
 #include <vulkan/vulkan.h>
 
+
+
+#include "Camera.h"
+#include "Camera.h"
+#include "Camera.h"
+#include "Camera.h"
+#include "Camera.h"
+#include "Camera.h"
+
 namespace Pelican
 {
 	class Camera;
@@ -22,7 +31,7 @@ namespace Pelican
 		void CreateBuffers();
 		void CreateDescriptorSet(const VkDescriptorPool& pool);
 
-		void Update(Camera* pCamera);
+		void Update(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj);
 		void Draw() const;
 
 	private:

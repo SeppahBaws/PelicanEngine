@@ -356,14 +356,12 @@ namespace Pelican
 		m_pTexture = new VulkanTexture(path);
 	}
 
-	void Mesh::Update(Camera* pCamera)
+	void Mesh::Update(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj)
 	{
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
-			glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f));
-		ubo.view = pCamera->GetView();
-		ubo.proj = pCamera->GetProjection();
-		ubo.proj[1][1] *= -1;
+		ubo.model = model;
+		ubo.view = view;
+		ubo.proj = proj;
 
 		void* data;
 		vkMapMemory(VulkanRenderer::GetDevice(), m_UniformBufferMemory, 0, sizeof(ubo), 0, &data);
