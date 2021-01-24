@@ -109,10 +109,7 @@ namespace Pelican
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = 0.0f;
 
-		if (vkCreateSampler(VulkanRenderer::GetDevice(), &samplerInfo, nullptr, &m_ImageSampler) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create texture sampler!");
-		}
+		VK_CHECK(vkCreateSampler(VulkanRenderer::GetDevice(), &samplerInfo, nullptr, &m_ImageSampler));
 	}
 
 	void VulkanTexture::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
@@ -133,10 +130,7 @@ namespace Pelican
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.flags = 0;
 
-		if (vkCreateImage(VulkanRenderer::GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create image!");
-		}
+		VK_CHECK(vkCreateImage(VulkanRenderer::GetDevice(), &imageInfo, nullptr, &image));
 
 		VkMemoryRequirements memRequirements;
 		vkGetImageMemoryRequirements(VulkanRenderer::GetDevice(), image, &memRequirements);
@@ -145,10 +139,7 @@ namespace Pelican
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = VulkanHelpers::FindMemoryType(memRequirements.memoryTypeBits, properties);
 
-		if (vkAllocateMemory(VulkanRenderer::GetDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to allocate image memory!");
-		}
+		VK_CHECK(vkAllocateMemory(VulkanRenderer::GetDevice(), &allocInfo, nullptr, &imageMemory));
 
 		vkBindImageMemory(VulkanRenderer::GetDevice(), image, imageMemory, 0);
 	}
@@ -166,10 +157,7 @@ namespace Pelican
 		viewInfo.subresourceRange.layerCount = 1;
 
 		VkImageView imageView;
-		if (vkCreateImageView(VulkanRenderer::GetDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create texture image view!");
-		}
+		VK_CHECK(vkCreateImageView(VulkanRenderer::GetDevice(), &viewInfo, nullptr, &imageView));
 
 		return imageView;
 	}

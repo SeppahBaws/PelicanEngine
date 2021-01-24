@@ -64,6 +64,7 @@ namespace Pelican
 				if (ImGui::Begin("Frame timings", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove))
 				{
 					ImGui::Text("Frame time: %fms", Time::GetDeltaTime() * 1000.0f);
+					ImGui::Text("Fps: %.0f", 1.0f / Time::GetDeltaTime());
 					glm::vec2 pos = Input::GetMousePos();
 					ImGui::Text("Mouse position: (%.0f, %.0f)", pos.x, pos.y);
 				}

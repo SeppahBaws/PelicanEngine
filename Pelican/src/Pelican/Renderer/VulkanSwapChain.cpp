@@ -45,10 +45,7 @@ namespace Pelican
 			framebufferInfo.height = m_SwapChainExtent.height;
 			framebufferInfo.layers = 1;
 
-			if (vkCreateFramebuffer(m_pDevice->GetDevice(), &framebufferInfo, nullptr, &m_Framebuffers[i]) != VK_SUCCESS)
-			{
-				ASSERT_MSG(false, "failed to create framebuffer!");
-			}
+			VK_CHECK(vkCreateFramebuffer(m_pDevice->GetDevice(), &framebufferInfo, nullptr, &m_Framebuffers[i]));
 		}
 	}
 
@@ -165,10 +162,7 @@ namespace Pelican
 		createInfo.clipped = VK_TRUE;
 		createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-		if (vkCreateSwapchainKHR(m_pDevice->GetDevice(), &createInfo, nullptr, &m_SwapChain) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create swap chain!");
-		}
+		VK_CHECK(vkCreateSwapchainKHR(m_pDevice->GetDevice(), &createInfo, nullptr, &m_SwapChain));
 
 		vkGetSwapchainImagesKHR(m_pDevice->GetDevice(), m_SwapChain, &imageCount, nullptr);
 		m_SwapChainImages.resize(imageCount);
@@ -197,10 +191,7 @@ namespace Pelican
 		viewInfo.subresourceRange.layerCount = 1;
 
 		VkImageView imageView;
-		if (vkCreateImageView(m_pDevice->GetDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create texture image view!");
-		}
+		VK_CHECK(vkCreateImageView(m_pDevice->GetDevice(), &viewInfo, nullptr, &imageView));
 
 		return imageView;
 	}

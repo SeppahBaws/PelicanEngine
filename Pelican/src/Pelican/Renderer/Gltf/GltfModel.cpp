@@ -3,6 +3,7 @@
 
 #include "Pelican/Renderer/Camera.h"
 #include "Pelican/Renderer/Mesh.h"
+#include "Pelican/Renderer/VulkanHelpers.h"
 #include "Pelican/Renderer/VulkanTexture.h"
 #include "Pelican/Renderer/VulkanRenderer.h"
 
@@ -215,10 +216,7 @@ namespace Pelican
 		createInfo.pPoolSizes = &poolSize;
 		createInfo.maxSets = static_cast<uint32_t>(m_Meshes.size());
 
-		if (vkCreateDescriptorPool(VulkanRenderer::GetDevice(), &createInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "Failed to create descriptor pool!");
-		}
+		VK_CHECK(vkCreateDescriptorPool(VulkanRenderer::GetDevice(), &createInfo, nullptr, &m_DescriptorPool));
 
 		for (size_t i = 0; i < m_Meshes.size(); i++)
 		{

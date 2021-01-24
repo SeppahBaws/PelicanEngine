@@ -73,10 +73,7 @@ namespace Pelican
 
 	void VulkanDevice::CreateSurface()
 	{
-		if (glfwCreateWindowSurface(m_VulkanInstance, Application::Get().GetWindow()->GetGLFWWindow(), nullptr, &m_Surface) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create window surface");
-		}
+		VK_CHECK(glfwCreateWindowSurface(m_VulkanInstance, Application::Get().GetWindow()->GetGLFWWindow(), nullptr, &m_Surface));
 	}
 
 	void VulkanDevice::PickPhysicalDevice()
@@ -126,10 +123,7 @@ namespace Pelican
 
 		VkDeviceCreateInfo createInfo = VkInit::DeviceCreateInfo(queueCreateInfos, &deviceFeatures, g_DeviceExtensions);
 
-		if (vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create logical device!");
-		}
+		VK_CHECK(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device));
 
 		vkGetDeviceQueue(m_Device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
 		vkGetDeviceQueue(m_Device, indices.presentFamily.value(), 0, &m_PresentQueue);

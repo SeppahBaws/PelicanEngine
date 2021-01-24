@@ -49,7 +49,7 @@ namespace Pelican
 		poolInfo.poolSizeCount = static_cast<uint32_t>(std::size(poolSizes));
 		poolInfo.pPoolSizes = poolSizes;
 
-		VkCheckResult(vkCreateDescriptorPool(initInfo.device, &poolInfo, nullptr, &m_Pool));
+		VK_CHECK(vkCreateDescriptorPool(initInfo.device, &poolInfo, nullptr, &m_Pool));
 
 		// Initialize ImGui
 

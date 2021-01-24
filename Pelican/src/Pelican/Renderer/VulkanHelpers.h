@@ -17,16 +17,32 @@ namespace Pelican
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
-#pragma warning(push, 0)
-	static void VkCheckResult(VkResult err)
-	{
-		if (err == 0)
-			return;
-		std::cerr << "[vulkan] Error: VkResult = " << err << std::endl;
-		if (err < 0)
-			abort();
-	}
-#pragma warning(pop)
+#define LOGE(...) fprintf(stderr, "ERROR: " __VA_ARGS__)
+#define LOGI(...) fprintf(stderr, "INFO: " __VA_ARGS__)
+
+	/// @brief Helper macro to test the result of Vulkan calls which can return an
+	/// error.
+#define VK_CHECK(x)                                                                     \
+	do                                                                                  \
+	{                                                                                   \
+		VkResult err = x;                                                               \
+		if (err)                                                                        \
+		{                                                                               \
+			LOGE("Detected Vulkan error %d at %s:%d.\n", int(err), __FILE__, __LINE__); \
+			abort();                                                                    \
+		}                                                                               \
+	} while (0)
+
+#define ASSERT_VK_HANDLE(handle)                                    \
+	do                                                              \
+	{                                                               \
+		if ((handle) == VK_NULL_HANDLE)                             \
+		{                                                           \
+			LOGE("Handle is NULL at %s:%d.\n", __FILE__, __LINE__); \
+			abort();                                                \
+		}                                                           \
+	} while (0)
+
 
 	class VulkanHelpers
 	{

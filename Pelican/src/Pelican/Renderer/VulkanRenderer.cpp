@@ -166,10 +166,7 @@ namespace Pelican
 
 		vkResetFences(m_pDevice->GetDevice(), 1, &m_VkInFlightFences[m_CurrentFrame]);
 
-		if (vkQueueSubmit(m_pDevice->GetGraphicsQueue(), 1, &submitInfo, m_VkInFlightFences[m_CurrentFrame]) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to submit draw command buffer!");
-		}
+		VK_CHECK(vkQueueSubmit(m_pDevice->GetGraphicsQueue(), 1, &submitInfo, m_VkInFlightFences[m_CurrentFrame]));
 
 		// Present the image to the window
 		VkPresentInfoKHR presentInfo = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
@@ -238,10 +235,7 @@ namespace Pelican
 			createInfo.pNext = nullptr;
 		}
 
-		if (vkCreateInstance(&createInfo, nullptr, &m_VkInstance) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create instance!");
-		}
+		VK_CHECK(vkCreateInstance(&createInfo, nullptr, &m_VkInstance));
 	}
 
 	bool VulkanRenderer::CheckValidationLayerSupport()
@@ -311,10 +305,7 @@ namespace Pelican
 	
 		VkDebugUtilsMessengerCreateInfoEXT createInfo = VkInit::DebugUtilsMessengerCreateInfo(DebugCallback);
 	
-		if (VulkanProxy::CreateDebugUtilsMessenger(m_VkInstance, &createInfo, nullptr, &m_VkDebugMessenger) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to set up debug messenger!");
-		}
+		VK_CHECK(VulkanProxy::CreateDebugUtilsMessenger(m_VkInstance, &createInfo, nullptr, &m_VkDebugMessenger));
 	}
 
 	void VulkanRenderer::CreateRenderPass()
@@ -370,10 +361,7 @@ namespace Pelican
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		if (vkCreateRenderPass(m_pDevice->GetDevice(), &renderPassInfo, nullptr, &m_VkRenderPass) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create render pass!");
-		}
+		VK_CHECK(vkCreateRenderPass(m_pDevice->GetDevice(), &renderPassInfo, nullptr, &m_VkRenderPass));
 	}
 
 	void VulkanRenderer::CreateDescriptorSetLayout()
@@ -398,10 +386,7 @@ namespace Pelican
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 		layoutInfo.pBindings = bindings.data();
 
-		if (vkCreateDescriptorSetLayout(m_pDevice->GetDevice(), &layoutInfo, nullptr, &m_VkDescriptorSetLayout) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create descriptor set layout");
-		}
+		VK_CHECK(vkCreateDescriptorSetLayout(m_pDevice->GetDevice(), &layoutInfo, nullptr, &m_VkDescriptorSetLayout));
 	}
 
 	void VulkanRenderer::CreateGraphicsPipeline()
@@ -454,10 +439,7 @@ namespace Pelican
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &m_VkDescriptorSetLayout;
 
-		if (vkCreatePipelineLayout(m_pDevice->GetDevice(), &pipelineLayoutInfo, nullptr, &m_VkPipelineLayout) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create pipeline layout!");
-		}
+		VK_CHECK(vkCreatePipelineLayout(m_pDevice->GetDevice(), &pipelineLayoutInfo, nullptr, &m_VkPipelineLayout));
 
 		VkGraphicsPipelineCreateInfo pipelineInfo = { VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
 		std::vector<VkPipelineShaderStageCreateInfo> stages = pShader->GetShaderStages();
@@ -480,10 +462,7 @@ namespace Pelican
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
 
-		if (vkCreateGraphicsPipelines(m_pDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_VkGraphicsPipeline) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create graphics pipeline!");
-		}
+		VK_CHECK(vkCreateGraphicsPipelines(m_pDevice->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_VkGraphicsPipeline));
 
 		delete pShader;
 		pShader = nullptr;
@@ -496,10 +475,7 @@ namespace Pelican
 		VkCommandPoolCreateInfo poolInfo = VkInit::CommandPoolCreateInfo(queueFamilyIndices.graphicsFamily.value(),
 			VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-		if (vkCreateCommandPool(m_pDevice->GetDevice(), &poolInfo, nullptr, &m_VkCommandPool) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create command pool!");
-		}
+		VK_CHECK(vkCreateCommandPool(m_pDevice->GetDevice(), &poolInfo, nullptr, &m_VkCommandPool));
 	}
 
 	void VulkanRenderer::CreateDepthResources()
@@ -543,10 +519,7 @@ namespace Pelican
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(m_pSwapChain->GetImages().size());
 
-		if (vkCreateDescriptorPool(m_pDevice->GetDevice(), &poolInfo, nullptr, &m_VkDescriptorPool) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create descriptor pool!");
-		}
+		VK_CHECK(vkCreateDescriptorPool(m_pDevice->GetDevice(), &poolInfo, nullptr, &m_VkDescriptorPool));
 	}
 
 	void VulkanRenderer::CreateCommandBuffers()
@@ -556,10 +529,7 @@ namespace Pelican
 		VkCommandBufferAllocateInfo allocInfo = VkInit::CommandBufferAllocateInfo(m_VkCommandPool);
 		allocInfo.commandBufferCount = static_cast<uint32_t>(m_VkCommandBuffers.size());
 
-		if (vkAllocateCommandBuffers(m_pDevice->GetDevice(), &allocInfo, m_VkCommandBuffers.data()) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to allocate command buffers!");
-		}
+		VK_CHECK(vkAllocateCommandBuffers(m_pDevice->GetDevice(), &allocInfo, m_VkCommandBuffers.data()));
 	}
 
 	void VulkanRenderer::CreateSyncObjects()
@@ -574,12 +544,9 @@ namespace Pelican
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			if (vkCreateSemaphore(m_pDevice->GetDevice(), &semaphoreInfo, nullptr, &m_VkImageAvailableSemaphores[i]) != VK_SUCCESS ||
-				vkCreateSemaphore(m_pDevice->GetDevice(), &semaphoreInfo, nullptr, &m_VkRenderFinishedSemaphores[i]) != VK_SUCCESS ||
-				vkCreateFence(m_pDevice->GetDevice(), &fenceInfo, nullptr, &m_VkInFlightFences[i]) != VK_SUCCESS)
-			{
-				ASSERT_MSG(false, "failed to create synchronization objects for a frame!");
-			}
+			VK_CHECK(vkCreateSemaphore(m_pDevice->GetDevice(), &semaphoreInfo, nullptr, &m_VkImageAvailableSemaphores[i]));
+			VK_CHECK(vkCreateSemaphore(m_pDevice->GetDevice(), &semaphoreInfo, nullptr, &m_VkRenderFinishedSemaphores[i]));
+			VK_CHECK(vkCreateFence(m_pDevice->GetDevice(), &fenceInfo, nullptr, &m_VkInFlightFences[i]));
 		}
 	}
 
@@ -662,10 +629,7 @@ namespace Pelican
 		imageInfo.tiling = tiling;
 		imageInfo.usage = usage;
 		
-		if (vkCreateImage(m_pDevice->GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create image!");
-		}
+		VK_CHECK(vkCreateImage(m_pDevice->GetDevice(), &imageInfo, nullptr, &image));
 		
 		VkMemoryRequirements memRequirements;
 		vkGetImageMemoryRequirements(m_pDevice->GetDevice(), image, &memRequirements);
@@ -674,10 +638,7 @@ namespace Pelican
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = VulkanHelpers::FindMemoryType(memRequirements.memoryTypeBits, properties);
 		
-		if (vkAllocateMemory(m_pDevice->GetDevice(), &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to allocate image memory!");
-		}
+		VK_CHECK(vkAllocateMemory(m_pDevice->GetDevice(), &allocInfo, nullptr, &imageMemory));
 		
 		vkBindImageMemory(m_pDevice->GetDevice(), image, imageMemory, 0);
 	}
@@ -780,10 +741,7 @@ namespace Pelican
 		viewInfo.subresourceRange.layerCount = 1;
 	
 		VkImageView imageView;
-		if (vkCreateImageView(m_pDevice->GetDevice(), &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create texture image view!");
-		}
+		VK_CHECK(vkCreateImageView(m_pDevice->GetDevice(), &viewInfo, nullptr, &imageView));
 	
 		return imageView;
 	}
@@ -828,10 +786,7 @@ namespace Pelican
 	{
 		VkCommandBufferBeginInfo beginInfo = VkInit::CommandBufferBeginInfo();
 
-		if (vkBeginCommandBuffer(m_VkCommandBuffers[m_CurrentBuffer], &beginInfo) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to begin recording command buffer!");
-		}
+		VK_CHECK(vkBeginCommandBuffer(m_VkCommandBuffers[m_CurrentBuffer], &beginInfo));
 
 		VkRenderPassBeginInfo renderPassInfo = VkInit::RenderPassBeginInfo();
 		renderPassInfo.renderPass = m_VkRenderPass;
@@ -854,10 +809,7 @@ namespace Pelican
 	{
 		vkCmdEndRenderPass(m_VkCommandBuffers[m_CurrentBuffer]);
 
-		if (vkEndCommandBuffer(m_VkCommandBuffers[m_CurrentBuffer]) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to record command buffer!");
-		}
+		VK_CHECK(vkEndCommandBuffer(m_VkCommandBuffers[m_CurrentBuffer]));
 	}
 
 	VkBool32 VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT,

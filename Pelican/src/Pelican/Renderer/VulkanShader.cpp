@@ -3,6 +3,7 @@
 
 #include <fstream>
 
+#include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 
 namespace Pelican
@@ -69,10 +70,7 @@ namespace Pelican
 		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
 		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(VulkanRenderer::GetDevice(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create shader module!");
-		}
+		VK_CHECK(vkCreateShaderModule(VulkanRenderer::GetDevice(), &createInfo, nullptr, &shaderModule));
 
 		return shaderModule;
 	}

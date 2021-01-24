@@ -62,10 +62,7 @@ namespace Pelican
 		bufferInfo.usage = usage;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		if (vkCreateBuffer(VulkanRenderer::GetDevice(), &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to create buffer!");
-		}
+		VK_CHECK(vkCreateBuffer(VulkanRenderer::GetDevice(), &bufferInfo, nullptr, &buffer));
 
 		VkMemoryRequirements memRequirements;
 		vkGetBufferMemoryRequirements(VulkanRenderer::GetDevice(), buffer, &memRequirements);
@@ -74,10 +71,7 @@ namespace Pelican
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
 
-		if (vkAllocateMemory(VulkanRenderer::GetDevice(), &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
-		{
-			ASSERT_MSG(false, "failed to allocate vertex buffer memory!");
-		}
+		VK_CHECK(vkAllocateMemory(VulkanRenderer::GetDevice(), &allocInfo, nullptr, &bufferMemory));
 
 		vkBindBufferMemory(VulkanRenderer::GetDevice(), buffer, bufferMemory, 0);
 	}
