@@ -1,15 +1,14 @@
 ﻿#include "PelicanPCH.h"
 #include "VulkanHelpers.h"
 
+#include "VkInit.h"
 #include "VulkanRenderer.h"
 
 namespace Pelican
 {
 	VkCommandBuffer VulkanHelpers::BeginSingleTimeCommands()
 	{
-		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = VulkanRenderer::GetCommandPool();
+		VkCommandBufferAllocateInfo allocInfo = VkInit::CommandBufferAllocateInfo(VulkanRenderer::GetCommandPool());
 		allocInfo.commandBufferCount = 1;
 
 		VkCommandBuffer commandBuffer;

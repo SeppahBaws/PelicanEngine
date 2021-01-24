@@ -1,7 +1,7 @@
 ﻿#include "PelicanPCH.h"
 #include "VulkanSwapChain.h"
 
-
+#include "VkInit.h"
 #include "VulkanDevice.h"
 #include "VulkanHelpers.h"
 #include "Pelican/Application.h"
@@ -134,7 +134,7 @@ namespace Pelican
 			imageCount = swapChainSupport.capabilities.maxImageCount;
 		}
 
-		VkSwapchainCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
+		VkSwapchainCreateInfoKHR createInfo = VkInit::SwapchainCreateInfo();
 		createInfo.surface = m_pDevice->GetSurface();
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
@@ -189,10 +189,7 @@ namespace Pelican
 
 	VkImageView VulkanSwapChain::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 	{
-		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewInfo.image = image;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = format;
+		VkImageViewCreateInfo viewInfo = VkInit::ImageViewCreateInfo(image, VK_IMAGE_VIEW_TYPE_2D, format);
 		viewInfo.subresourceRange.aspectMask = aspectFlags;
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = 1;

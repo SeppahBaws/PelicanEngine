@@ -50,7 +50,6 @@ namespace Pelican
 		void PrintExtensions();
 
 		void SetupDebugMessenger();
-		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
 		void CreateRenderPass();
 

@@ -20,6 +20,7 @@
 
 #include "Pelican/Application.h"
 
+#include "VkInit.h"
 #include "VulkanProxy.h"
 #include "UniformBufferObject.h"
 #include "Camera.h"
@@ -208,31 +209,27 @@ namespace Pelican
 			ASSERT_MSG(false, "validation layers requested, but not available!");
 		}
 
-		VkApplicationInfo appInfo = { VK_STRUCTURE_TYPE_APPLICATION_INFO };
+		VkApplicationInfo appInfo = VkInit::ApplicationInfo();
 		appInfo.pApplicationName = "Pelican Game";
 		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 		appInfo.pEngineName = "Pelican Engine";
 		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 		appInfo.apiVersion = VK_API_VERSION_1_2;
 
-		VkInstanceCreateInfo createInfo = { VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
-		createInfo.pApplicationInfo = &appInfo;
-
 		// Extensions
-		std::vector<const char*> extensions = GetRequiredExtensions();
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-		createInfo.ppEnabledExtensionNames = extensions.data();
+		const std::vector<const char*> extensions = GetRequiredExtensions();
+		VkInstanceCreateInfo createInfo = VkInit::InstanceCreateInfo(&appInfo, extensions);
 
 		PrintExtensions();
 
 		// Layers
-		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
+		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 		if (m_EnableValidationLayers)
 		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
 			createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
 
-			PopulateDebugMessengerCreateInfo(debugCreateInfo);
+			debugCreateInfo = VkInit::DebugUtilsMessengerCreateInfo(DebugCallback);
 			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 		}
 		else
@@ -312,23 +309,12 @@ namespace Pelican
 		if (!m_EnableValidationLayers)
 			return;
 	
-		VkDebugUtilsMessengerCreateInfoEXT createInfo{};
-		PopulateDebugMessengerCreateInfo(createInfo);
+		VkDebugUtilsMessengerCreateInfoEXT createInfo = VkInit::DebugUtilsMessengerCreateInfo(DebugCallback);
 	
 		if (VulkanProxy::CreateDebugUtilsMessenger(m_VkInstance, &createInfo, nullptr, &m_VkDebugMessenger) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to set up debug messenger!");
 		}
-	}
-
-	void VulkanRenderer::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
-	{
-		createInfo = { VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
-		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-			| VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-		createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-			| VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-		createInfo.pfnUserCallback = DebugCallback;
 	}
 
 	void VulkanRenderer::CreateRenderPass()
@@ -376,7 +362,7 @@ namespace Pelican
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 		std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
-		VkRenderPassCreateInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+		VkRenderPassCreateInfo renderPassInfo = VkInit::RenderPassCreateInfo();
 		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		renderPassInfo.pAttachments = attachments.data();
 		renderPassInfo.subpassCount = 1;
@@ -408,7 +394,7 @@ namespace Pelican
 
 		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
 
-		VkDescriptorSetLayoutCreateInfo layoutInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+		VkDescriptorSetLayoutCreateInfo layoutInfo = VkInit::DescriptorSetLayoutCreateInfo();
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 		layoutInfo.pBindings = bindings.data();
 
@@ -425,15 +411,14 @@ namespace Pelican
 		auto bindingDescription = Vertex::GetBindingDescription();
 		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
 
-		VkPipelineVertexInputStateCreateInfo vertexInputInfo = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
+		VkPipelineVertexInputStateCreateInfo vertexInputInfo = VkInit::VertexInputStateCreateInfo();
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
 		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
 		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
 		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-		VkPipelineInputAssemblyStateCreateInfo inputAssembly = { VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		inputAssembly.primitiveRestartEnable = VK_FALSE;
+		VkPipelineInputAssemblyStateCreateInfo inputAssembly = VkInit::InputAssemblyStateCreateInfo(
+			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
@@ -453,50 +438,11 @@ namespace Pelican
 		viewportState.scissorCount = 1;
 		viewportState.pScissors = &scissor;
 
-		VkPipelineRasterizationStateCreateInfo rasterizer = { VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-		rasterizer.depthClampEnable = VK_FALSE;
-		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizer.lineWidth = 1.0f;
-		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-		rasterizer.depthBiasEnable = VK_FALSE;
-		rasterizer.depthBiasConstantFactor = 0.0f;
-		rasterizer.depthBiasClamp = 0.0f;
-		rasterizer.depthBiasSlopeFactor = 0.0f;
-
-		VkPipelineMultisampleStateCreateInfo multisampling = { VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
-		multisampling.sampleShadingEnable = VK_FALSE;
-		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-		multisampling.minSampleShading = 1.0f;
-		multisampling.pSampleMask = nullptr;
-		multisampling.alphaToCoverageEnable = VK_FALSE;
-		multisampling.alphaToOneEnable = VK_FALSE;
-
-		VkPipelineDepthStencilStateCreateInfo depthStencil = { VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-		depthStencil.depthTestEnable = VK_TRUE;
-		depthStencil.depthWriteEnable = VK_TRUE;
-		depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-		depthStencil.depthBoundsTestEnable = VK_FALSE;
-		depthStencil.minDepthBounds = 0.0f;
-		depthStencil.maxDepthBounds = 1.0f;
-		depthStencil.stencilTestEnable = VK_FALSE;
-		depthStencil.front = {};
-		depthStencil.back = {};
-
-		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachment.blendEnable = VK_FALSE;
-		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-		VkPipelineColorBlendStateCreateInfo colorBlending = { VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
-		colorBlending.logicOpEnable = VK_FALSE;
-		colorBlending.logicOp = VK_LOGIC_OP_COPY;
+		VkPipelineRasterizationStateCreateInfo rasterizer = VkInit::RasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT);
+		VkPipelineMultisampleStateCreateInfo multisampling = VkInit::MultisampleStateCreateInfo();
+		VkPipelineDepthStencilStateCreateInfo depthStencil = VkInit::DepthStencilCreateInfo(true, true, VK_COMPARE_OP_LESS);
+		VkPipelineColorBlendAttachmentState colorBlendAttachment = VkInit::ColorBlendAttachmentState();
+		VkPipelineColorBlendStateCreateInfo colorBlending = VkInit::ColorBlendState();
 		colorBlending.attachmentCount = 1;
 		colorBlending.pAttachments = &colorBlendAttachment;
 		colorBlending.blendConstants[0] = 0.0f;
@@ -504,11 +450,9 @@ namespace Pelican
 		colorBlending.blendConstants[2] = 0.0f;
 		colorBlending.blendConstants[3] = 0.0f;
 
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo = { VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkInit::PipelineLayoutCreateInfo();
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &m_VkDescriptorSetLayout;
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
-		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
 		if (vkCreatePipelineLayout(m_pDevice->GetDevice(), &pipelineLayoutInfo, nullptr, &m_VkPipelineLayout) != VK_SUCCESS)
 		{
@@ -549,9 +493,8 @@ namespace Pelican
 	{
 		QueueFamilyIndices queueFamilyIndices = m_pDevice->FindQueueFamilies();
 
-		VkCommandPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
-		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		VkCommandPoolCreateInfo poolInfo = VkInit::CommandPoolCreateInfo(queueFamilyIndices.graphicsFamily.value(),
+			VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
 		if (vkCreateCommandPool(m_pDevice->GetDevice(), &poolInfo, nullptr, &m_VkCommandPool) != VK_SUCCESS)
 		{
@@ -610,9 +553,7 @@ namespace Pelican
 	{
 		m_VkCommandBuffers.resize(m_pSwapChain->GetFramebuffers().size());
 
-		VkCommandBufferAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
-		allocInfo.commandPool = m_VkCommandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		VkCommandBufferAllocateInfo allocInfo = VkInit::CommandBufferAllocateInfo(m_VkCommandPool);
 		allocInfo.commandBufferCount = static_cast<uint32_t>(m_VkCommandBuffers.size());
 
 		if (vkAllocateCommandBuffers(m_pDevice->GetDevice(), &allocInfo, m_VkCommandBuffers.data()) != VK_SUCCESS)
@@ -628,10 +569,8 @@ namespace Pelican
 		m_VkInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 		m_VkImagesInFlight.resize(m_pSwapChain->GetImages().size(), VK_NULL_HANDLE);
 
-		VkSemaphoreCreateInfo semaphoreInfo = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-
-		VkFenceCreateInfo fenceInfo = { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+		VkSemaphoreCreateInfo semaphoreInfo = VkInit::SemaphoreCreateInfo();
+		VkFenceCreateInfo fenceInfo = VkInit::FenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
@@ -715,20 +654,13 @@ namespace Pelican
 	void VulkanRenderer::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
 		VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 	{
-		VkImageCreateInfo imageInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		VkImageCreateInfo imageInfo = VkInit::ImageCreateInfo(VK_IMAGE_TYPE_2D);
 		imageInfo.extent.width = width;
 		imageInfo.extent.height = height;
 		imageInfo.extent.depth = 1;
-		imageInfo.mipLevels = 1;
-		imageInfo.arrayLayers = 1;
 		imageInfo.format = format;
 		imageInfo.tiling = tiling;
-		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageInfo.usage = usage;
-		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageInfo.flags = 0;
 		
 		if (vkCreateImage(m_pDevice->GetDevice(), &imageInfo, nullptr, &image) != VK_SUCCESS)
 		{
@@ -755,17 +687,10 @@ namespace Pelican
 	{
 		VkCommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
 		
-		VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+		VkImageMemoryBarrier barrier = VkInit::ImageMemoryBarrier();
 		barrier.oldLayout = oldLayout;
 		barrier.newLayout = newLayout;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.image = image;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
 		
 		VkPipelineStageFlags sourceStage{};
 		VkPipelineStageFlags destinationStage{};
@@ -847,10 +772,7 @@ namespace Pelican
 	
 	VkImageView VulkanRenderer::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
 	{
-		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-		viewInfo.image = image;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = format;
+		VkImageViewCreateInfo viewInfo = VkInit::ImageViewCreateInfo(image, VK_IMAGE_VIEW_TYPE_2D, format);
 		viewInfo.subresourceRange.aspectMask = aspectFlags;
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = 1;
@@ -904,16 +826,14 @@ namespace Pelican
 
 	void VulkanRenderer::BeginCommandBuffers()
 	{
-		VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-		beginInfo.flags = 0;
-		beginInfo.pInheritanceInfo = nullptr;
+		VkCommandBufferBeginInfo beginInfo = VkInit::CommandBufferBeginInfo();
 
 		if (vkBeginCommandBuffer(m_VkCommandBuffers[m_CurrentBuffer], &beginInfo) != VK_SUCCESS)
 		{
 			ASSERT_MSG(false, "failed to begin recording command buffer!");
 		}
 
-		VkRenderPassBeginInfo renderPassInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+		VkRenderPassBeginInfo renderPassInfo = VkInit::RenderPassBeginInfo();
 		renderPassInfo.renderPass = m_VkRenderPass;
 		renderPassInfo.framebuffer = m_pSwapChain->GetFramebuffers()[m_CurrentBuffer];
 		renderPassInfo.renderArea.offset = { 0, 0 };
