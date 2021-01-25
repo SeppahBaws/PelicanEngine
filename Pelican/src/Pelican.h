@@ -10,7 +10,7 @@
 // |                                                __/ |              |
 // |                                               |___/               |
 // +-------------------------------------------------------------------+
-// Copyright 2020 Seppe Dekeyser
+// Copyright 2020-2021 Seppe Dekeyser
 // Source code hosted at https://github.com/SeppahBaws/PelicanEngine
 
 #include "PelicanPCH.h"
@@ -18,3 +18,7 @@
 #include "Pelican/Entrypoint.h"
 
 #include "Pelican/Application.h"
+
+#include "Pelican/Scene/Component.h"
+#include "Pelican/Scene/Entity.h"
+#include "Pelican/Scene/Scene.h"

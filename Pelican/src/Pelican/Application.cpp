@@ -33,6 +33,8 @@ namespace Pelican
 	{
 		Init();
 
+		LoadScene(m_pScene);
+
 		auto t = std::chrono::high_resolution_clock::now();
 		auto lastTime = std::chrono::high_resolution_clock::now();
 		while (!m_pWindow->ShouldClose())

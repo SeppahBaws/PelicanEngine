@@ -21,7 +21,7 @@ namespace Pelican
 		void RemoveComponent()
 		{
 			ASSERT_MSG(HasComponent<T>(), "Entity does not have component!");
-			m_pScene->m_Registry.remove<T>();
+			m_pScene->m_Registry.remove<T>(m_Entity);
 		}
 
 		template<typename T>

@@ -12,13 +12,14 @@
 
 namespace Pelican
 {
-	struct Position
-	{
-		float x, y, z;
-	};
-
 	Scene::Scene()
 	{
+		m_pCamera = m_pCamera = new Camera(120.0f,
+			static_cast<float>(Application::Get().GetWindow()->GetParams().width),
+			static_cast<float>(Application::Get().GetWindow()->GetParams().height),
+			0.1f, 1000.0f);
+		Application::Get().GetRenderer().SetCamera(m_pCamera);
+
 		Initialize();
 	}
 
@@ -45,20 +46,6 @@ namespace Pelican
 
 	void Scene::Initialize()
 	{
-		// TEMP
-		m_pCamera = m_pCamera = new Camera(120.0f,
-			static_cast<float>(Application::Get().GetWindow()->GetParams().width),
-			static_cast<float>(Application::Get().GetWindow()->GetParams().height),
-			0.1f, 1000.0f);
-		Application::Get().GetRenderer().SetCamera(m_pCamera);
-
-		Entity light = CreateEntity("Light");
-		light.AddComponent<TransformComponent>(glm::vec3{ 0.0f, 5.0f, 0.0f }, glm::vec3{ glm::radians(-90.0f), 0.0f, 0.0f }, glm::vec3{ 0.1f });
-		light.AddComponent<ModelComponent>(new GltfModel("res/models/tactical_flashlight/scene.gltf"));
-
-		Entity car = CreateEntity("Car");
-		car.AddComponent<TransformComponent>(glm::vec3{ 0.0f, 0.0f, 0.0f }, glm::vec3{ glm::radians(-90.0f), 0.0f, 0.0f }, glm::vec3{ 0.01f });
-		car.AddComponent<ModelComponent>(new GltfModel("res/models/pony_cartoon/scene.gltf"));
 	}
 
 	void Scene::Update()
@@ -74,6 +61,11 @@ namespace Pelican
 			p[1][1] *= -1;
 
 			model.pModel->Update(m, v, p);
+		}
+
+		for (auto [entity, script] : m_Registry.view<ScriptComponent>().each())
+		{
+			script.OnUpdate();
 		}
 	}
 
@@ -101,6 +93,19 @@ namespace Pelican
 			}
 		}
 		ImGui::End();
+
+		for (auto [entity, tag, transform] : m_Registry.view<TagComponent, TransformComponent>().each())
+		{
+			if (ImGui::Begin(std::string("Entity debugger##" + tag.name).c_str()))
+			{
+				ImGui::Text("Debug for: %s", tag.name.c_str());
+				ImGui::Spacing();
+				ImGui::InputFloat3("position", reinterpret_cast<float*>(&transform.position));
+				ImGui::InputFloat3("rotation", reinterpret_cast<float*>(&transform.rotation));
+				ImGui::InputFloat3("scale", reinterpret_cast<float*>(&transform.scale));
+			}
+			ImGui::End();
+		}
 	}
 
 	void Scene::Cleanup()

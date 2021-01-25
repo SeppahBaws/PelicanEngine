@@ -135,7 +135,8 @@ project "Sandbox"
         "Pelican/src",
         "Pelican/vendor",
         "%{IncludeDir.Glm}",
-        "%{IncludeDir.Vulkan}"
+        "%{IncludeDir.Vulkan}",
+        "%{IncludeDir.entt}",
     }
 
     links
