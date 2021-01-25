@@ -17,15 +17,15 @@ workspace "PelicanEngine"
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 IncludeDir = {}
-IncludeDir["GLFW"] = "Pelican/dependencies/GLFW/include"
-IncludeDir["Glm"] = "Pelican/dependencies/glm"
-IncludeDir["Logtools"] = "Pelican/dependencies/logtools/logtools/src"
-IncludeDir["stb"] = "Pelican/dependencies/stb"
-IncludeDir["json_hpp"] = "Pelican/dependencies/json_hpp/include"
-IncludeDir["tiny_gltf"] = "Pelican/dependencies/tiny_gltf/include"
+IncludeDir["GLFW"] = "%{wks.location}/Pelican/dependencies/GLFW/include"
+IncludeDir["Glm"] = "%{wks.location}/Pelican/dependencies/glm"
+IncludeDir["Logtools"] = "%{wks.location}/Pelican/dependencies/logtools/logtools/src"
+IncludeDir["stb"] = "%{wks.location}/Pelican/dependencies/stb"
+IncludeDir["json_hpp"] = "%{wks.location}/Pelican/dependencies/json_hpp/include"
+IncludeDir["tiny_gltf"] = "%{wks.location}/Pelican/dependencies/tiny_gltf/include"
 IncludeDir["Vulkan"] = "%VULKAN_SDK%/Include"
-IncludeDir["ImGui"] = "Pelican/dependencies/imgui"
-IncludeDir["entt"] = "Pelican/dependencies/entt/include"
+IncludeDir["ImGui"] = "%{wks.location}/Pelican/dependencies/imgui"
+IncludeDir["entt"] = "%{wks.location}/Pelican/dependencies/entt/include"
 
 LibDir = {}
 LibDir["Vulkan"] = "%VULKAN_SDK%/Lib"
@@ -35,122 +35,9 @@ group "Dependencies"
     include "Pelican/dependencies/imgui"
 group ""
 
-project "Pelican"
-    location "Pelican"
-    kind "StaticLib"
-    language "C++"
-    cppdialect "C++17"
-    staticruntime "on"
-    warnings "extra"
+group "Engine"
+    include "Pelican"
+    include "PelicanEd"
+group ""
 
-    targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-    objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
-
-    pchheader "PelicanPCH.h"
-    pchsource "Pelican/src/PelicanPCH.cpp"
-
-    files
-    {
-        "%{prj.name}/src/**.h",
-        "%{prj.name}/src/**.cpp"
-    }
-
-    defines
-    {
-        "GLFW_INCLUDE_NONE"
-    }
-
-    includedirs
-    {
-        "%{prj.name}/src",
-        "%{IncludeDir.GLFW}",
-        "%{IncludeDir.Glm}",
-        "%{IncludeDir.Logtools}",
-        "%{IncludeDir.stb}",
-        "%{IncludeDir.json_hpp}",
-        "%{IncludeDir.tiny_gltf}",
-        "%{IncludeDir.Vulkan}",
-        "%{IncludeDir.ImGui}",
-        "%{IncludeDir.entt}",
-    }
-
-    libdirs
-    {
-        "%{LibDir.Vulkan}"
-    }
-
-    links
-    {
-        "GLFW",
-        "ImGui",
-        "vulkan-1"
-    }
-
-    filter "system:windows"
-        systemversion "latest"
-        system "Windows"
-
-        defines
-        {
-            "PLATFORM_WINDOWS"
-        }
-
-    filter "configurations:Debug"
-        runtime "Debug"
-        symbols "on"
-
-        defines
-        {
-            "PELICAN_DEBUG"
-        }
-
-    filter "configurations:Release"
-        runtime "Release"
-        optimize "on"
-
-        defines
-        {
-            "PELICAN_RELEASE"
-        }
-
-project "Sandbox"
-    location "Sandbox"
-    kind "ConsoleApp"
-    language "C++"
-    cppdialect "C++17"
-    staticruntime "on"
-    warnings "extra"
-
-    targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-    objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
-
-    files
-    {
-        "%{prj.name}/src/**.h",
-        "%{prj.name}/src/**.cpp"
-    }
-
-    includedirs
-    {
-        "Pelican/src",
-        "Pelican/vendor",
-        "%{IncludeDir.Glm}",
-        "%{IncludeDir.Vulkan}",
-        "%{IncludeDir.entt}",
-    }
-
-    links
-    {
-        "Pelican"
-    }
-
-    filter "system:windows"
-        systemversion "latest"
-
-    filter "configurations:Debug"
-        runtime "Debug"
-        symbols "on"
-
-    filter "configurations:Release"
-        runtime "Release"
-        optimize "on"
+include "Sandbox"

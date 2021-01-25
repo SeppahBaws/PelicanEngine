@@ -62,11 +62,6 @@ namespace Pelican
 
 			model.pModel->Update(m, v, p);
 		}
-
-		for (auto [entity, script] : m_Registry.view<ScriptComponent>().each())
-		{
-			script.OnUpdate();
-		}
 	}
 
 	void Scene::Draw()
