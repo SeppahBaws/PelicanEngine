@@ -8,18 +8,17 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <logtools.h>
+#include <imgui.h>
 
 namespace Pelican
 {
 	Camera::Camera(float fov, float width, float height, float zNear, float zFar)
-		// : m_Position(2.0f, 2.0f, 2.0f)
-		// , m_Forward(-2.0f, -2.0f, -2.0f)
 		: m_Position(0.0f, 0.0f, 0.0f)
 		, m_Forward(0.0f, 0.0f, 1.0f)
 		, m_Yaw(0.0f)
 		, m_Pitch(0.0f)
 	{
-		m_Projection = glm::perspective(glm::radians(fov / 2), width / height, zNear, zFar);
+		UpdateProjection(fov, width, height, zNear, zFar);
 	}
 
 	void Camera::Update()
@@ -30,12 +29,12 @@ namespace Pelican
 			movement.x -= 1;
 		if (Input::GetKey(KeyCode::D))
 			movement.x += 1;
-		
+
 		if (Input::GetKey(KeyCode::W))
 			movement.y += 1;
 		if (Input::GetKey(KeyCode::S))
 			movement.y -= 1;
-		
+
 		if (Input::GetKey(KeyCode::Q))
 			movement.z -= 1;
 		if (Input::GetKey(KeyCode::E))
@@ -97,6 +96,22 @@ namespace Pelican
 	glm::mat4 Camera::GetProjection() const
 	{
 		return m_Projection;
+	}
+
+	void Camera::UpdateProjection(float fov, float width, float height, float zNear, float zFar)
+	{
+		if (fov != 0.0f)
+			m_Fov = fov;
+		if (width != 0.0f)
+			m_Width = width;
+		if (height != 0.0f)
+			m_Height = height;
+		if (zNear != 0.0f)
+			m_ZNear = zNear;
+		if (zFar != 0.0f)
+			m_ZFar = zFar;
+
+		m_Projection = glm::perspective(glm::radians(m_Fov / 2), m_Width / m_Height, m_ZNear, m_ZFar);
 	}
 
 	void Camera::UpdateViewMatrix()

@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Pelican/Events/Event.h"
 
 struct GLFWwindow;
 
@@ -7,6 +8,8 @@ namespace Pelican
 	class Window final
 	{
 	public:
+		using EventCallbackFn = std::function<void(Event&)>;
+
 		struct Params
 		{
 			int width;
@@ -21,6 +24,8 @@ namespace Pelican
 		void Init();
 		void Cleanup();
 
+		void SetEventCallback(const EventCallbackFn& callback) { m_EventCallback = callback; }
+
 		void Update();
 
 		[[nodiscard]] bool ShouldClose() const;
@@ -32,5 +37,7 @@ namespace Pelican
 	private:
 		GLFWwindow* m_pGLFWwindow;
 		Params m_Params;
+
+		EventCallbackFn m_EventCallback;
 	};
 }

@@ -575,15 +575,17 @@ namespace Pelican
 
 	void VulkanRenderer::RecreateSwapChain()
 	{
-		int width = 0, height = 0;
-		glfwGetFramebufferSize(Application::Get().GetWindow()->GetGLFWWindow(), &width, &height);
-		while (width == 0 || height == 0)
+		Window::Params params = Application::Get().GetWindow()->GetParams();
+		while (params.width == 0 || params.height == 0)
 		{
-			glfwGetFramebufferSize(Application::Get().GetWindow()->GetGLFWWindow(), &width, &height);
+			params = Application::Get().GetWindow()->GetParams();
 			glfwWaitEvents();
 		}
 
-		std::cout << "framebuffer resized, recreating swap chain!" << std::endl;
+		// Passing 0 to not change those parameters
+		m_pCamera->UpdateProjection(0, static_cast<float>(params.width), static_cast<float>(params.height), 0, 0);
+
+		Logger::LogTrace("Framebuffer resized, recreating swap chain!");
 
 		vkDeviceWaitIdle(m_pDevice->GetDevice());
 

@@ -15,6 +15,9 @@
 
 #include <imgui.h>
 
+#include "Pelican/Events/ApplicationEvent.h"
+#include "Pelican/Events/MouseEvent.h"
+
 namespace Pelican
 {
 	Application* Application::m_Instance = nullptr;
@@ -27,6 +30,33 @@ namespace Pelican
 		}
 
 		m_Instance = this;
+	}
+
+	void Application::OnEvent(Event& e)
+	{
+		EventDispatcher dispatcher(e);
+		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(Application::OnWindowClose));
+		dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Application::OnWindowResize));
+
+		// TODO: dispatch events to layers.
+
+		if (e.IsInCategory(EventCategoryApplication))
+		{
+			const std::string s = e.ToString();
+			Logger::LogDebug(s);
+		}
+	}
+
+	bool Application::OnWindowClose(WindowCloseEvent& /*e*/)
+	{
+		return true;
+	}
+
+	bool Application::OnWindowResize(WindowResizeEvent& /*e*/)
+	{
+		m_pRenderer->FlagWindowResized();
+
+		return false;
 	}
 
 	void Application::Run()
@@ -100,6 +130,7 @@ namespace Pelican
 		// 	0.1f, 1000.0f);
 
 		m_pWindow->Init();
+		m_pWindow->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 		Input::Init(m_pWindow->GetGLFWWindow());
 		m_pRenderer->Initialize();
 

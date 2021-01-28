@@ -34,3 +34,7 @@ inline void ReportAssertionFailure(const char* expression, const char* msg, cons
 #define ASSERT(expr)
 #define ASSERT_MSG(expr, msg)
 #endif // ENABLE_ASSERTIONS
+
+#define BIT(x) (1 << x)
+
+#define BIND_EVENT_FN(fn) std::bind(&fn, this, std::placeholders::_1)

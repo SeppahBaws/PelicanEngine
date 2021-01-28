@@ -10,8 +10,11 @@ namespace Pelican
 
 		void Update();
 
-		glm::mat4 GetView();
-		glm::mat4 GetProjection() const;
+		[[nodiscard]] glm::mat4 GetView();
+		[[nodiscard]] glm::mat4 GetProjection() const;
+
+		// Pass 0 if you want to keep the original values
+		void UpdateProjection(float fov, float width, float height, float zNear, float zFar);
 
 	private:
 		void UpdateViewMatrix();
@@ -30,5 +33,11 @@ namespace Pelican
 
 		float m_Yaw;
 		float m_Pitch;
+
+		float m_Fov;
+		float m_Width;
+		float m_Height;
+		float m_ZNear;
+		float m_ZFar;
 	};
 }
