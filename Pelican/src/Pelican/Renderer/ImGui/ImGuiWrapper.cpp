@@ -1,8 +1,8 @@
 ﻿#include "PelicanPCH.h"
 #include "ImGuiWrapper.h"
 
-#include "Pelican/Application.h"
-#include "Pelican/Time.h"
+#include "Pelican/Core/Application.h"
+#include "Pelican/Core/Time.h"
 
 #include "Pelican/Input/Input.h"
 

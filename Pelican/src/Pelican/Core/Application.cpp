@@ -1,7 +1,7 @@
 ﻿#include "PelicanPCH.h"
 #include "Application.h"
 
-#include "Pelican/Time.h"
+#include "Pelican/Core/Time.h"
 #include "Pelican/Input/Input.h"
 #include "Pelican/Renderer/Camera.h"
 #include "Pelican/Renderer/Mesh.h"

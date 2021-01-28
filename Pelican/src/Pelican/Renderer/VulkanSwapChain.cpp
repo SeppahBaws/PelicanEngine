@@ -4,8 +4,8 @@
 #include "VkInit.h"
 #include "VulkanDevice.h"
 #include "VulkanHelpers.h"
-#include "Pelican/Application.h"
-#include "Pelican/Window.h"
+#include "Pelican/Core/Application.h"
+#include "Pelican/Core/Window.h"
 
 namespace Pelican
 {

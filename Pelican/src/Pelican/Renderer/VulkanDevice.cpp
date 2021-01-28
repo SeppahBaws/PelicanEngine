@@ -3,7 +3,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "Pelican/Application.h"
+#include "Pelican/Core/Application.h"
 #include "VkInit.h"
 #include "VulkanHelpers.h"
 

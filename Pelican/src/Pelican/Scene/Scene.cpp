@@ -6,7 +6,7 @@
 
 #include "Component.h"
 #include "Entity.h"
-#include "Pelican/Application.h"
+#include "Pelican/Core/Application.h"
 
 #include "Pelican/Renderer/Camera.h"
 

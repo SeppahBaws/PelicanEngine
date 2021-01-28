@@ -18,7 +18,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include "Pelican/Application.h"
+#include "Pelican/Core/Application.h"
 
 #include "VkInit.h"
 #include "VulkanProxy.h"
