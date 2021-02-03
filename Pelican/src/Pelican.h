@@ -15,10 +15,12 @@
 
 #include "PelicanPCH.h"
 
-#include "Pelican/Core/Entrypoint.h"
+// #include "Pelican/Core/Entrypoint.h"
 
 #include "Pelican/Core/Application.h"
 #include "Pelican/Core/Time.h"
+#include "Pelican/Core/Layer.h"
+#include "Pelican/Core/LayerStack.h"
 
 #include "Pelican/Scene/Component.h"
 #include "Pelican/Scene/Entity.h"

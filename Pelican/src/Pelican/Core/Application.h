@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include "Window.h"
+#include "LayerStack.h"
+
 #include "Pelican/Events/ApplicationEvent.h"
 #include "Pelican/Events/Event.h"
 
@@ -19,6 +21,9 @@ namespace Pelican
 		virtual ~Application() = default;
 
 		void OnEvent(Event& e);
+
+		void PushLayer(Layer* layer);
+		void PushOverlay(Layer* overlay);
 
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
@@ -40,6 +45,8 @@ namespace Pelican
 		Window* m_pWindow{};
 		VulkanRenderer* m_pRenderer{};
 		Scene* m_pScene{};
+
+		LayerStack m_LayerStack;
 
 		static Application* m_Instance;
 	};

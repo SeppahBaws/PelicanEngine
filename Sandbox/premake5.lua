@@ -21,6 +21,7 @@ project "Sandbox"
         "%{IncludeDir.Glm}",
         "%{IncludeDir.Vulkan}",
         "%{IncludeDir.entt}",
+        "%{IncludeDir.ImGui}"
     }
 
     links

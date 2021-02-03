@@ -15,6 +15,7 @@
 
 #include <imgui.h>
 
+#include "Layer.h"
 #include "Pelican/Events/ApplicationEvent.h"
 #include "Pelican/Events/MouseEvent.h"
 
@@ -38,13 +39,30 @@ namespace Pelican
 		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(Application::OnWindowClose));
 		dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Application::OnWindowResize));
 
-		// TODO: dispatch events to layers.
-
 		if (e.IsInCategory(EventCategoryApplication))
 		{
 			const std::string s = e.ToString();
 			Logger::LogDebug(s);
 		}
+
+		for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
+		{
+			if (e.Handled)
+				break;
+			(*it)->OnEvent(e);
+		}
+	}
+
+	void Application::PushLayer(Layer* layer)
+	{
+		m_LayerStack.PushLayer(layer);
+		layer->OnAttach();
+	}
+
+	void Application::PushOverlay(Layer* overlay)
+	{
+		m_LayerStack.PushOverlay(overlay);
+		overlay->OnAttach();
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent& /*e*/)
@@ -81,7 +99,9 @@ namespace Pelican
 				m_pScene->Update();
 				// m_pModel->Update(m_pCamera);
 			}
-			
+
+			for (Layer* layer : m_LayerStack)
+				layer->OnUpdate();
 
 			if (!m_pRenderer->BeginScene())
 				continue;
@@ -92,7 +112,7 @@ namespace Pelican
 				m_pScene->Draw();
 			}
 
-			// Draw UI
+			// Draw ImGui
 			{
 				ImGui::ShowDemoWindow();
 
@@ -107,6 +127,9 @@ namespace Pelican
 					ImGui::Text("Mouse position: (%.0f, %.0f)", pos.x, pos.y);
 				}
 				ImGui::End();
+
+				for (Layer* layer : m_LayerStack)
+					layer->OnImGuiRender();
 			}
 
 			m_pRenderer->EndScene();

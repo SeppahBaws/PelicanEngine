@@ -1,12 +1,21 @@
 // ReSharper disable once CppUnusedIncludeDirective
 #include <vld.h>
 #include <Pelican.h>
+#include <Pelican/Core/Entrypoint.h>
+
+#include "SandboxLayer.h"
 
 class Sandbox final : public Pelican::Application
 {
 public:
-	Sandbox() = default;
-	virtual ~Sandbox() = default;
+	Sandbox()
+	{
+		PushLayer(new SandboxLayer());
+	}
+
+	virtual ~Sandbox()
+	{
+	}
 
 	void LoadScene(Pelican::Scene* pScene) override
 	{
