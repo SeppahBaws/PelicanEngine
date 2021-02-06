@@ -29,6 +29,8 @@ namespace Pelican
 		void FlagWindowResized() { m_FrameBufferResized = true; }
 		void SetCamera(Camera* pCamera);
 
+		void ReloadShaders();
+
 	public:
 		static int GetMaxImages() { return m_pInstance->MAX_FRAMES_IN_FLIGHT; }
 		static VkInstance GetInstance() { return m_pInstance->m_VkInstance; }
@@ -67,6 +69,8 @@ namespace Pelican
 
 		void CleanupSwapChain();
 		void RecreateSwapChain();
+
+		void ReloadShaders_Internal();
 
 		void UpdateUniformBuffer(uint32_t currentImage);
 
@@ -127,6 +131,8 @@ namespace Pelican
 		std::vector<VkFence> m_VkImagesInFlight;
 
 		bool m_FrameBufferResized = false;
+
+		bool m_ReloadShadersFlag = false;
 
 		std::vector<VkBuffer> m_VkUniformBuffers;
 		std::vector<VkDeviceMemory> m_VkUniformBuffersMemory;

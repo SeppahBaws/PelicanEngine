@@ -1,25 +1,29 @@
 ﻿#pragma once
 #include <vulkan/vulkan.h>
 
+#include <glm/vec4.hpp>
+
 namespace Pelican
 {
 	class VulkanTexture
 	{
 	public:
-		VulkanTexture();
-		VulkanTexture(const std::string& path);
+		// VulkanTexture();
+		explicit VulkanTexture(const std::string& path);
+		// TODO: implement this
+		// explicit VulkanTexture(const glm::vec4& color, int width, int height);
 		~VulkanTexture();
 
 		void InitFromFile(const std::string& path);
+		void InitFromColor(const glm::vec4& color, int width, int height);
 
-		VkImageView GetImageView() const { return m_ImageView; }
-		VkSampler GetSampler() const { return m_ImageSampler; }
+		[[nodiscard]] VkImageView GetImageView() const { return m_ImageView; }
+		[[nodiscard]] VkSampler GetSampler() const { return m_ImageSampler; }
+
+		[[nodiscard]] VkDescriptorImageInfo GetDescriptorImageInfo() const;
 
 	private:
-		void Init();
-		void Cleanup();
-
-		void CreateTextureImage();
+		void CreateTextureImage(void* pixelData, int width, int height, int channels);
 		void CreateTextureImageView();
 		void CreateTextureSampler();
 
@@ -31,11 +35,11 @@ namespace Pelican
 		void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
 	private:
-		VkImage m_Image;
-		VkDeviceMemory m_ImageMemory;
-		VkImageView m_ImageView;
-		VkSampler m_ImageSampler;
+		VkImage m_Image{};
+		VkDeviceMemory m_ImageMemory{};
+		VkImageView m_ImageView{};
+		VkSampler m_ImageSampler{};
 
-		std::string m_TexturePath;
+		std::string m_TexturePath{};
 	};
 }

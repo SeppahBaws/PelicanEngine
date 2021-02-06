@@ -192,11 +192,22 @@ namespace Pelican
 		}
 
 		m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+		if (m_ReloadShadersFlag)
+		{
+			m_ReloadShadersFlag = false;
+			ReloadShaders_Internal();
+		}
 	}
 
 	void VulkanRenderer::SetCamera(Camera* pCamera)
 	{
 		m_pCamera = pCamera;
+	}
+
+	void VulkanRenderer::ReloadShaders()
+	{
+		m_ReloadShadersFlag = true;
 	}
 
 	void VulkanRenderer::CreateInstance()
@@ -373,14 +384,33 @@ namespace Pelican
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		uboLayoutBinding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-		samplerLayoutBinding.binding = 1;
-		samplerLayoutBinding.descriptorCount = 1;
-		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerLayoutBinding.pImmutableSamplers = nullptr;
-		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		VkDescriptorSetLayoutBinding albedoSamplerBinding{};
+		albedoSamplerBinding.binding = 1;
+		albedoSamplerBinding.descriptorCount = 1;
+		albedoSamplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		albedoSamplerBinding.pImmutableSamplers = nullptr;
+		albedoSamplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+		VkDescriptorSetLayoutBinding normalSamplerBinding{};
+		normalSamplerBinding.binding = 2;
+		normalSamplerBinding.descriptorCount = 1;
+		normalSamplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		normalSamplerBinding.pImmutableSamplers = nullptr;
+		normalSamplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		VkDescriptorSetLayoutBinding metallicRoughnessSamplerBinding{};
+		metallicRoughnessSamplerBinding.binding = 3;
+		metallicRoughnessSamplerBinding.descriptorCount = 1;
+		metallicRoughnessSamplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		metallicRoughnessSamplerBinding.pImmutableSamplers = nullptr;
+		metallicRoughnessSamplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		std::array<VkDescriptorSetLayoutBinding, 4> bindings = {
+			uboLayoutBinding,
+			albedoSamplerBinding,
+			normalSamplerBinding,
+			metallicRoughnessSamplerBinding
+		};
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo = VkInit::DescriptorSetLayoutCreateInfo();
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -600,6 +630,19 @@ namespace Pelican
 		CreateUniformBuffers();
 		CreateDescriptorPool();
 		CreateCommandBuffers();
+	}
+
+	void VulkanRenderer::ReloadShaders_Internal()
+	{
+		vkDeviceWaitIdle(m_pDevice->GetDevice());
+
+		// Cleanup pipeline
+		vkDestroyPipeline(m_pDevice->GetDevice(), m_VkGraphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(m_pDevice->GetDevice(), m_VkPipelineLayout, nullptr);
+		vkDestroyRenderPass(m_pDevice->GetDevice(), m_VkRenderPass, nullptr);
+
+		CreateRenderPass();
+		CreateGraphicsPipeline();
 	}
 
 	void VulkanRenderer::UpdateUniformBuffer(uint32_t currentImage)

@@ -114,8 +114,6 @@ namespace Pelican
 
 			// Draw ImGui
 			{
-				ImGui::ShowDemoWindow();
-
 				// Show some frame time results.
 				ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f));
 				ImGui::SetNextWindowBgAlpha(0.35f);
@@ -130,6 +128,15 @@ namespace Pelican
 
 				for (Layer* layer : m_LayerStack)
 					layer->OnImGuiRender();
+
+				if (ImGui::Begin("Shader Reloader"))
+				{
+					if (ImGui::Button("Reload Shaders!"))
+					{
+						m_pRenderer->ReloadShaders();
+					}
+				}
+				ImGui::End();
 			}
 
 			m_pRenderer->EndScene();

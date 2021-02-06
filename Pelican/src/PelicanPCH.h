@@ -14,4 +14,10 @@
 // Configuration
 
 // Whether or not to use validation layers.
-#define PELICAN_VALIDATE true
+#if defined(PELICAN_DEBUG)
+constexpr bool PELICAN_VALIDATE = true;
+#elif defined(PELICAN_RELEASE)
+constexpr bool PELICAN_VALIDATE = false;
+#else
+constexpr bool PELICAN_VALIDATE = false;
+#endif

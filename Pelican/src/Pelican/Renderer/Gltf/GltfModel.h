@@ -38,6 +38,8 @@ namespace Pelican
 
 		void CreateDescriptorPool();
 
+		std::string GetAbsolutePath(const std::string& uri) const;
+
 	private:
 		std::vector<Mesh> m_Meshes;
 		std::vector<VulkanTexture*> m_pTextures;
@@ -45,5 +47,6 @@ namespace Pelican
 		std::string m_AssetPath{};
 
 		VkDescriptorPool m_DescriptorPool{};
+		VulkanTexture* m_pWhiteTexture{};
 	};
 }

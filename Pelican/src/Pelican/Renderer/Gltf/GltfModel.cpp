@@ -45,6 +45,7 @@ namespace Pelican
 			m_pTextures[i] = nullptr;
 		}
 		m_pTextures.clear();
+		delete m_pWhiteTexture;
 	}
 
 	void GltfModel::Update(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj)
@@ -136,27 +137,39 @@ namespace Pelican
 				uint16_t vertexStart = static_cast<uint16_t>(vertices.size());
 				uint32_t indexCount = 0;
 				uint32_t vertexCount = 0;
-				glm::vec3 posMin{};
-				glm::vec3 posMax{};
+				// glm::vec3 posMin{};
+				// glm::vec3 posMax{};
 				bool hasIndices = primitive.indices > -1;
 			
 				// Vertices
 				{
 					const float* bufferPos = nullptr;
+					const float* bufferNorm = nullptr;
 					const float* bufferTexCoordSet0 = nullptr;
 			
 					int posByteStride{};
+					int normByteStride{};
 					int uv0ByteStride{};
 			
 					const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
 					const tinygltf::BufferView& posView = model.bufferViews[posAccessor.bufferView];
 					bufferPos = reinterpret_cast<const float*>(&(model.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]));
-					posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
-					posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
+					// posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
+					// posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
+
 					vertexCount = static_cast<uint32_t>(posAccessor.count);
 					posByteStride = posAccessor.ByteStride(posView) ? (posAccessor.ByteStride(posView) / sizeof(float)) : GetTypeSizeInBytes(TINYGLTF_TYPE_VEC3);
-			
-					if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
+
+					if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
+					{
+						const tinygltf::Accessor& normAccessor = model.accessors[primitive.attributes.find("NORMAL")->second];
+						const tinygltf::BufferView& normView = model.bufferViews[normAccessor.bufferView];
+						bufferNorm = reinterpret_cast<const float*>(&(model.buffers[normView.buffer].data[normAccessor.byteOffset + normView.byteOffset]));
+						normByteStride = normAccessor.ByteStride(normView) ? (normAccessor.ByteStride(normView) / sizeof(float)) : GetTypeSizeInBytes(TINYGLTF_TYPE_VEC3);
+					}
+
+					if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
+					{
 						const tinygltf::Accessor& uvAccessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
 						const tinygltf::BufferView& uvView = model.bufferViews[uvAccessor.bufferView];
 						bufferTexCoordSet0 = reinterpret_cast<const float*>(&(model.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]));
@@ -167,6 +180,7 @@ namespace Pelican
 					{
 						Vertex vert{};
 						vert.pos = glm::make_vec3(&bufferPos[v * posByteStride]);
+						vert.normal = bufferNorm ? glm::make_vec3(&bufferNorm[v * normByteStride]) : glm::vec3(0.0f);
 						vert.texCoord = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
 						vertices.push_back(vert);
 					}
@@ -190,12 +204,28 @@ namespace Pelican
 
 				Mesh mesh{ vertices, indices };
 
-				tinygltf::Material material = model.materials[primitive.material];
-				tinygltf::Image image = model.images[material.pbrMetallicRoughness.baseColorTexture.index];
-				std::string absolutePath = m_AssetPath;
-				absolutePath = absolutePath.substr(0, m_AssetPath.find_last_of('/') + 1);
-				absolutePath += image.uri;
-				mesh.SetupTexture(absolutePath);
+				if (!model.materials.empty())
+				{
+					tinygltf::Material material = model.materials[primitive.material];
+
+					if (material.pbrMetallicRoughness.baseColorTexture.index > -1)
+					{
+						tinygltf::Image albedoImage = model.images[material.pbrMetallicRoughness.baseColorTexture.index];
+						mesh.SetupTexture(TextureSlot::ALBEDO, GetAbsolutePath(albedoImage.uri));
+					}
+
+					if (material.normalTexture.index > -1)
+					{
+						tinygltf::Image normalImage = model.images[material.normalTexture.index];
+						mesh.SetupTexture(TextureSlot::NORMAL, GetAbsolutePath(normalImage.uri));
+					}
+
+					if (material.pbrMetallicRoughness.metallicRoughnessTexture.index > -1)
+					{
+						tinygltf::Image metallicRoughnessImage = model.images[material.pbrMetallicRoughness.metallicRoughnessTexture.index];
+						mesh.SetupTexture(TextureSlot::METALLIC_ROUGHNESS, GetAbsolutePath(metallicRoughnessImage.uri));
+					}
+				}
 
 				mesh.CreateBuffers();
 				m_Meshes.push_back(mesh);
@@ -222,5 +252,13 @@ namespace Pelican
 		{
 			m_Meshes[i].CreateDescriptorSet(m_DescriptorPool);
 		}
+	}
+
+	std::string GltfModel::GetAbsolutePath(const std::string& uri) const
+	{
+		std::string absolutePath = m_AssetPath;
+		absolutePath = absolutePath.substr(0, m_AssetPath.find_last_of('/') + 1);
+		absolutePath += uri;
+		return absolutePath;
 	}
 }

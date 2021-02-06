@@ -2,42 +2,26 @@
 #include "VulkanTexture.h"
 
 #include <stb_image.h>
+#include <glm/vec4.hpp>
+
 
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 
 namespace Pelican
 {
-	VulkanTexture::VulkanTexture()
-		: m_TexturePath()
-	{
-	}
-
 	VulkanTexture::VulkanTexture(const std::string& path)
 		: m_TexturePath(path)
 	{
-		Init();
+		InitFromFile(path);
 	}
+
+	// VulkanTexture::VulkanTexture(const glm::vec4& color, int width, int height)
+	// {
+	// 	InitFromColor(color, width, height);
+	// }
 
 	VulkanTexture::~VulkanTexture()
-	{
-		Cleanup();
-	}
-
-	void VulkanTexture::InitFromFile(const std::string& path)
-	{
-		m_TexturePath = path;
-		Init();
-	}
-
-	void VulkanTexture::Init()
-	{
-		CreateTextureImage();
-		CreateTextureImageView();
-		CreateTextureSampler();
-	}
-
-	void VulkanTexture::Cleanup()
 	{
 		vkDestroySampler(VulkanRenderer::GetDevice(), m_ImageSampler, nullptr);
 		vkDestroyImageView(VulkanRenderer::GetDevice(), m_ImageView, nullptr);
@@ -45,16 +29,47 @@ namespace Pelican
 		vkFreeMemory(VulkanRenderer::GetDevice(), m_ImageMemory, nullptr);
 	}
 
-	void VulkanTexture::CreateTextureImage()
+	void VulkanTexture::InitFromFile(const std::string& path)
 	{
+		m_TexturePath = path;
+
 		int width, height, nrChannels;
-		stbi_uc* pixels = stbi_load(m_TexturePath.c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
-		VkDeviceSize size = width * height * 4;
+		stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
 
 		if (!pixels)
 		{
 			ASSERT_MSG(false, "failed to load texture image!");
 		}
+
+		CreateTextureImage(pixels, width, height, STBI_rgb_alpha);
+		CreateTextureImageView();
+		CreateTextureSampler();
+
+		stbi_image_free(pixels);
+	}
+
+	void VulkanTexture::InitFromColor(const glm::vec4& color, int width, int height)
+	{
+		std::vector<glm::vec4> pixels{ color };
+
+		CreateTextureImage(pixels.data(), width, height, 4);
+		CreateTextureImageView();
+		CreateTextureSampler();
+	}
+
+	VkDescriptorImageInfo VulkanTexture::GetDescriptorImageInfo() const
+	{
+		VkDescriptorImageInfo info;
+		info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		info.imageView = m_ImageView;
+		info.sampler = m_ImageSampler;
+
+		return info;
+	}
+
+	void VulkanTexture::CreateTextureImage(void* pixelData, int width, int height, int channels)
+	{
+		VkDeviceSize size = width * height * channels;
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
@@ -64,10 +79,8 @@ namespace Pelican
 
 		void* data;
 		vkMapMemory(VulkanRenderer::GetDevice(), stagingBufferMemory, 0, size, 0, &data);
-		memcpy(data, pixels, static_cast<size_t>(size));
+		memcpy(data, pixelData, static_cast<size_t>(size));
 		vkUnmapMemory(VulkanRenderer::GetDevice(), stagingBufferMemory);
-
-		stbi_image_free(pixels);
 
 		CreateImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,

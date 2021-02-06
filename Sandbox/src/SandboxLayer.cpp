@@ -21,11 +21,6 @@ void SandboxLayer::OnUpdate()
 
 void SandboxLayer::OnImGuiRender()
 {
-	if (ImGui::Begin("Sandbox"))
-	{
-		ImGui::Text("Hello Sandbox!");
-	}
-	ImGui::End();
 }
 
 void SandboxLayer::OnEvent(Pelican::Event& /*e*/)

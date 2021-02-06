@@ -11,6 +11,8 @@ namespace Pelican
 
 		std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() const { return m_ShaderStages; }
 
+		void Reload();
+
 	private:
 		void Initialize();
 		void Cleanup();

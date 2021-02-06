@@ -20,6 +20,12 @@ namespace Pelican
 		Cleanup();
 	}
 
+	void VulkanShader::Reload()
+	{
+		Cleanup();
+		Initialize();
+	}
+
 	void VulkanShader::Initialize()
 	{
 		const std::vector<char> vertCode = ReadFile(m_VertPath);
