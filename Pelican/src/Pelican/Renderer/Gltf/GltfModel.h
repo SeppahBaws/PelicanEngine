@@ -36,6 +36,8 @@ namespace Pelican
 		void Initialize(const std::string& file);
 		void Load(const tinygltf::Model& model);
 
+		std::string GetAssetPath() const { return m_AssetPath; }
+
 		void CreateDescriptorPool();
 
 		std::string GetAbsolutePath(const std::string& uri) const;

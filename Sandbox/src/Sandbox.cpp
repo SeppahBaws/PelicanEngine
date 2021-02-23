@@ -1,5 +1,9 @@
 // ReSharper disable once CppUnusedIncludeDirective
+
+#if 0 // Re-enable this but on a pc that has VLD properly installed :)
 #include <vld.h>
+#endif
+
 #include <Pelican.h>
 #include <Pelican/Core/Entrypoint.h>
 
@@ -21,6 +25,8 @@ public:
 	{
 		using namespace Pelican;
 
+		pScene->LoadFromFile("res/scenes/demoScene.json");
+
 		// Entity light = pScene->CreateEntity("Light");
 		// light.AddComponent<TransformComponent>(glm::vec3{ 0.0f, 5.0f, 0.0f }, glm::vec3{ -90.0f, 0.0f, 0.0f }, glm::vec3{ 0.1f });
 		// light.AddComponent<ModelComponent>(new GltfModel("res/models/tactical_flashlight/scene.gltf"));
@@ -29,13 +35,14 @@ public:
 		// light2.AddComponent<TransformComponent>(glm::vec3{ 3.0f, 3.0f, 3.0f }, glm::vec3{ -90.0f, 0.0f, 0.0f }, glm::vec3{ 0.1f });
 		// light2.AddComponent<ModelComponent>(new GltfModel("res/models/tactical_flashlight/scene.gltf"));
 
-		Entity car = pScene->CreateEntity("Car");
-		car.AddComponent<TransformComponent>(glm::vec3{ 0.0f, 0.0f, 0.0f }, glm::vec3{ -90.0f, 0.0f, .0f }, glm::vec3{ 0.01f });
-		car.AddComponent<ModelComponent>(new GltfModel("res/models/pony_cartoon/scene.gltf"));
 
-		Entity gun = pScene->CreateEntity("Gun");
-		gun.AddComponent<TransformComponent>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(0.1f));
-		gun.AddComponent<ModelComponent>(new GltfModel("res/models/cerberus_gun/scene.gltf"));
+		// Entity car = pScene->CreateEntity("Car");
+		// car.AddComponent<TransformComponent>(glm::vec3{ 0.0f, 0.0f, 0.0f }, glm::vec3{ -90.0f, 0.0f, .0f }, glm::vec3{ 0.01f });
+		// car.AddComponent<ModelComponent>(new GltfModel("res/models/pony_cartoon/scene.gltf"));
+		//
+		// Entity gun = pScene->CreateEntity("Gun");
+		// gun.AddComponent<TransformComponent>(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(0.1f));
+		// gun.AddComponent<ModelComponent>(new GltfModel("res/models/cerberus_gun/scene.gltf"));
 	}
 };
 

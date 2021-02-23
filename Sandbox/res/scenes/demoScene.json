@@ -1,0 +1,43 @@
+{
+	"name": "Demo Scene",
+	"entities": [
+		{
+			"id": "<ID GENERATED HERE>",
+			"components": [
+				{
+					"type": "TagComponent",
+					"name": "Car"
+				},
+				{
+					"type": "TransformComponent",
+					"position": [ 0.0, 0.0, 0.0 ],
+					"rotation": [ -90.0, 0.0, 0.0 ],
+					"scale": [ 0.025, 0.025, 0.025 ]
+				},
+				{
+					"type": "ModelComponent",
+					"assetPath": "res/models/pony_cartoon/scene.gltf"
+				}
+			]
+		},
+		{
+			"id": "<ID GENERATED HERE>",
+			"components": [
+				{
+					"type": "TagComponent",
+					"name": "Gun"
+				},
+				{
+					"type": "TransformComponent",
+					"position": [ 0.0, 10.0, 5.0 ],
+					"rotation": [ -90.0, 180.0, 0.0 ],
+					"scale": [ 0.1, 0.1, 0.1 ]
+				},
+				{
+					"type": "ModelComponent",
+					"assetPath": "res/models/cerberus_gun/scene.gltf"
+				}
+			]
+		}
+	]
+}
