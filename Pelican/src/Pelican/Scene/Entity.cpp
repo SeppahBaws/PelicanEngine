@@ -7,4 +7,9 @@ namespace Pelican
 		: m_Entity(e), m_pScene(nullptr)
 	{
 	}
+
+	Entity::Entity(const entt::entity& e, Scene* pScene)
+		: m_Entity(e), m_pScene(pScene)
+	{
+	}
 }

@@ -32,11 +32,12 @@ namespace Pelican
 		void Update(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj);
 		void Draw();
 
+		std::string GetAssetPath() const { return m_AssetPath; }
+
 	private:
 		void Initialize(const std::string& file);
 		void Load(const tinygltf::Model& model);
 
-		std::string GetAssetPath() const { return m_AssetPath; }
 
 		void CreateDescriptorPool();
 

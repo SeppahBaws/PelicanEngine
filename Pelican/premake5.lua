@@ -54,7 +54,7 @@ project "Pelican"
 
         defines
         {
-            "PLATFORM_WINDOWS"
+            "PELICAN_WINDOWS"
         }
 
     filter "configurations:Debug"

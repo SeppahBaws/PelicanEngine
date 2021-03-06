@@ -1,43 +1,95 @@
 {
-	"name": "Demo Scene",
-	"entities": [
-		{
-			"id": "<ID GENERATED HERE>",
-			"components": [
-				{
-					"type": "TagComponent",
-					"name": "Car"
-				},
-				{
-					"type": "TransformComponent",
-					"position": [ 0.0, 0.0, 0.0 ],
-					"rotation": [ -90.0, 0.0, 0.0 ],
-					"scale": [ 0.025, 0.025, 0.025 ]
-				},
-				{
-					"type": "ModelComponent",
-					"assetPath": "res/models/pony_cartoon/scene.gltf"
-				}
-			]
-		},
-		{
-			"id": "<ID GENERATED HERE>",
-			"components": [
-				{
-					"type": "TagComponent",
-					"name": "Gun"
-				},
-				{
-					"type": "TransformComponent",
-					"position": [ 0.0, 10.0, 5.0 ],
-					"rotation": [ -90.0, 180.0, 0.0 ],
-					"scale": [ 0.1, 0.1, 0.1 ]
-				},
-				{
-					"type": "ModelComponent",
-					"assetPath": "res/models/cerberus_gun/scene.gltf"
-				}
-			]
-		}
-	]
+  "entities": [
+    {
+      "components": [
+        {
+          "name": "Flashlight",
+          "type": "TagComponent"
+        },
+        {
+          "position": [
+            -1.5,
+            20.0,
+            10.0
+          ],
+          "rotation": [
+            -90.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "type": "TransformComponent"
+        },
+        {
+          "assetPath": "res/models/tactical_flashlight/scene.gltf",
+          "type": "ModelComponent"
+        }
+      ]
+    },
+    {
+      "components": [
+        {
+          "name": "Car",
+          "type": "TagComponent"
+        },
+        {
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "rotation": [
+            -90.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            0.05000000074505806,
+            0.05000000074505806,
+            0.05000000074505806
+          ],
+          "type": "TransformComponent"
+        },
+        {
+          "assetPath": "res/models/pony_cartoon/scene.gltf",
+          "type": "ModelComponent"
+        }
+      ]
+    },
+    {
+      "components": [
+        {
+          "name": "Gun",
+          "type": "TagComponent"
+        },
+        {
+          "position": [
+            0.0,
+            15.0,
+            10.0
+          ],
+          "rotation": [
+            -90.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            0.10000000149011612,
+            0.10000000149011612,
+            0.10000000149011612
+          ],
+          "type": "TransformComponent"
+        },
+        {
+          "assetPath": "res/models/cerberus_gun/scene.gltf",
+          "type": "ModelComponent"
+        }
+      ]
+    }
+  ],
+  "name": "Hello World"
 }

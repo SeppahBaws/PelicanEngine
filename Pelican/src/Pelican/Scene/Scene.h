@@ -6,6 +6,7 @@ namespace Pelican
 {
 	class Camera;
 	class Entity;
+	class SceneSerializer;
 
 	class Scene
 	{
@@ -14,6 +15,7 @@ namespace Pelican
 		~Scene();
 
 		void LoadFromFile(const std::string& file);
+		void SaveToFile(const std::string& file) const;
 
 		Entity CreateEntity(const std::string& name = "new entity");
 		void DestroyEntity(Entity& entity);
@@ -29,6 +31,7 @@ namespace Pelican
 	private:
 		// We need access to the registry to add components.
 		friend class Entity;
+		friend class SceneSerializer;
 
 		entt::registry m_Registry;
 

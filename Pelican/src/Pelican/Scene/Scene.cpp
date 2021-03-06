@@ -3,37 +3,17 @@
 
 #include <logtools.h>
 #include <imgui.h>
-#include <json.hpp>
-
-#pragma warning(push, 0)
-#include <glm/gtc/type_ptr.hpp>
-#pragma warning(pop)
+#include <misc/cpp/imgui_stdlib.h>
 
 #include "Component.h"
 #include "Entity.h"
+#include "SceneSerializer.h"
 #include "Pelican/Core/Application.h"
 #include "Pelican/Core/System/FileUtils.h"
+#include "Pelican/Core/System/FileDialog.h"
 
 #include "Pelican/Renderer/Camera.h"
 
-namespace nlohmann
-{
-	template<>
-	struct adl_serializer<glm::vec3>
-	{
-		static void to_json(json& j, const glm::vec3& v)
-		{
-			j = json::array({ v.x, v.y, v.z });
-		}
-
-		static void from_json(const json& j, glm::vec3& v)
-		{
-			std::vector<float> values;
-			j.get_to(values);
-			v = glm::make_vec3(values.data());
-		}
-	};
-}
 
 namespace Pelican
 {
@@ -64,82 +44,19 @@ namespace Pelican
 			return;
 		}
 
-		using namespace nlohmann;
+		SceneSerializer::Deserialize(fileContent, this);
+	}
 
-		basic_json jsonScene = json::parse(fileContent);
+	void Scene::SaveToFile(const std::string& file) const
+	{
+		std::string fileContent;
 
-		const auto name = jsonScene["name"];
-		const auto jsonEntities = jsonScene["entities"];
+		SceneSerializer::Serialize(this, fileContent);
 
-		if (!name.is_string())
+		const bool result = FileUtils::WriteFileSync(file, fileContent);
+		if (!result)
 		{
-			throw std::exception("Invalid scene name");
-		}
-
-		if (!jsonEntities.is_array())
-		{
-			throw std::exception("Invalid scene entities");
-		}
-
-		// Get the scene name
-		name.get_to(m_Name);
-
-		for (auto jsonEntity : jsonEntities)
-		{
-			const auto id = jsonEntity["id"];
-			const auto jsonComponents = jsonEntity["components"];
-
-			Entity e = m_Registry.create();
-			e.m_pScene = this;
-
-			for (auto jsonComponent : jsonComponents)
-			{
-				const auto componentType = jsonComponent["type"];
-
-				// TODO: get rid of this garbage
-				if (componentType == "TagComponent")
-				{
-					// Parse tag component
-					if (!jsonComponent["name"].is_string())
-						throw std::exception("Tag component doesn't have a name!");
-
-					std::string tagName{};
-					jsonComponent["name"].get_to(tagName);
-					e.AddComponent<TagComponent>(tagName);
-				}
-				else if (componentType == "TransformComponent")
-				{
-					// Parse transform component
-					if (!jsonComponent["position"].is_array())
-						throw std::exception("Transform component doesn't have a position!");
-
-					if (!jsonComponent["rotation"].is_array())
-						throw std::exception("Transform component doesn't have a rotation!");
-
-					if (!jsonComponent["scale"].is_array())
-						throw std::exception("Transform component doesn't have a scale!");
-
-					glm::vec3 position;
-					glm::vec3 rotation;
-					glm::vec3 scale;
-
-					jsonComponent["position"].get_to(position);
-					jsonComponent["rotation"].get_to(rotation);
-					jsonComponent["scale"].get_to(scale);
-
-					e.AddComponent<TransformComponent>(position, rotation, scale);
-				}
-				else if (componentType == "ModelComponent")
-				{
-					// Parse model component
-					if (!jsonComponent["assetPath"].is_string())
-						throw std::exception("Model component doesn't have an asset path!");
-
-					std::string assetPath;
-					jsonComponent["assetPath"].get_to(assetPath);
-					e.AddComponent<ModelComponent>(new GltfModel(assetPath));
-				}
-			}
+			Logger::LogError("Failed to write to \"%s\"", file.c_str());
 		}
 	}
 
@@ -167,7 +84,7 @@ namespace Pelican
 	{
 		m_pCamera->Update();
 
-		// Hacky solution, should be made better in the future
+		// TODO: Hacky solution, should be made better in the future
 		for (auto [entity, transform, model] : m_Registry.view<TransformComponent, ModelComponent>().each())
 		{
 			glm::mat4 m = transform.GetTransform();
@@ -188,10 +105,36 @@ namespace Pelican
 			model.pModel->Draw();
 		}
 
-
+		bool isOpen = true;
 		// Debug UI
-		if (ImGui::Begin("Scene debugger"))
+		if (ImGui::Begin("Scene debugger", &isOpen, ImGuiWindowFlags_MenuBar))
 		{
+			// Scene debugger menu bar
+			if (ImGui::BeginMenuBar())
+			{
+				if (ImGui::BeginMenu("File"))
+				{
+					// TODO: implement this better, make the user choose a file. - Eventually should be moved to PelicanEd
+					if (ImGui::MenuItem("Save scene file"))
+					{
+						Logger::LogDebug("Saving the current scene...");
+						SaveToFile("res/scenes/demoScene.json");
+					}
+					if (ImGui::MenuItem("Load scene file"))
+					{
+						std::wstring filePath;
+						if (FileDialog::OpenFileDialog(filePath))
+						{
+							Logger::LogDebug("Loading scene file \"%ls\"", filePath.c_str());
+						}
+					}
+					ImGui::EndMenu();
+				}
+				ImGui::EndMenuBar();
+			}
+
+			ImGui::InputText("Scene Name", &m_Name);
+
 			const auto entities = m_Registry.view<TagComponent>();
 
 			ImGui::Text("%i entities in scene:", static_cast<int>(entities.size()));
@@ -224,6 +167,8 @@ namespace Pelican
 		delete m_pCamera;
 
 		// TODO: figure out a way to make this easier.
+		// (registry.destroy() on each entity might work, then we can move the memory free to the deconstructor of the components.)
+		// Will have to test when VLD works again.
 		for (auto [entity, model] : m_Registry.view<ModelComponent>().each())
 		{
 			delete model.pModel;

@@ -6,15 +6,27 @@
 
 namespace Pelican
 {
+	class SceneSerializer;
+
 	class Entity final
 	{
 	public:
+		Entity() = delete;
+
 		template<typename T, typename... Args>
 		T& AddComponent(Args&&... args)
 		{
 			ASSERT_MSG(!HasComponent<T>(), "Entity already has component!");
 			T& component = m_pScene->m_Registry.emplace<T>(m_Entity, std::forward<Args>(args)...);
 			return component;
+		}
+
+		template<typename T>
+		T& AddComponent(const T& component)
+		{
+			ASSERT_MSG(!HasComponent<T>(), "Entity already has component!");
+			T& c = m_pScene->m_Registry.emplace<T>(component);
+			return c;
 		}
 
 		template<typename T>
@@ -40,9 +52,10 @@ namespace Pelican
 	private:
 		// Scene is a friend, because it will create the entities for us.
 		friend class Scene;
+		friend class SceneSerializer;
 
-		Entity() = delete;
 		Entity(const entt::entity& e);
+		Entity(const entt::entity& e, Scene* pScene);
 
 	private:
 		entt::entity m_Entity{ entt::null };
