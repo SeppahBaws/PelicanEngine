@@ -7,7 +7,8 @@
 
 #include "Component.h"
 #include "Entity.h"
-#include "SceneSerializer.h"
+#include "Serializer/SceneSerializer.h"
+
 #include "Pelican/Core/Application.h"
 #include "Pelican/Core/System/FileUtils.h"
 #include "Pelican/Core/System/FileDialog.h"
@@ -19,7 +20,7 @@ namespace Pelican
 {
 	Scene::Scene()
 	{
-		m_pCamera = m_pCamera = new Camera(120.0f,
+		m_pCamera = new Camera(120.0f,
 			static_cast<float>(Application::Get().GetWindow()->GetParams().width),
 			static_cast<float>(Application::Get().GetWindow()->GetParams().height),
 			0.1f, 1000.0f);
