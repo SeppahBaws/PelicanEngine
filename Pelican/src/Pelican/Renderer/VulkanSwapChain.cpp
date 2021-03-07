@@ -4,6 +4,7 @@
 #include "VkInit.h"
 #include "VulkanDevice.h"
 #include "VulkanHelpers.h"
+#include "VulkanDebug.h"
 #include "Pelican/Core/Application.h"
 #include "Pelican/Core/Window.h"
 
@@ -46,6 +47,8 @@ namespace Pelican
 			framebufferInfo.layers = 1;
 
 			VK_CHECK(vkCreateFramebuffer(m_pDevice->GetDevice(), &framebufferInfo, nullptr, &m_Framebuffers[i]));
+
+			VkDebugMarker::SetFramebufferName(m_pDevice->GetDevice(), m_Framebuffers[i], std::string("Framebuffer " + i).c_str());
 		}
 	}
 

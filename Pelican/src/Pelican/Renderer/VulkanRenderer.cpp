@@ -21,7 +21,7 @@
 #include "Pelican/Core/Application.h"
 
 #include "VkInit.h"
-#include "VulkanProxy.h"
+#include "VulkanDebug.h"
 #include "UniformBufferObject.h"
 #include "Camera.h"
 
@@ -45,9 +45,19 @@ namespace Pelican
 	void VulkanRenderer::Initialize()
 	{
 		CreateInstance();
-		SetupDebugMessenger();
+
+		if (m_EnableValidationLayers)
+		{
+			VkDebug::Setup(m_VkInstance);
+		}
 
 		m_pDevice = new VulkanDevice(m_VkInstance);
+
+		if (m_EnableValidationLayers)
+		{
+			VkDebugMarker::Setup(m_pDevice->GetDevice());
+		}
+
 		m_pSwapChain = new VulkanSwapChain(m_pDevice);
 
 		CreateRenderPass();
@@ -104,7 +114,7 @@ namespace Pelican
 
 		if (m_EnableValidationLayers)
 		{
-			VulkanProxy::DestroyDebugUtilsMessenger(m_VkInstance, m_VkDebugMessenger, nullptr);
+			VkDebug::FreeDebugCallback(m_VkInstance);
 		}
 
 		vkDestroyInstance(m_VkInstance, nullptr);
@@ -237,7 +247,7 @@ namespace Pelican
 			createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
 			createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
 
-			debugCreateInfo = VkInit::DebugUtilsMessengerCreateInfo(DebugCallback);
+			debugCreateInfo = VkInit::DebugUtilsMessengerCreateInfo(VkDebug::DebugCallback);
 			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 		}
 		else
@@ -289,6 +299,7 @@ namespace Pelican
 		if (m_EnableValidationLayers)
 		{
 			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+			extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 		}
 
 		return extensions;
@@ -307,16 +318,6 @@ namespace Pelican
 		{
 			std::cout << "\t" << extension.extensionName << std::endl;
 		}
-	}
-
-	void VulkanRenderer::SetupDebugMessenger()
-	{
-		if (!m_EnableValidationLayers)
-			return;
-	
-		VkDebugUtilsMessengerCreateInfoEXT createInfo = VkInit::DebugUtilsMessengerCreateInfo(DebugCallback);
-	
-		VK_CHECK(VulkanProxy::CreateDebugUtilsMessenger(m_VkInstance, &createInfo, nullptr, &m_VkDebugMessenger));
 	}
 
 	void VulkanRenderer::CreateRenderPass()
@@ -373,6 +374,8 @@ namespace Pelican
 		renderPassInfo.pDependencies = &dependency;
 
 		VK_CHECK(vkCreateRenderPass(m_pDevice->GetDevice(), &renderPassInfo, nullptr, &m_VkRenderPass));
+
+		VkDebugMarker::SetRenderPassName(m_pDevice->GetDevice(), m_VkRenderPass, "Main Render Pass");
 	}
 
 	void VulkanRenderer::CreateDescriptorSetLayout()
@@ -855,32 +858,6 @@ namespace Pelican
 		vkCmdEndRenderPass(m_VkCommandBuffers[m_CurrentBuffer]);
 
 		VK_CHECK(vkEndCommandBuffer(m_VkCommandBuffers[m_CurrentBuffer]));
-	}
-
-	VkBool32 VulkanRenderer::DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT,
-	                                       const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
-	{
-		switch (severity)
-		{
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-			Logger::LogTrace("[VULKAN] %s", pCallbackData->pMessage);
-			break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-			Logger::LogInfo("[VULKAN] %s", pCallbackData->pMessage);
-			break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-			Logger::LogWarning("[VULKAN] %s", pCallbackData->pMessage);
-			break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-			Logger::LogError("[VULKAN] %s", pCallbackData->pMessage);
-			break;
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
-			Logger::LogDebug("[VULKAN] %s", pCallbackData->pMessage);
-			break;
-		default: break;
-		}
-
-		return VK_FALSE;
 	}
 
 	std::vector<char> VulkanRenderer::ReadFile(const std::string& filename)

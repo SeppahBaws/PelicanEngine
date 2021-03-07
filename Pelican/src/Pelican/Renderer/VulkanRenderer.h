@@ -51,8 +51,6 @@ namespace Pelican
 		std::vector<const char*> GetRequiredExtensions();
 		void PrintExtensions();
 
-		void SetupDebugMessenger();
-
 		void CreateRenderPass();
 
 		void CreateDescriptorSetLayout();
@@ -88,13 +86,6 @@ namespace Pelican
 		void EndCommandBuffers();
 
 	private:
-		static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
-			VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-			VkDebugUtilsMessageTypeFlagsEXT messageType,
-			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-			void* pUserData);
-
-	private:
 		static std::vector<char> ReadFile(const std::string& filename);
 
 	private:
@@ -110,7 +101,6 @@ namespace Pelican
 		const std::vector<const char*> m_ValidationLayers = {
 			"VK_LAYER_KHRONOS_validation"
 		};
-		VkDebugUtilsMessengerEXT m_VkDebugMessenger{};
 
 		VulkanDevice* m_pDevice{};
 		VulkanSwapChain* m_pSwapChain{};

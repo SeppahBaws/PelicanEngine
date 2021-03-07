@@ -6,6 +6,7 @@
 
 #include "Pelican/Input/Input.h"
 
+#include "Pelican/Renderer/VulkanDebug.h"
 #include "Pelican/Renderer/VulkanDevice.h"
 #include "Pelican/Renderer/VulkanHelpers.h"
 #include "Pelican/Renderer/VulkanRenderer.h"
@@ -157,9 +158,12 @@ namespace Pelican
 
 	void ImGuiWrapper::Render(VkCommandBuffer cmdBuffer)
 	{
+		VkDebugMarker::BeginRegion(cmdBuffer, "Debug UI Render", glm::vec4(0.2f, 0.2f, 0.8f, 1.0f));
 
 		ImGui::EndFrame();
 		ImGui::Render();
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
+
+		VkDebugMarker::EndRegion(cmdBuffer);
 	}
 }

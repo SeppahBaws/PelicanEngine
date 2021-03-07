@@ -14,6 +14,7 @@
 #include "Pelican/Core/System/FileDialog.h"
 
 #include "Pelican/Renderer/Camera.h"
+#include "Pelican/Renderer/VulkanDebug.h"
 
 
 namespace Pelican
@@ -101,10 +102,15 @@ namespace Pelican
 	{
 		auto view = m_Registry.view<TransformComponent, ModelComponent>();
 
+		VkDebugMarker::BeginRegion(VulkanRenderer::GetCurrentBuffer(), "Scene Render", glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
+
 		for (auto [entity, transform, model] : view.each())
 		{
 			model.pModel->Draw();
 		}
+
+		VkDebugMarker::EndRegion(VulkanRenderer::GetCurrentBuffer());
+
 
 		bool isOpen = true;
 		// Debug UI

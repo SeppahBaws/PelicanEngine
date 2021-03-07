@@ -3,13 +3,13 @@
     {
       "components": [
         {
-          "name": "Flashlight",
+          "name": "Gun",
           "type": "TagComponent"
         },
         {
           "position": [
-            -1.5,
-            20.0,
+            0.0,
+            15.0,
             10.0
           ],
           "rotation": [
@@ -18,14 +18,14 @@
             0.0
           ],
           "scale": [
-            0.5,
-            0.5,
-            0.5
+            0.10000000149011612,
+            0.10000000149011612,
+            0.10000000149011612
           ],
           "type": "TransformComponent"
         },
         {
-          "assetPath": "res/models/tactical_flashlight/scene.gltf",
+          "assetPath": "res/models/cerberus_gun/scene.gltf",
           "type": "ModelComponent"
         }
       ]
@@ -63,13 +63,13 @@
     {
       "components": [
         {
-          "name": "Gun",
+          "name": "Flashlight",
           "type": "TagComponent"
         },
         {
           "position": [
-            0.0,
-            15.0,
+            -1.5,
+            20.0,
             10.0
           ],
           "rotation": [
@@ -78,18 +78,18 @@
             0.0
           ],
           "scale": [
-            0.10000000149011612,
-            0.10000000149011612,
-            0.10000000149011612
+            0.5,
+            0.5,
+            0.5
           ],
           "type": "TransformComponent"
         },
         {
-          "assetPath": "res/models/cerberus_gun/scene.gltf",
+          "assetPath": "res/models/tactical_flashlight/scene.gltf",
           "type": "ModelComponent"
         }
       ]
     }
   ],
-  "name": "Hello World"
+  "name": "Demo Scene"
 }

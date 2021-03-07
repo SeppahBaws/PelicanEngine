@@ -13,8 +13,8 @@ namespace Pelican
 		std::vector<VkPresentModeKHR> presentModes;
 	};
 
-	const std::vector<const char*> g_DeviceExtensions = {
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	inline std::vector<const char*> g_DeviceExtensions = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
 #define LOGE(...) fprintf(stderr, "ERROR: " __VA_ARGS__)

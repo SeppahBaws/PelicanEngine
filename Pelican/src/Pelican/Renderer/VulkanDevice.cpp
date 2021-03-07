@@ -121,14 +121,19 @@ namespace Pelican
 		VkPhysicalDeviceFeatures deviceFeatures{};
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
 
+		if (PELICAN_VALIDATE)
+		{
+			g_DeviceExtensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+		}
+
 		VkDeviceCreateInfo createInfo = VkInit::DeviceCreateInfo(queueCreateInfos, &deviceFeatures, g_DeviceExtensions);
 
-		VK_CHECK(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device));
+		VkResult result = vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device);
+		VK_CHECK(result);
 
 		vkGetDeviceQueue(m_Device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
 		vkGetDeviceQueue(m_Device, indices.presentFamily.value(), 0, &m_PresentQueue);
 	}
-
 
 	bool VulkanDevice::IsDeviceSuitable(VkPhysicalDevice device)
 	{
