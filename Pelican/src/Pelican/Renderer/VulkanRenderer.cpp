@@ -48,10 +48,10 @@ namespace Pelican
 
 		if (m_EnableValidationLayers)
 		{
-			VkDebug::Setup(m_VkInstance);
+			VkDebug::Setup(m_Instance.get());
 		}
 
-		m_pDevice = new VulkanDevice(m_VkInstance);
+		m_pDevice = new VulkanDevice(m_Instance.get());
 
 		if (m_EnableValidationLayers)
 		{
@@ -74,7 +74,7 @@ namespace Pelican
 		m_pImGui = new ImGuiWrapper();
 
 		ImGuiInitInfo imGuiInit = {};
-		imGuiInit.instance = m_VkInstance;
+		imGuiInit.instance = m_Instance.get();
 		imGuiInit.physicalDevice = m_pDevice->GetPhysicalDevice();
 		imGuiInit.device = m_pDevice->GetDevice();
 		imGuiInit.queue = GetGraphicsQueue();
@@ -114,10 +114,10 @@ namespace Pelican
 
 		if (m_EnableValidationLayers)
 		{
-			VkDebug::FreeDebugCallback(m_VkInstance);
+			VkDebug::FreeDebugCallback(m_Instance.get());
 		}
 
-		vkDestroyInstance(m_VkInstance, nullptr);
+		// vkDestroyInstance(m_Instance, nullptr);
 	}
 
 	bool VulkanRenderer::BeginScene()
@@ -227,36 +227,37 @@ namespace Pelican
 			ASSERT_MSG(false, "validation layers requested, but not available!");
 		}
 
-		VkApplicationInfo appInfo = VkInit::ApplicationInfo();
-		appInfo.pApplicationName = "Pelican Game";
-		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.pEngineName = "Pelican Engine";
-		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_2;
+		vk::ApplicationInfo appinfo(
+			"Pelican Game",
+			VK_MAKE_VERSION(1, 0, 0),
+			"Pelican Engine",
+			VK_MAKE_VERSION(1, 0, 0));
 
 		// Extensions
 		const std::vector<const char*> extensions = GetRequiredExtensions();
-		VkInstanceCreateInfo createInfo = VkInit::InstanceCreateInfo(&appInfo, extensions);
+		vk::InstanceCreateInfo createInfo(
+			{},
+			&appinfo,
+			0, nullptr, // enabled layers
+			static_cast<uint32_t>(extensions.size()), extensions.data());
 
 		PrintExtensions();
 
 		// Layers
-		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 		if (m_EnableValidationLayers)
 		{
 			createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
 			createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
-
-			debugCreateInfo = VkInit::DebugUtilsMessengerCreateInfo(VkDebug::DebugCallback);
-			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 		}
-		else
+
+		try
 		{
-			createInfo.enabledLayerCount = 0;
-			createInfo.pNext = nullptr;
+			m_Instance = vk::createInstanceUnique(createInfo);
 		}
-
-		VK_CHECK(vkCreateInstance(&createInfo, nullptr, &m_VkInstance));
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error(std::string("Failed to create instance: ") + e.what());
+		}
 	}
 
 	bool VulkanRenderer::CheckValidationLayerSupport()

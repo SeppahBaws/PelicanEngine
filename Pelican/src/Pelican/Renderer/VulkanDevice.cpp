@@ -9,8 +9,8 @@
 
 namespace Pelican
 {
-	VulkanDevice::VulkanDevice(VkInstance instance)
-		: m_VulkanInstance(instance)
+	VulkanDevice::VulkanDevice(vk::Instance instance)
+		: m_Instance(instance)
 	{
 		CreateSurface();
 		PickPhysicalDevice();
@@ -19,42 +19,49 @@ namespace Pelican
 
 	VulkanDevice::~VulkanDevice()
 	{
-		vkDestroyDevice(m_Device, nullptr);
-		vkDestroySurfaceKHR(m_VulkanInstance, m_Surface, nullptr);
+		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 	}
 
 	void VulkanDevice::WaitIdle()
 	{
-		vkDeviceWaitIdle(m_Device);
+		m_Device->waitIdle();
 	}
 
-	QueueFamilyIndices VulkanDevice::FindQueueFamilies()
+	QueueFamilyIndices VulkanDevice::FindQueueFamilies() const
 	{
-		ASSERT_MSG(m_PhysicalDevice != VK_NULL_HANDLE, "m_PhysicalDevice hasn't been initialized yet. Please pass in a valid physical device");
+		if (!m_PhysicalDevice)
+		{
+			throw std::runtime_error("m_PhysicalDevice hasn't been initialized yet. Please pass in a valid physical device");
+		}
 
 		return FindQueueFamilies(m_PhysicalDevice);
 	}
 
-	QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice physicalDevice)
+	QueueFamilyIndices VulkanDevice::FindQueueFamilies(vk::PhysicalDevice physicalDevice) const
 	{
 		QueueFamilyIndices indices;
 
 		uint32_t queueFamilyCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
+		physicalDevice.getQueueFamilyProperties(&queueFamilyCount, nullptr);
 
-		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
+		std::vector<vk::QueueFamilyProperties> queueFamilies(queueFamilyCount);
+		physicalDevice.getQueueFamilyProperties(&queueFamilyCount, queueFamilies.data());
 
 		int i = 0;
 		for (const auto& queueFamily : queueFamilies)
 		{
-			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics)
 			{
 				indices.graphicsFamily = i;
 			}
 
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, m_Surface, &presentSupport);
+			vk::Bool32 presentSupport = false;
+			const vk::Result result = physicalDevice.getSurfaceSupportKHR(i, m_Surface, &presentSupport);
+			if (result != vk::Result::eSuccess)
+			{
+				throw std::runtime_error("Failed to get physical device surface support!");
+			}
+
 			if (presentSupport)
 			{
 				indices.presentFamily = i;
@@ -73,23 +80,18 @@ namespace Pelican
 
 	void VulkanDevice::CreateSurface()
 	{
-		VK_CHECK(glfwCreateWindowSurface(m_VulkanInstance, Application::Get().GetWindow()->GetGLFWWindow(), nullptr, &m_Surface));
+		VK_CHECK(glfwCreateWindowSurface(m_Instance, Application::Get().GetWindow()->GetGLFWWindow(), nullptr, &m_Surface));
 	}
 
 	void VulkanDevice::PickPhysicalDevice()
 	{
-		uint32_t deviceCount = 0;
-		vkEnumeratePhysicalDevices(m_VulkanInstance, &deviceCount, nullptr);
-
-		if (deviceCount == 0)
+		std::vector<vk::PhysicalDevice> devices = m_Instance.enumeratePhysicalDevices();
+		if (devices.empty())
 		{
-			ASSERT_MSG(false, "failed to find GPUs with Vulkan support!");
+			throw std::runtime_error("Failed to find GPUs with Vulkan support!");
 		}
 
-		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(m_VulkanInstance, &deviceCount, devices.data());
-
-		for (const auto& device : devices)
+		for (const vk::PhysicalDevice& device : devices)
 		{
 			if (IsDeviceSuitable(device))
 			{
@@ -98,27 +100,24 @@ namespace Pelican
 			}
 		}
 
-		if (m_PhysicalDevice == VK_NULL_HANDLE)
+		if (!m_PhysicalDevice)
 		{
-			ASSERT_MSG(false, "failed to find a suitable GPU!");
+			throw std::runtime_error("Failed to find a suitable GPU!");
 		}
 	}
 
 	void VulkanDevice::CreateLogicalDevice()
 	{
 		QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
-
-		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(),indices.presentFamily.value() };
-
 		float queuePriority = 1.0f;
-		for (uint32_t queueFamily : uniqueQueueFamilies)
-		{
-			VkDeviceQueueCreateInfo queueCreateInfo = VkInit::DeviceQueueCreateInfo(queueFamily, 1, &queuePriority);
-			queueCreateInfos.push_back(queueCreateInfo);
-		}
+		vk::DeviceQueueCreateInfo queueCreateInfo = vk::DeviceQueueCreateInfo(
+			{},
+			indices.graphicsFamily.value(),
+			1,
+			&queuePriority
+		);
 
-		VkPhysicalDeviceFeatures deviceFeatures{};
+		vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
 
 		if (PELICAN_VALIDATE)
@@ -126,22 +125,35 @@ namespace Pelican
 			g_DeviceExtensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
 		}
 
-		VkDeviceCreateInfo createInfo = VkInit::DeviceCreateInfo(queueCreateInfos, &deviceFeatures, g_DeviceExtensions);
+		const vk::DeviceCreateInfo createInfo = vk::DeviceCreateInfo(
+			{},
+			1, &queueCreateInfo,
+			0, nullptr,
+			static_cast<uint32_t>(g_DeviceExtensions.size()),
+			g_DeviceExtensions.data(),
+			&deviceFeatures
+		);
 
-		VkResult result = vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device);
-		VK_CHECK(result);
+		try
+		{
+			m_Device = m_PhysicalDevice.createDeviceUnique(createInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error(std::string("Failed to create logical device: ") + e.what());
+		}
 
-		vkGetDeviceQueue(m_Device, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
-		vkGetDeviceQueue(m_Device, indices.presentFamily.value(), 0, &m_PresentQueue);
+		m_GraphicsQueue = m_Device->getQueue(indices.graphicsFamily.value(), 0);
+		m_PresentQueue = m_Device->getQueue(indices.presentFamily.value(), 0);
 	}
 
-	bool VulkanDevice::IsDeviceSuitable(VkPhysicalDevice device)
+	bool VulkanDevice::IsDeviceSuitable(vk::PhysicalDevice device) const
 	{
-		VkPhysicalDeviceProperties deviceProperties;
-		VkPhysicalDeviceFeatures deviceFeatures;
-		vkGetPhysicalDeviceProperties(device, &deviceProperties);
-		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-
+		vk::PhysicalDeviceProperties deviceProperties;
+		vk::PhysicalDeviceFeatures deviceFeatures;
+		device.getProperties(&deviceProperties);
+		device.getFeatures(&deviceFeatures);
+		
 		QueueFamilyIndices indices = FindQueueFamilies(device);
 
 		bool extensionsSupported = VulkanHelpers::CheckDeviceExtensionSupport(device);
@@ -153,10 +165,10 @@ namespace Pelican
 			swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 		}
 
-		VkPhysicalDeviceFeatures supportedFeatures;
-		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+		vk::PhysicalDeviceFeatures supportedFeatures;
+		device.getFeatures(&supportedFeatures);
 
-		return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+		return deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu &&
 			indices.IsComplete() && extensionsSupported && swapChainAdequate &&
 			supportedFeatures.samplerAnisotropy;
 	}

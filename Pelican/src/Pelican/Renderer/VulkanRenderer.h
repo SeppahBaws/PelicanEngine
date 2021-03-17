@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
@@ -33,7 +33,7 @@ namespace Pelican
 
 	public:
 		static int GetMaxImages() { return m_pInstance->MAX_FRAMES_IN_FLIGHT; }
-		static VkInstance GetInstance() { return m_pInstance->m_VkInstance; }
+		static VkInstance GetInstance() { return m_pInstance->m_Instance.get(); }
 		static VulkanDevice* GetVulkanDevice() { return m_pInstance->m_pDevice; }
 		static VkDevice GetDevice() { return m_pInstance->m_pDevice->GetDevice(); }
 		static VkRenderPass GetRenderPass() { return m_pInstance->m_VkRenderPass; }
@@ -94,7 +94,7 @@ namespace Pelican
 	private:
 		static VulkanRenderer* m_pInstance;
 
-		VkInstance m_VkInstance{};
+		vk::UniqueInstance m_Instance;
 
 		const bool m_EnableValidationLayers = PELICAN_VALIDATE;
 

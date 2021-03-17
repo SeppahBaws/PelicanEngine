@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <optional>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 namespace Pelican
 {
@@ -10,7 +10,7 @@ namespace Pelican
 		std::optional<uint32_t> graphicsFamily;
 		std::optional<uint32_t> presentFamily;
 
-		bool IsComplete() const
+		[[nodiscard]] bool IsComplete() const
 		{
 			return graphicsFamily.has_value() && presentFamily.has_value();
 		}
@@ -19,37 +19,37 @@ namespace Pelican
 	class VulkanDevice final
 	{
 	public:
-		VulkanDevice(VkInstance instance);
+		VulkanDevice(vk::Instance instance);
 		~VulkanDevice();
 
 		void WaitIdle();
 
-		VkDevice GetDevice() const { return m_Device; }
-		VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
-		VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
-		VkQueue GetPresentQueue() const { return m_PresentQueue; }
-		VkSurfaceKHR GetSurface() const { return m_Surface; }
+		[[nodiscard]] vk::Device GetDevice() const { return m_Device.get(); }
+		[[nodiscard]] vk::PhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
+		[[nodiscard]] vk::Queue GetGraphicsQueue() const { return m_GraphicsQueue; }
+		[[nodiscard]] vk::Queue GetPresentQueue() const { return m_PresentQueue; }
+		[[nodiscard]] VkSurfaceKHR GetSurface() const { return m_Surface; }
 
 		// Finds queue families for VulkanDevice's physical device.
 		// !! Make sure to only call this function after the device has been initialized !!
-		QueueFamilyIndices FindQueueFamilies();
+		[[nodiscard]] QueueFamilyIndices FindQueueFamilies() const;
 		// Finds queue families for the given physical device
-		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice physicalDevice);
+		[[nodiscard]] QueueFamilyIndices FindQueueFamilies(vk::PhysicalDevice physicalDevice) const;
 
 	private:
 		void CreateSurface();
 		void PickPhysicalDevice();
 		void CreateLogicalDevice();
 
-		bool IsDeviceSuitable(VkPhysicalDevice device);
+		bool IsDeviceSuitable(vk::PhysicalDevice device) const;
 
 	private:
-		VkInstance m_VulkanInstance;
+		vk::Instance m_Instance;
 
 		VkSurfaceKHR m_Surface{};
-		VkDevice m_Device{};
-		VkPhysicalDevice m_PhysicalDevice{};
-		VkQueue m_GraphicsQueue{};
-		VkQueue m_PresentQueue{};
+		vk::UniqueDevice m_Device{};
+		vk::PhysicalDevice m_PhysicalDevice{};
+		vk::Queue m_GraphicsQueue{};
+		vk::Queue m_PresentQueue{};
 	};
 }
