@@ -80,7 +80,10 @@ namespace Pelican
 
 	void VulkanDevice::CreateSurface()
 	{
-		VK_CHECK(glfwCreateWindowSurface(m_Instance, Application::Get().GetWindow()->GetGLFWWindow(), nullptr, &m_Surface));
+		VkSurfaceKHR rawSurface;
+		VK_CHECK(glfwCreateWindowSurface(m_Instance, Application::Get().GetWindow()->GetGLFWWindow(), nullptr, &rawSurface));
+
+		m_Surface = rawSurface;
 	}
 
 	void VulkanDevice::PickPhysicalDevice()
@@ -140,7 +143,7 @@ namespace Pelican
 		}
 		catch (vk::SystemError& e)
 		{
-			throw std::runtime_error(std::string("Failed to create logical device: ") + e.what());
+			throw std::runtime_error("Failed to create logical device: "s + e.what());
 		}
 
 		m_GraphicsQueue = m_Device->getQueue(indices.graphicsFamily.value(), 0);

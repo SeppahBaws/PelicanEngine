@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Vertex.h"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 #include "Camera.h"
 
@@ -42,14 +42,14 @@ namespace Pelican
 		std::vector<Vertex> m_Vertices{};
 		std::vector<uint32_t> m_Indices{};
 
-		VkBuffer m_UniformBuffer{};
-		VkDeviceMemory m_UniformBufferMemory{};
+		vk::Buffer m_UniformBuffer{};
+		vk::DeviceMemory m_UniformBufferMemory{};
 
-		VkBuffer m_VkVertexBuffer{};
-		VkDeviceMemory m_VkVertexBufferMemory{};
-		VkBuffer m_VkIndexBuffer{};
-		VkDeviceMemory m_VkIndexBufferMemory{};
-		VkDescriptorSet m_DescriptorSet{};
+		vk::Buffer m_VertexBuffer{};
+		vk::DeviceMemory m_VertexBufferMemory{};
+		vk::Buffer m_IndexBuffer{};
+		vk::DeviceMemory m_IndexBufferMemory{};
+		vk::DescriptorSet m_DescriptorSet{};
 
 		// VulkanTexture* m_pTexture{};
 		VulkanTexture* m_pTextures[static_cast<uint32_t>(TextureSlot::SLOT_COUNT)]{};

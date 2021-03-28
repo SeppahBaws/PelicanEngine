@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 namespace Pelican
 {
@@ -13,35 +13,35 @@ namespace Pelican
 		~VulkanSwapChain();
 
 		void Initialize();
-		void CreateFramebuffers(VkImageView depthImageView, VkRenderPass renderPass);
+		void CreateFramebuffers(vk::ImageView depthImageView, vk::RenderPass renderPass);
 		void Cleanup();
 
-		VkSwapchainKHR GetSwapChain() const { return m_SwapChain; }
-		VkFormat GetImageFormat() const { return m_SwapChainImageFormat; }
-		VkExtent2D GetExtent() const { return m_SwapChainExtent; }
-		std::vector<VkImageView> GetImageViews() const { return m_SwapChainImageViews; }
-		std::vector<VkImage> GetImages() const { return m_SwapChainImages; }
-		std::vector<VkFramebuffer> GetFramebuffers() const { return m_Framebuffers; }
+		vk::SwapchainKHR GetSwapChain() const { return m_SwapChain; }
+		vk::Format GetImageFormat() const { return m_SwapChainImageFormat; }
+		vk::Extent2D GetExtent() const { return m_SwapChainExtent; }
+		std::vector<vk::ImageView> GetImageViews() const { return m_SwapChainImageViews; }
+		std::vector<vk::Image> GetImages() const { return m_SwapChainImages; }
+		std::vector<vk::Framebuffer> GetFramebuffers() const { return m_Framebuffers; }
 
 	private:
-		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+		vk::SurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) const;
+		vk::PresentModeKHR ChooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) const;
+		vk::Extent2D ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const;
 
 		void CreateSwapChain();
 		void CreateImageViews();
 
 		// TODO: SwapChain should use textures, which then hold CreateImageView, but for now we'll just duplicate this function.
-		VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+		vk::ImageView CreateImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags) const;
 
 	private:
 		VulkanDevice* m_pDevice{};
 
-		VkSwapchainKHR m_SwapChain{};
-		std::vector<VkImage> m_SwapChainImages{};
-		VkFormat m_SwapChainImageFormat{};
-		VkExtent2D m_SwapChainExtent{};
-		std::vector<VkImageView> m_SwapChainImageViews{};
-		std::vector<VkFramebuffer> m_Framebuffers{};
+		vk::SwapchainKHR m_SwapChain{};
+		std::vector<vk::Image> m_SwapChainImages{};
+		vk::Format m_SwapChainImageFormat{};
+		vk::Extent2D m_SwapChainExtent{};
+		std::vector<vk::ImageView> m_SwapChainImageViews{};
+		std::vector<vk::Framebuffer> m_Framebuffers{};
 	};
 }

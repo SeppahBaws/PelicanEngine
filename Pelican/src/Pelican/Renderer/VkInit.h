@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 namespace Pelican
 {
@@ -10,63 +10,63 @@ namespace Pelican
 		// Instance related infos
 		//-----------------------------------------------------------
 
-		VkApplicationInfo ApplicationInfo();
-		VkInstanceCreateInfo InstanceCreateInfo(const VkApplicationInfo* appInfo, const std::vector<const char*>& extensions);
-		VkDebugUtilsMessengerCreateInfoEXT DebugUtilsMessengerCreateInfo(PFN_vkDebugUtilsMessengerCallbackEXT callback);
+		vk::ApplicationInfo ApplicationInfo();
+		vk::InstanceCreateInfo InstanceCreateInfo(const vk::ApplicationInfo* appInfo, const std::vector<const char*>& extensions);
+		vk::DebugUtilsMessengerCreateInfoEXT DebugUtilsMessengerCreateInfo(PFN_vkDebugUtilsMessengerCallbackEXT callback);
 
 
 		//-----------------------------------------------------------
 		// Device related infos
 		//-----------------------------------------------------------
 
-		VkDeviceQueueCreateInfo DeviceQueueCreateInfo(uint32_t queueFamilyIndex, uint32_t queueCount, const float* pQueuePriorities);
-		VkDeviceCreateInfo DeviceCreateInfo(const std::vector<VkDeviceQueueCreateInfo>& queueCreateInfos, const VkPhysicalDeviceFeatures* enabledFeatures, const std::vector<const char*>& enabledExtensionNames);
+		vk::DeviceQueueCreateInfo DeviceQueueCreateInfo(uint32_t queueFamilyIndex, uint32_t queueCount, const float* pQueuePriorities);
+		vk::DeviceCreateInfo DeviceCreateInfo(const std::vector<vk::DeviceQueueCreateInfo>& queueCreateInfos, const vk::PhysicalDeviceFeatures* enabledFeatures, const std::vector<const char*>& enabledExtensionNames);
 
 
 		//-----------------------------------------------------------
 		// Swap chain related infos
 		//-----------------------------------------------------------
 
-		VkSwapchainCreateInfoKHR SwapchainCreateInfo();
+		vk::SwapchainCreateInfoKHR SwapchainCreateInfo();
 
 
 		//-----------------------------------------------------------
 		// Graphics pipeline and render pass related infos
 		//-----------------------------------------------------------
 
-		VkPipelineVertexInputStateCreateInfo VertexInputStateCreateInfo();
-		VkPipelineInputAssemblyStateCreateInfo InputAssemblyStateCreateInfo(VkPrimitiveTopology topology);
-		VkPipelineRasterizationStateCreateInfo RasterizationStateCreateInfo(VkPolygonMode polygonMode, VkCullModeFlags cullMode);
-		VkPipelineMultisampleStateCreateInfo MultisampleStateCreateInfo();
-		VkPipelineDepthStencilStateCreateInfo DepthStencilCreateInfo(bool depthTest, bool depthWrite, VkCompareOp compareOp);
-		VkPipelineColorBlendAttachmentState ColorBlendAttachmentState();
-		VkPipelineColorBlendStateCreateInfo ColorBlendState();
-		VkPipelineLayoutCreateInfo PipelineLayoutCreateInfo();
+		vk::PipelineVertexInputStateCreateInfo VertexInputStateCreateInfo();
+		vk::PipelineInputAssemblyStateCreateInfo InputAssemblyStateCreateInfo(vk::PrimitiveTopology topology);
+		vk::PipelineRasterizationStateCreateInfo RasterizationStateCreateInfo(vk::PolygonMode polygonMode, vk::CullModeFlags cullMode);
+		vk::PipelineMultisampleStateCreateInfo MultisampleStateCreateInfo();
+		vk::PipelineDepthStencilStateCreateInfo DepthStencilCreateInfo(bool depthTest, bool depthWrite, vk::CompareOp compareOp);
+		vk::PipelineColorBlendAttachmentState ColorBlendAttachmentState();
+		vk::PipelineColorBlendStateCreateInfo ColorBlendState();
+		vk::PipelineLayoutCreateInfo PipelineLayoutCreateInfo();
 
-		VkRenderPassBeginInfo RenderPassBeginInfo();
+		vk::RenderPassBeginInfo RenderPassBeginInfo();
 
 
 		//-----------------------------------------------------------
 		// Image related infos
 		//-----------------------------------------------------------
 
-		VkImageCreateInfo ImageCreateInfo(VkImageType imageType);
-		VkImageViewCreateInfo ImageViewCreateInfo(VkImage image, VkImageViewType viewType, VkFormat format, VkImageViewCreateFlags flags = 0);
-		VkImageMemoryBarrier ImageMemoryBarrier();
+		vk::ImageCreateInfo ImageCreateInfo(vk::ImageType imageType);
+		vk::ImageViewCreateInfo ImageViewCreateInfo(vk::Image image, vk::ImageViewType viewType, vk::Format format, vk::ImageViewCreateFlags flags = {});
+		vk::ImageMemoryBarrier ImageMemoryBarrier(vk::Image image, vk::ImageLayout oldLayout = {}, vk::ImageLayout newLayout = {});
 
 
 		//-----------------------------------------------------------
 		// Uncategorized infos
 		//-----------------------------------------------------------
 
-		VkRenderPassCreateInfo RenderPassCreateInfo(VkRenderPassCreateFlags flags = 0);
-		VkDescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo(VkDescriptorSetLayoutCreateFlags flags = 0);
+		vk::RenderPassCreateInfo RenderPassCreateInfo(vk::RenderPassCreateFlags flags = {});
+		vk::DescriptorSetLayoutCreateInfo DescriptorSetLayoutCreateInfo(vk::DescriptorSetLayoutCreateFlags flags = {});
 
-		VkCommandPoolCreateInfo CommandPoolCreateInfo(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = 0);
-		VkCommandBufferAllocateInfo CommandBufferAllocateInfo(VkCommandPool pool, uint32_t count = 1, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		VkCommandBufferBeginInfo CommandBufferBeginInfo(VkCommandBufferUsageFlags flags = 0);
+		vk::CommandPoolCreateInfo CommandPoolCreateInfo(uint32_t queueFamilyIndex, vk::CommandPoolCreateFlags flags = {});
+		vk::CommandBufferAllocateInfo CommandBufferAllocateInfo(vk::CommandPool pool, uint32_t count = 1, vk::CommandBufferLevel level = vk::CommandBufferLevel::ePrimary);
+		vk::CommandBufferBeginInfo CommandBufferBeginInfo(vk::CommandBufferUsageFlags flags = {});
 
-		VkSemaphoreCreateInfo SemaphoreCreateInfo();
-		VkFenceCreateInfo FenceCreateInfo(VkFenceCreateFlags flags = 0);
+		vk::SemaphoreCreateInfo SemaphoreCreateInfo();
+		vk::FenceCreateInfo FenceCreateInfo(vk::FenceCreateFlags flags = {});
 	}
 }

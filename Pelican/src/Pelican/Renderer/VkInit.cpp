@@ -3,21 +3,17 @@
 
 namespace Pelican
 {
-	VkApplicationInfo VkInit::ApplicationInfo()
+	vk::ApplicationInfo VkInit::ApplicationInfo()
 	{
-		VkApplicationInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		info.pNext = nullptr;
+		vk::ApplicationInfo info{};
 
 		return info;
 	}
 
-	VkInstanceCreateInfo VkInit::InstanceCreateInfo(const VkApplicationInfo* appInfo,
+	vk::InstanceCreateInfo VkInit::InstanceCreateInfo(const vk::ApplicationInfo* appInfo,
 		const std::vector<const char*>& extensions)
 	{
-		VkInstanceCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::InstanceCreateInfo info{};
 
 		info.pApplicationInfo = appInfo;
 
@@ -27,27 +23,24 @@ namespace Pelican
 		return info;
 	}
 
-	VkDebugUtilsMessengerCreateInfoEXT VkInit::DebugUtilsMessengerCreateInfo(PFN_vkDebugUtilsMessengerCallbackEXT callback)
+	vk::DebugUtilsMessengerCreateInfoEXT VkInit::DebugUtilsMessengerCreateInfo(PFN_vkDebugUtilsMessengerCallbackEXT callback)
 	{
-		VkDebugUtilsMessengerCreateInfoEXT info = {};
-		info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-		info.pNext = nullptr;
+		vk::DebugUtilsMessengerCreateInfoEXT info{};
 
-		info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-			| VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-		info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-			| VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+		using MsgSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT;
+		using MsgType = vk::DebugUtilsMessageTypeFlagBitsEXT;
+
+		info.messageSeverity = MsgSeverity::eVerbose | MsgSeverity::eWarning | MsgSeverity::eError;
+		info.messageType = MsgType::eGeneral | MsgType::eValidation | MsgType::ePerformance;
 		info.pfnUserCallback = callback;
 
 		return info;
 	}
 
-	VkDeviceQueueCreateInfo VkInit::DeviceQueueCreateInfo(uint32_t queueFamilyIndex, uint32_t queueCount,
+	vk::DeviceQueueCreateInfo VkInit::DeviceQueueCreateInfo(uint32_t queueFamilyIndex, uint32_t queueCount,
 		const float* pQueuePriorities)
 	{
-		VkDeviceQueueCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::DeviceQueueCreateInfo info{};
 
 		info.queueFamilyIndex = queueFamilyIndex;
 		info.queueCount = queueCount;
@@ -56,12 +49,10 @@ namespace Pelican
 		return info;
 	}
 
-	VkDeviceCreateInfo VkInit::DeviceCreateInfo(const std::vector<VkDeviceQueueCreateInfo>& queueCreateInfos,
-		const VkPhysicalDeviceFeatures* enabledFeatures, const std::vector<const char*>& enabledExtensionNames)
+	vk::DeviceCreateInfo VkInit::DeviceCreateInfo(const std::vector<vk::DeviceQueueCreateInfo>& queueCreateInfos,
+		const vk::PhysicalDeviceFeatures* enabledFeatures, const std::vector<const char*>& enabledExtensionNames)
 	{
-		VkDeviceCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::DeviceCreateInfo info{};
 
 		info.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		info.pQueueCreateInfos = queueCreateInfos.data();
@@ -72,55 +63,42 @@ namespace Pelican
 		return info;
 	}
 
-	VkSwapchainCreateInfoKHR VkInit::SwapchainCreateInfo()
+	vk::SwapchainCreateInfoKHR VkInit::SwapchainCreateInfo()
 	{
 		// Because the Swapchain create info struct is so large, we'll just return default values in here.
-		VkSwapchainCreateInfoKHR info = {};
-		info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		info.pNext = nullptr;
+		vk::SwapchainCreateInfoKHR info{};
 
 		return info;
 	}
 
-	VkPipelineVertexInputStateCreateInfo VkInit::VertexInputStateCreateInfo()
+	vk::PipelineVertexInputStateCreateInfo VkInit::VertexInputStateCreateInfo()
 	{
-		VkPipelineVertexInputStateCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		info.pNext = nullptr;
-
-		info.vertexBindingDescriptionCount = 0;
-		info.pVertexBindingDescriptions = nullptr;
-		info.vertexAttributeDescriptionCount = 0;
-		info.pVertexAttributeDescriptions = nullptr;
+		vk::PipelineVertexInputStateCreateInfo info = {};
 
 		return info;
 	}
 
-	VkPipelineInputAssemblyStateCreateInfo VkInit::InputAssemblyStateCreateInfo(VkPrimitiveTopology topology)
+	vk::PipelineInputAssemblyStateCreateInfo VkInit::InputAssemblyStateCreateInfo(vk::PrimitiveTopology topology)
 	{
-		VkPipelineInputAssemblyStateCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::PipelineInputAssemblyStateCreateInfo info = {};
 
 		info.topology = topology;
-		info.primitiveRestartEnable = VK_FALSE;
+		info.primitiveRestartEnable = false;
 
 		return info;
 	}
 
-	VkPipelineRasterizationStateCreateInfo VkInit::RasterizationStateCreateInfo(VkPolygonMode polygonMode,
-		VkCullModeFlags cullMode)
+	vk::PipelineRasterizationStateCreateInfo VkInit::RasterizationStateCreateInfo(vk::PolygonMode polygonMode,
+		vk::CullModeFlags cullMode)
 	{
-		VkPipelineRasterizationStateCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::PipelineRasterizationStateCreateInfo info = {};
 
-		info.depthClampEnable = VK_FALSE;
-		info.rasterizerDiscardEnable = VK_FALSE;
+		info.depthClampEnable = false;
+		info.rasterizerDiscardEnable = false;
 		info.polygonMode = polygonMode;
 		info.lineWidth = 1.0f;
 		info.cullMode = cullMode;
-		info.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		info.frontFace = vk::FrontFace::eCounterClockwise;
 		info.depthBiasEnable = VK_FALSE;
 		info.depthBiasConstantFactor = 0.0f;
 		info.depthBiasClamp = 0.0f;
@@ -129,68 +107,59 @@ namespace Pelican
 		return info;
 	}
 
-	VkPipelineMultisampleStateCreateInfo VkInit::MultisampleStateCreateInfo()
+	vk::PipelineMultisampleStateCreateInfo VkInit::MultisampleStateCreateInfo()
 	{
-		VkPipelineMultisampleStateCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::PipelineMultisampleStateCreateInfo info = {};
 
-		info.sampleShadingEnable = VK_FALSE;
-		info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		info.sampleShadingEnable = false;
+		info.rasterizationSamples = vk::SampleCountFlagBits::e1;
 		info.minSampleShading = 1.0f;
 		info.pSampleMask = nullptr;
-		info.alphaToCoverageEnable = VK_FALSE;
-		info.alphaToOneEnable = VK_FALSE;
+		info.alphaToCoverageEnable = false;
+		info.alphaToOneEnable = false;
 
 		return info;
 	}
 
-	VkPipelineDepthStencilStateCreateInfo VkInit::DepthStencilCreateInfo(bool depthTest, bool depthWrite,
-		VkCompareOp compareOp)
+	vk::PipelineDepthStencilStateCreateInfo VkInit::DepthStencilCreateInfo(bool depthTest, bool depthWrite,
+		vk::CompareOp compareOp)
 	{
-		VkPipelineDepthStencilStateCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		info.pNext = nullptr;
-		info.flags = 0;
+		vk::PipelineDepthStencilStateCreateInfo info{};
 
-		info.depthTestEnable = depthTest ? VK_TRUE : VK_FALSE;
-		info.depthWriteEnable = depthWrite ? VK_TRUE : VK_FALSE;
-		info.depthCompareOp = depthTest ? compareOp : VK_COMPARE_OP_ALWAYS;
-		info.depthBoundsTestEnable = VK_FALSE;
+		info.depthTestEnable = depthTest ? true : false;
+		info.depthWriteEnable = depthWrite ? true : false;
+		info.depthCompareOp = depthTest ? compareOp : vk::CompareOp::eAlways;
+		info.depthBoundsTestEnable = false;
 		info.minDepthBounds = 0.0f;
 		info.maxDepthBounds = 1.0f;
-		info.stencilTestEnable = VK_FALSE;
+		info.stencilTestEnable = false;
 
 		return info;
 	}
 
-	VkPipelineColorBlendAttachmentState VkInit::ColorBlendAttachmentState()
+	vk::PipelineColorBlendAttachmentState VkInit::ColorBlendAttachmentState()
 	{
-		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachment.blendEnable = VK_FALSE;
+		vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
+
+		colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
+		colorBlendAttachment.blendEnable = false;
 
 		return colorBlendAttachment;
 	}
 
-	VkPipelineColorBlendStateCreateInfo VkInit::ColorBlendState()
+	vk::PipelineColorBlendStateCreateInfo VkInit::ColorBlendState()
 	{
-		VkPipelineColorBlendStateCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::PipelineColorBlendStateCreateInfo info{};
 
-		info.logicOpEnable = VK_FALSE;
-		info.logicOp = VK_LOGIC_OP_COPY;
+		info.logicOpEnable = false;
+		info.logicOp = vk::LogicOp::eCopy;
 
 		return info;
 	}
 
-	VkPipelineLayoutCreateInfo VkInit::PipelineLayoutCreateInfo()
+	vk::PipelineLayoutCreateInfo VkInit::PipelineLayoutCreateInfo()
 	{
-		VkPipelineLayoutCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		info.pNext = nullptr;
-		info.flags = 0;
+		vk::PipelineLayoutCreateInfo info{};
 
 		info.setLayoutCount = 0;
 		info.pSetLayouts = nullptr;
@@ -200,37 +169,31 @@ namespace Pelican
 		return info;
 	}
 
-	VkRenderPassBeginInfo VkInit::RenderPassBeginInfo()
+	vk::RenderPassBeginInfo VkInit::RenderPassBeginInfo()
 	{
-		VkRenderPassBeginInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		info.pNext = nullptr;
+		vk::RenderPassBeginInfo info{};
 
 		return info;
 	}
 
-	VkImageCreateInfo VkInit::ImageCreateInfo(VkImageType imageType)
+	vk::ImageCreateInfo VkInit::ImageCreateInfo(vk::ImageType imageType)
 	{
-		VkImageCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::ImageCreateInfo info{};
 
 		info.imageType = imageType;
 		info.mipLevels = 1;
 		info.arrayLayers = 1;
-		info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		info.samples = VK_SAMPLE_COUNT_1_BIT;
+		info.initialLayout = vk::ImageLayout::eUndefined;
+		info.sharingMode = vk::SharingMode::eExclusive;
+		info.samples = vk::SampleCountFlagBits::e1;
 
 		return info;
 	}
 
-	VkImageViewCreateInfo VkInit::ImageViewCreateInfo(VkImage image, VkImageViewType viewType, VkFormat format,
-		VkImageViewCreateFlags flags)
+	vk::ImageViewCreateInfo VkInit::ImageViewCreateInfo(vk::Image image, vk::ImageViewType viewType, vk::Format format,
+		vk::ImageViewCreateFlags flags)
 	{
-		VkImageViewCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::ImageViewCreateInfo info{};
 		info.flags = flags;
 
 		info.image = image;
@@ -240,18 +203,16 @@ namespace Pelican
 		return info;
 	}
 
-	VkImageMemoryBarrier VkInit::ImageMemoryBarrier()
+	vk::ImageMemoryBarrier VkInit::ImageMemoryBarrier(vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
 	{
-		VkImageMemoryBarrier barrier = {};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.pNext = nullptr;
+		vk::ImageMemoryBarrier barrier{};
 
-		barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		barrier.newLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		barrier.oldLayout = oldLayout;
+		barrier.newLayout = newLayout;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = nullptr;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.image = image;
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
@@ -260,31 +221,25 @@ namespace Pelican
 		return barrier;
 	}
 
-	VkRenderPassCreateInfo VkInit::RenderPassCreateInfo(VkRenderPassCreateFlags flags)
+	vk::RenderPassCreateInfo VkInit::RenderPassCreateInfo(vk::RenderPassCreateFlags flags)
 	{
-		VkRenderPassCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::RenderPassCreateInfo info{};
 		info.flags = flags;
 
 		return info;
 	}
 
-	VkDescriptorSetLayoutCreateInfo VkInit::DescriptorSetLayoutCreateInfo(VkDescriptorSetLayoutCreateFlags flags)
+	vk::DescriptorSetLayoutCreateInfo VkInit::DescriptorSetLayoutCreateInfo(vk::DescriptorSetLayoutCreateFlags flags)
 	{
-		VkDescriptorSetLayoutCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::DescriptorSetLayoutCreateInfo info{};
 		info.flags = flags;
 
 		return info;
 	}
 
-	VkCommandPoolCreateInfo VkInit::CommandPoolCreateInfo(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags)
+	vk::CommandPoolCreateInfo VkInit::CommandPoolCreateInfo(uint32_t queueFamilyIndex, vk::CommandPoolCreateFlags flags)
 	{
-		VkCommandPoolCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::CommandPoolCreateInfo info{};
 		info.flags = flags;
 
 		info.queueFamilyIndex = queueFamilyIndex;
@@ -292,12 +247,10 @@ namespace Pelican
 		return info;
 	}
 
-	VkCommandBufferAllocateInfo VkInit::CommandBufferAllocateInfo(VkCommandPool pool, uint32_t count,
-		VkCommandBufferLevel level)
+	vk::CommandBufferAllocateInfo VkInit::CommandBufferAllocateInfo(vk::CommandPool pool, uint32_t count,
+		vk::CommandBufferLevel level)
 	{
-		VkCommandBufferAllocateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		info.pNext = nullptr;
+		vk::CommandBufferAllocateInfo info{};
 
 		info.commandPool = pool;
 		info.commandBufferCount = count;
@@ -306,11 +259,9 @@ namespace Pelican
 		return info;
 	}
 
-	VkCommandBufferBeginInfo VkInit::CommandBufferBeginInfo(VkCommandBufferUsageFlags flags)
+	vk::CommandBufferBeginInfo VkInit::CommandBufferBeginInfo(vk::CommandBufferUsageFlags flags)
 	{
-		VkCommandBufferBeginInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		info.pNext = nullptr;
+		vk::CommandBufferBeginInfo info{};
 		info.flags = flags;
 
 		info.pInheritanceInfo = nullptr;
@@ -318,21 +269,16 @@ namespace Pelican
 		return info;
 	}
 
-	VkSemaphoreCreateInfo VkInit::SemaphoreCreateInfo()
+	vk::SemaphoreCreateInfo VkInit::SemaphoreCreateInfo()
 	{
-		VkSemaphoreCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-		info.pNext = nullptr;
-		info.flags = 0;
+		vk::SemaphoreCreateInfo info = {};
 
 		return info;
 	}
 
-	VkFenceCreateInfo VkInit::FenceCreateInfo(VkFenceCreateFlags flags)
+	vk::FenceCreateInfo VkInit::FenceCreateInfo(vk::FenceCreateFlags flags)
 	{
-		VkFenceCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		info.pNext = nullptr;
+		vk::FenceCreateInfo info = {};
 		info.flags = flags;
 
 		return info;

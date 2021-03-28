@@ -1,45 +1,41 @@
 ﻿#include "PelicanPCH.h"
 #include "VulkanHelpers.h"
 
+#include <string>
+
 #include "VkInit.h"
 #include "VulkanRenderer.h"
 
 namespace Pelican
 {
-	VkCommandBuffer VulkanHelpers::BeginSingleTimeCommands()
+	vk::CommandBuffer VulkanHelpers::BeginSingleTimeCommands()
 	{
-		VkCommandBufferAllocateInfo allocInfo = VkInit::CommandBufferAllocateInfo(VulkanRenderer::GetCommandPool());
-		allocInfo.commandBufferCount = 1;
+		const vk::CommandBufferAllocateInfo allocInfo = VkInit::CommandBufferAllocateInfo(VulkanRenderer::GetCommandPool());
 
-		VkCommandBuffer commandBuffer;
-		vkAllocateCommandBuffers(VulkanRenderer::GetDevice(), &allocInfo, &commandBuffer);
+		vk::CommandBuffer commandBuffer = VulkanRenderer::GetDevice().allocateCommandBuffers(allocInfo)[0];
 
-		VkCommandBufferBeginInfo beginInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		const vk::CommandBufferBeginInfo beginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+		commandBuffer.begin(beginInfo);
 
 		return commandBuffer;
 	}
 
-	void VulkanHelpers::EndSingleTimeCommands(VkCommandBuffer commandBuffer)
+	void VulkanHelpers::EndSingleTimeCommands(vk::CommandBuffer commandBuffer)
 	{
-		vkEndCommandBuffer(commandBuffer);
+		commandBuffer.end();
 
-		VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
+		vk::SubmitInfo submitInfo{};
+		submitInfo.setCommandBuffers(commandBuffer);
 
-		vkQueueSubmit(VulkanRenderer::GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(VulkanRenderer::GetGraphicsQueue());
+		VulkanRenderer::GetGraphicsQueue().submit(submitInfo);
+		VulkanRenderer::GetGraphicsQueue().waitIdle();
 
-		vkFreeCommandBuffers(VulkanRenderer::GetDevice(), VulkanRenderer::GetCommandPool(), 1, &commandBuffer);
+		VulkanRenderer::GetDevice().freeCommandBuffers(VulkanRenderer::GetCommandPool(), commandBuffer);
 	}
 
-	uint32_t VulkanHelpers::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+	uint32_t VulkanHelpers::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
 	{
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(VulkanRenderer::GetPhysicalDevice(), &memProperties);
+		vk::PhysicalDeviceMemoryProperties memProperties = VulkanRenderer::GetPhysicalDevice().getMemoryProperties();
 
 		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
 		{
@@ -49,52 +45,64 @@ namespace Pelican
 			}
 		}
 
-		// TODO: don't use an assert, but instead do a throw or so
-		ASSERT_MSG(false, "failed to find suitable memory type!");
-		return 0;
+		throw std::runtime_error("Failed to find suitable memory type!");
 	}
 
-	void VulkanHelpers::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-	                                 VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	void VulkanHelpers::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
+	                                 vk::Buffer& buffer, vk::DeviceMemory& bufferMemory)
 	{
-		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-		bufferInfo.size = size;
-		bufferInfo.usage = usage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		vk::BufferCreateInfo bufferInfo({}, size, usage, vk::SharingMode::eExclusive);
 
-		VK_CHECK(vkCreateBuffer(VulkanRenderer::GetDevice(), &bufferInfo, nullptr, &buffer));
+		try
+		{
+			buffer = VulkanRenderer::GetDevice().createBuffer(bufferInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to create buffer: "s + e.what());
+		}
 
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(VulkanRenderer::GetDevice(), buffer, &memRequirements);
+		vk::MemoryRequirements memRequirements = VulkanRenderer::GetDevice().getBufferMemoryRequirements(buffer);
 
-		VkMemoryAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
+		vk::MemoryAllocateInfo allocInfo(
+			memRequirements.size,
+			FindMemoryType(memRequirements.memoryTypeBits, properties)
+		);
 
-		VK_CHECK(vkAllocateMemory(VulkanRenderer::GetDevice(), &allocInfo, nullptr, &bufferMemory));
+		try
+		{
+			bufferMemory = VulkanRenderer::GetDevice().allocateMemory(allocInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to allocate buffer memory: "s + e.what());
+		}
 
-		vkBindBufferMemory(VulkanRenderer::GetDevice(), buffer, bufferMemory, 0);
+		try
+		{
+			VulkanRenderer::GetDevice().bindBufferMemory(buffer, bufferMemory, 0);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to bind buffer memory: "s + e.what());
+		}
 	}
 
-	void VulkanHelpers::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+	void VulkanHelpers::CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size)
 	{
-		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
+		vk::CommandBuffer commandBuffer = BeginSingleTimeCommands();
 
-		VkBufferCopy copyRegion{};
-		copyRegion.size = size;
-		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+		vk::BufferCopy copyRegion({}, {}, size);
+		commandBuffer.copyBuffer(srcBuffer, dstBuffer, 1, &copyRegion);
 
 		EndSingleTimeCommands(commandBuffer);
 	}
 
-	bool VulkanHelpers::CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice)
+	bool VulkanHelpers::CheckDeviceExtensionSupport(vk::PhysicalDevice physicalDevice)
 	{
-		uint32_t extensionCount;
-		vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+		using namespace std::string_literals;
 
-		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-		vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
-
+		std::vector<vk::ExtensionProperties> availableExtensions = physicalDevice.enumerateDeviceExtensionProperties(""s);
 		std::set<std::string> requiredExtensions(g_DeviceExtensions.begin(), g_DeviceExtensions.end());
 
 		for (const auto& extension : availableExtensions)
@@ -105,29 +113,13 @@ namespace Pelican
 		return requiredExtensions.empty();
 	}
 
-	SwapChainSupportDetails VulkanHelpers::QuerySwapChainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+	SwapChainSupportDetails VulkanHelpers::QuerySwapChainSupport(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface)
 	{
 		SwapChainSupportDetails details;
 
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities);
-
-		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
-
-		if (formatCount != 0)
-		{
-			details.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, details.formats.data());
-		}
-
-		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
-
-		if (presentModeCount != 0)
-		{
-			details.presentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, details.presentModes.data());
-		}
+		details.capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
+		details.formats = physicalDevice.getSurfaceFormatsKHR(surface);
+		details.presentModes = physicalDevice.getSurfacePresentModesKHR(surface);
 
 		return details;
 	}

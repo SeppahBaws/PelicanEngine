@@ -9,6 +9,9 @@
 #include <set>
 #include <functional>
 
+// useful for operator""s
+using namespace std::string_literals;
+
 #include "Pelican/Util/Defines.h"
 
 // Configuration

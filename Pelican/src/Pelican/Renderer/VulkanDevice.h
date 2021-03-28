@@ -28,7 +28,7 @@ namespace Pelican
 		[[nodiscard]] vk::PhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
 		[[nodiscard]] vk::Queue GetGraphicsQueue() const { return m_GraphicsQueue; }
 		[[nodiscard]] vk::Queue GetPresentQueue() const { return m_PresentQueue; }
-		[[nodiscard]] VkSurfaceKHR GetSurface() const { return m_Surface; }
+		[[nodiscard]] vk::SurfaceKHR GetSurface() const { return m_Surface; }
 
 		// Finds queue families for VulkanDevice's physical device.
 		// !! Make sure to only call this function after the device has been initialized !!
@@ -46,7 +46,7 @@ namespace Pelican
 	private:
 		vk::Instance m_Instance;
 
-		VkSurfaceKHR m_Surface{};
+		vk::SurfaceKHR m_Surface{};
 		vk::UniqueDevice m_Device{};
 		vk::PhysicalDevice m_PhysicalDevice{};
 		vk::Queue m_GraphicsQueue{};

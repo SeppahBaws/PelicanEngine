@@ -34,32 +34,33 @@ namespace Pelican
 		m_VertModule = CreateShaderModule(vertCode);
 		m_FragModule = CreateShaderModule(fragCode);
 
-		VkPipelineShaderStageCreateInfo vertStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
-		vertStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vertStageInfo.module = m_VertModule;
-		vertStageInfo.pName = "main";
+		vk::PipelineShaderStageCreateInfo vertStageInfo{};
+		vertStageInfo.setStage(vk::ShaderStageFlagBits::eVertex);
+		vertStageInfo.setModule(m_VertModule);
+		vertStageInfo.setPName("main");
 
-		VkPipelineShaderStageCreateInfo fragStageInfo = { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
-		fragStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragStageInfo.module = m_FragModule;
-		fragStageInfo.pName = "main";
+		vk::PipelineShaderStageCreateInfo fragStageInfo;
+		fragStageInfo.setStage(vk::ShaderStageFlagBits::eFragment);
+		fragStageInfo.setModule(m_FragModule);
+		fragStageInfo.setPName("main");
 
 		m_ShaderStages = { vertStageInfo, fragStageInfo };
 	}
 
 	void VulkanShader::Cleanup()
 	{
-		vkDestroyShaderModule(VulkanRenderer::GetDevice(), m_VertModule, nullptr);
-		vkDestroyShaderModule(VulkanRenderer::GetDevice(), m_FragModule, nullptr);
+		VulkanRenderer::GetDevice().destroyShaderModule(m_VertModule);
+		VulkanRenderer::GetDevice().destroyShaderModule(m_FragModule);
 	}
 
-	std::vector<char> VulkanShader::ReadFile(const std::string& filename)
+	std::vector<char> VulkanShader::ReadFile(const std::string& filename) const
 	{
 		std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
-		ASSERT_MSG(file.is_open(), "Failed to open file!");
+		if (!file.is_open())
+			throw std::runtime_error("Failed to open file!");
 
-		size_t fileSize = static_cast<size_t>(file.tellg());
+		const size_t fileSize = static_cast<size_t>(file.tellg());
 		std::vector<char> buffer(fileSize);
 
 		file.seekg(0);
@@ -69,14 +70,22 @@ namespace Pelican
 		return buffer;
 	}
 
-	VkShaderModule VulkanShader::CreateShaderModule(const std::vector<char>& code)
+	vk::ShaderModule VulkanShader::CreateShaderModule(const std::vector<char>& code) const
 	{
-		VkShaderModuleCreateInfo createInfo = { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+		vk::ShaderModuleCreateInfo createInfo{};
 		createInfo.codeSize = code.size();
 		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-		VkShaderModule shaderModule;
-		VK_CHECK(vkCreateShaderModule(VulkanRenderer::GetDevice(), &createInfo, nullptr, &shaderModule));
+		vk::ShaderModule shaderModule;
+
+		try
+		{
+			shaderModule = VulkanRenderer::GetDevice().createShaderModule(createInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to create shader module: "s + e.what());
+		}
 
 		return shaderModule;
 	}
