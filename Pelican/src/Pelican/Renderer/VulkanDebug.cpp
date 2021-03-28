@@ -37,7 +37,7 @@ namespace Pelican
 			return VK_FALSE;
 		}
 
-		void Setup(VkInstance instance)
+		void Setup(vk::Instance instance)
 		{
 			g_VkCreateDebugUtilsMessenger = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 			g_VkDestroyDebugUtilsMessenger = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));

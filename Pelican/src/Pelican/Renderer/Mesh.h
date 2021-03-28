@@ -32,7 +32,7 @@ namespace Pelican
 		VulkanTexture* GetTexture(TextureSlot slot);
 
 		void CreateBuffers();
-		void CreateDescriptorSet(const VkDescriptorPool& pool);
+		void CreateDescriptorSet(const vk::DescriptorPool& pool);
 
 		void Update(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj);
 		void Draw() const;

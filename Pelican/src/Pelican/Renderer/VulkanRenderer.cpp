@@ -731,7 +731,7 @@ namespace Pelican
 	}
 
 	void VulkanRenderer::CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
-		vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory)
+		vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory) const
 	{
 		vk::ImageCreateInfo imageInfo = VkInit::ImageCreateInfo(vk::ImageType::e2D);
 		imageInfo.extent.width = width;
@@ -763,7 +763,7 @@ namespace Pelican
 	}
 
 	void VulkanRenderer::TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout,
-		vk::ImageLayout newLayout)
+		vk::ImageLayout newLayout) const
 	{
 		vk::CommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
 
@@ -827,7 +827,7 @@ namespace Pelican
 		VulkanHelpers::EndSingleTimeCommands(commandBuffer);
 	}
 	
-	void VulkanRenderer::CopyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height)
+	void VulkanRenderer::CopyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height) const
 	{
 		vk::CommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
 
@@ -840,7 +840,7 @@ namespace Pelican
 		VulkanHelpers::EndSingleTimeCommands(commandBuffer);
 	}
 	
-	VkImageView VulkanRenderer::CreateImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags)
+	vk::ImageView VulkanRenderer::CreateImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags) const
 	{
 		vk::ImageViewCreateInfo viewInfo = VkInit::ImageViewCreateInfo(image, vk::ImageViewType::e2D, format);
 		viewInfo.setSubresourceRange(vk::ImageSubresourceRange(aspectFlags, 0, 1, 0, 1));
@@ -875,8 +875,7 @@ namespace Pelican
 			}
 		}
 
-		ASSERT_MSG(false, "failed to find supported format!");
-		return candidates[0];
+		throw std::runtime_error("Failed to find supported format!");
 	}
 
 	vk::Format VulkanRenderer::FindDepthFormat()
@@ -895,32 +894,51 @@ namespace Pelican
 
 	void VulkanRenderer::BeginCommandBuffers()
 	{
-		VkCommandBufferBeginInfo beginInfo = VkInit::CommandBufferBeginInfo();
+		vk::CommandBufferBeginInfo beginInfo = VkInit::CommandBufferBeginInfo();
 
-		VK_CHECK(vkBeginCommandBuffer(m_CommandBuffers[m_CurrentBuffer], &beginInfo));
+		vk::CommandBuffer& cmd = m_CommandBuffers[m_CurrentBuffer];
 
-		VkRenderPassBeginInfo renderPassInfo = VkInit::RenderPassBeginInfo();
-		renderPassInfo.renderPass = m_RenderPass;
-		renderPassInfo.framebuffer = m_pSwapChain->GetFramebuffers()[m_CurrentBuffer];
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = m_pSwapChain->GetExtent();
+		try
+		{
+			cmd.begin(beginInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to begin command buffer: "s + e.what());
+		}
 
-		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { {0.1f,0.1f,0.1f,1.0f} };
-		clearValues[1].depthStencil = { 1.0f, 0 };
+		// vk::RenderPassBeginInfo renderPassInfo = VkInit::RenderPassBeginInfo();
+		vk::RenderPassBeginInfo renderPassInfo = vk::RenderPassBeginInfo()
+			.setRenderPass(m_RenderPass)
+			.setFramebuffer(m_pSwapChain->GetFramebuffers()[m_CurrentBuffer])
+			.setRenderArea(vk::Rect2D()
+				.setOffset(vk::Offset2D(0, 0))
+				.setExtent(m_pSwapChain->GetExtent()));
 
-		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
+		std::array<vk::ClearValue, 2> clearValues{};
+		clearValues[0].setColor(vk::ClearColorValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}));
+		clearValues[1].setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0));
 
-		vkCmdBeginRenderPass(m_CommandBuffers[m_CurrentBuffer], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(m_CommandBuffers[m_CurrentBuffer], VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
+		renderPassInfo.setClearValues(clearValues);
+
+		cmd.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_GraphicsPipeline);
 	}
 
 	void VulkanRenderer::EndCommandBuffers()
 	{
-		vkCmdEndRenderPass(m_CommandBuffers[m_CurrentBuffer]);
+		vk::CommandBuffer& cmd = m_CommandBuffers[m_CurrentBuffer];
 
-		VK_CHECK(vkEndCommandBuffer(m_CommandBuffers[m_CurrentBuffer]));
+		cmd.endRenderPass();
+
+		try
+		{
+			cmd.end();
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to end command buffer: "s + e.what());
+		}
 	}
 
 	std::vector<char> VulkanRenderer::ReadFile(const std::string& filename)

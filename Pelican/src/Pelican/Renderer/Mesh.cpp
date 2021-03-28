@@ -225,7 +225,7 @@ namespace Pelican
 		}
 	}
 
-	void Mesh::CreateDescriptorSet(const VkDescriptorPool& pool)
+	void Mesh::CreateDescriptorSet(const vk::DescriptorPool& pool)
 	{
 		vk::DescriptorBufferInfo bufferInfo(m_UniformBuffer, 0, sizeof(UniformBufferObject));
 

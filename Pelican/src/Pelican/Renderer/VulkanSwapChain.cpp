@@ -68,18 +68,18 @@ namespace Pelican
 		if (!m_SwapChain)
 			return;
 
-		for (VkFramebuffer framebuffer : m_Framebuffers)
+		for (vk::Framebuffer framebuffer : m_Framebuffers)
 		{
-			vkDestroyFramebuffer(m_pDevice->GetDevice(), framebuffer, nullptr);
+			m_pDevice->GetDevice().destroyFramebuffer(framebuffer);
 		}
 
 		for (size_t i = 0; i < m_SwapChainImageViews.size(); i++)
 		{
-			vkDestroyImageView(m_pDevice->GetDevice(), m_SwapChainImageViews[i], nullptr);
+			m_pDevice->GetDevice().destroyImageView(m_SwapChainImageViews[i]);
 			m_SwapChainImageViews[i] = nullptr;
 		}
 
-		vkDestroySwapchainKHR(m_pDevice->GetDevice(), m_SwapChain, nullptr);
+		m_pDevice->GetDevice().destroySwapchainKHR(m_SwapChain);
 		m_SwapChain = nullptr;
 	}
 

@@ -73,10 +73,10 @@ namespace Pelican
 		void UpdateUniformBuffer(uint32_t currentImage);
 
 		void CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
-			vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory);
-		void TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
-		void CopyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
-		VkImageView CreateImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags);
+			vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory) const;
+		void TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) const;
+		void CopyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height) const;
+		vk::ImageView CreateImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags) const;
 
 		vk::Format FindSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 		vk::Format FindDepthFormat();

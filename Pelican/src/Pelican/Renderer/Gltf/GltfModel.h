@@ -49,7 +49,7 @@ namespace Pelican
 
 		std::string m_AssetPath{};
 
-		VkDescriptorPool m_DescriptorPool{};
+		vk::DescriptorPool m_DescriptorPool{};
 		VulkanTexture* m_pWhiteTexture{};
 	};
 }
