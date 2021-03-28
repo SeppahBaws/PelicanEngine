@@ -16,6 +16,9 @@ workspace "PelicanEngine"
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
+local vulkanDir = os.getenv("VULKAN_SDK")
+print("Vulkan is installed at " .. vulkanDir)
+
 IncludeDir = {}
 IncludeDir["GLFW"] = "%{wks.location}/Pelican/dependencies/GLFW/include"
 IncludeDir["Glm"] = "%{wks.location}/Pelican/dependencies/glm"
@@ -23,12 +26,12 @@ IncludeDir["Logtools"] = "%{wks.location}/Pelican/dependencies/logtools/logtools
 IncludeDir["stb"] = "%{wks.location}/Pelican/dependencies/stb"
 IncludeDir["json_hpp"] = "%{wks.location}/Pelican/dependencies/json_hpp/include"
 IncludeDir["tiny_gltf"] = "%{wks.location}/Pelican/dependencies/tiny_gltf/include"
-IncludeDir["Vulkan"] = "%VULKAN_SDK%/Include"
+IncludeDir["Vulkan"] = (vulkanDir .. "/Include")
 IncludeDir["ImGui"] = "%{wks.location}/Pelican/dependencies/imgui"
 IncludeDir["entt"] = "%{wks.location}/Pelican/dependencies/entt/include"
 
 LibDir = {}
-LibDir["Vulkan"] = "%VULKAN_SDK%/Lib"
+LibDir["Vulkan"] = (vulkanDir .. "/Lib")
 
 group "Dependencies"
     include "Pelican/dependencies/glfw"
