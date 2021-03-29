@@ -130,9 +130,10 @@ namespace Pelican
 
 		result = m_pDevice->GetDevice().acquireNextImageKHR(
 			m_pSwapChain->GetSwapChain(),
-			UINT64_MAX,
+			// UINT64_MAX,
+			1'000'000'000,
 			m_ImageAvailableSemaphores[m_CurrentFrame],
-			{},
+			nullptr,
 			&m_CurrentBuffer);
 
 		if (result == vk::Result::eErrorOutOfDateKHR)
@@ -170,17 +171,13 @@ namespace Pelican
 		// Submit our main scene rendering commands.
 		EndCommandBuffers();
 
-		vk::SubmitInfo submitInfo;
-
-		std::vector<vk::Semaphore> waitSemaphores = { m_ImageAvailableSemaphores[m_CurrentFrame] };
 		vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
-		submitInfo.setWaitSemaphores(waitSemaphores);
-		submitInfo.pWaitDstStageMask = waitStages;
 
-		submitInfo.setCommandBuffers(m_CommandBuffers[m_CurrentBuffer]);
-
-		std::vector<vk::Semaphore> signalSemaphores = { m_RenderFinishedSemaphores[m_CurrentFrame] };
-		submitInfo.setSignalSemaphores(signalSemaphores);
+		const vk::SubmitInfo submitInfo = vk::SubmitInfo()
+			.setWaitSemaphores(m_ImageAvailableSemaphores[m_CurrentFrame])
+			.setPWaitDstStageMask(waitStages)
+			.setCommandBuffers(m_CommandBuffers[m_CurrentBuffer])
+			.setSignalSemaphores(m_RenderFinishedSemaphores[m_CurrentFrame]);
 
 		m_pDevice->GetDevice().resetFences(m_InFlightFences[m_CurrentFrame]);
 
@@ -194,13 +191,12 @@ namespace Pelican
 		}
 
 		// Present the image to the window
-		vk::PresentInfoKHR presentInfo;
-		presentInfo.setWaitSemaphores(signalSemaphores);
-
 		std::vector<vk::SwapchainKHR> swapChains = { m_pSwapChain->GetSwapChain() };
-		presentInfo.setSwapchains(swapChains);
-		presentInfo.pImageIndices = &m_CurrentBuffer;
-		presentInfo.pResults = nullptr;
+		const vk::PresentInfoKHR presentInfo = vk::PresentInfoKHR()
+			.setWaitSemaphores(m_RenderFinishedSemaphores[m_CurrentFrame])
+			.setResults(nullptr)
+			.setImageIndices(m_CurrentBuffer)
+			.setSwapchains(swapChains);
 
 		const vk::Result result = m_pDevice->GetPresentQueue().presentKHR(presentInfo);
 
@@ -237,30 +233,29 @@ namespace Pelican
 	{
 		if (m_EnableValidationLayers && !CheckValidationLayerSupport())
 		{
-			ASSERT_MSG(false, "validation layers requested, but not available!");
+			throw std::runtime_error("Validation layers were requested, but none are available!");
 		}
 
-		vk::ApplicationInfo appInfo(
-			"Pelican Game",
-			VK_MAKE_VERSION(1, 0, 0),
-			"Pelican Engine",
-			VK_MAKE_VERSION(1, 0, 0));
+		const vk::ApplicationInfo appInfo = vk::ApplicationInfo()
+			.setPApplicationName("Pelican Game")
+			.setApplicationVersion(VK_MAKE_VERSION(1, 0, 0))
+			.setPEngineName("Pelican Engine")
+			.setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
+			.setApiVersion(VK_MAKE_VERSION(1, 2, 0));
 
-		// Extensions
 		const std::vector<const char*> extensions = GetRequiredExtensions();
-		vk::InstanceCreateInfo createInfo(
-			{},
-			&appInfo,
-			0, nullptr, // enabled layers
-			static_cast<uint32_t>(extensions.size()), extensions.data());
+
+		vk::InstanceCreateInfo createInfo = vk::InstanceCreateInfo()
+			.setPApplicationInfo(&appInfo)
+			.setPEnabledLayerNames({})
+			.setPEnabledExtensionNames(extensions);
 
 		PrintExtensions();
 
 		// Layers
 		if (m_EnableValidationLayers)
 		{
-			createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
-			createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
+			createInfo.setPEnabledLayerNames(m_ValidationLayers);
 		}
 
 		try
@@ -328,53 +323,53 @@ namespace Pelican
 
 	void VulkanRenderer::CreateRenderPass()
 	{
-		vk::AttachmentDescription colorAttachment;
-		colorAttachment.format = m_pSwapChain->GetImageFormat();
-		colorAttachment.samples = vk::SampleCountFlagBits::e1;
-		colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-		colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
-		colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-		colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-		colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
-		colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+		const vk::AttachmentDescription colorAttachment = vk::AttachmentDescription()
+			.setFormat(m_pSwapChain->GetImageFormat())
+			.setSamples(vk::SampleCountFlagBits::e1)
+			.setLoadOp(vk::AttachmentLoadOp::eClear)
+			.setStoreOp(vk::AttachmentStoreOp::eStore)
+			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+			.setInitialLayout(vk::ImageLayout::eUndefined)
+			.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
-		vk::AttachmentDescription depthAttachment{};
-		depthAttachment.format = FindDepthFormat();
-		depthAttachment.samples = vk::SampleCountFlagBits::e1;
-		depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-		depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
-		depthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-		depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-		depthAttachment.initialLayout = vk::ImageLayout::eUndefined;
-		depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		const vk::AttachmentDescription depthAttachment = vk::AttachmentDescription()
+			.setFormat(FindDepthFormat())
+			.setSamples(vk::SampleCountFlagBits::e1)
+			.setLoadOp(vk::AttachmentLoadOp::eClear)
+			.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+			.setInitialLayout(vk::ImageLayout::eUndefined)
+			.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-		vk::AttachmentReference colorAttachmentRef{};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+		const vk::AttachmentReference colorAttachmentRef = vk::AttachmentReference()
+			.setAttachment(0)
+			.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
-		vk::AttachmentReference depthAttachmentRef{};
-		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		const vk::AttachmentReference depthAttachmentRef = vk::AttachmentReference()
+			.setAttachment(1)
+			.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-		vk::SubpassDescription subpass{};
-		subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &colorAttachmentRef;
-		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+		std::array<vk::AttachmentReference, 1> colorAttachmentRefs = { colorAttachmentRef };
+		vk::SubpassDescription subpass = vk::SubpassDescription()
+			.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+			.setColorAttachments(colorAttachmentRefs)
+			.setPDepthStencilAttachment(&depthAttachmentRef);
 
-		vk::SubpassDependency dependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		dependency.srcAccessMask = {};
-		dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		vk::SubpassDependency dependency = vk::SubpassDependency()
+			.setSrcSubpass(VK_SUBPASS_EXTERNAL)
+			.setDstSubpass(0)
+			.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+			.setSrcAccessMask({})
+			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
 
 		std::array<vk::AttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
-		vk::RenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.setAttachments(attachments);
-		renderPassInfo.setSubpasses(subpass);
-		renderPassInfo.setDependencies(dependency);
+		const vk::RenderPassCreateInfo renderPassInfo = vk::RenderPassCreateInfo()
+			.setAttachments(attachments)
+			.setSubpasses(subpass)
+			.setDependencies(dependency);
 
 		try
 		{
@@ -390,33 +385,33 @@ namespace Pelican
 
 	void VulkanRenderer::CreateDescriptorSetLayout()
 	{
-		vk::DescriptorSetLayoutBinding uboLayoutBinding{};
-		uboLayoutBinding.binding = 0;
-		uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-		uboLayoutBinding.descriptorCount = 1;
-		uboLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
-		uboLayoutBinding.pImmutableSamplers = nullptr;
+		const vk::DescriptorSetLayoutBinding uboLayoutBinding = vk::DescriptorSetLayoutBinding()
+			.setBinding(0)
+			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+			.setDescriptorCount(1)
+			.setStageFlags(vk::ShaderStageFlagBits::eVertex)
+			.setPImmutableSamplers(nullptr);
 
-		vk::DescriptorSetLayoutBinding albedoSamplerBinding{};
-		albedoSamplerBinding.binding = 1;
-		albedoSamplerBinding.descriptorCount = 1;
-		albedoSamplerBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		albedoSamplerBinding.pImmutableSamplers = nullptr;
-		albedoSamplerBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		const vk::DescriptorSetLayoutBinding albedoSamplerBinding = vk::DescriptorSetLayoutBinding()
+			.setBinding(1)
+			.setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setPImmutableSamplers(nullptr)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		vk::DescriptorSetLayoutBinding normalSamplerBinding{};
-		normalSamplerBinding.binding = 2;
-		normalSamplerBinding.descriptorCount = 1;
-		normalSamplerBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		normalSamplerBinding.pImmutableSamplers = nullptr;
-		normalSamplerBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		const vk::DescriptorSetLayoutBinding normalSamplerBinding = vk::DescriptorSetLayoutBinding()
+			.setBinding(2)
+			.setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setPImmutableSamplers(nullptr)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		vk::DescriptorSetLayoutBinding metallicRoughnessSamplerBinding{};
-		metallicRoughnessSamplerBinding.binding = 3;
-		metallicRoughnessSamplerBinding.descriptorCount = 1;
-		metallicRoughnessSamplerBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		metallicRoughnessSamplerBinding.pImmutableSamplers = nullptr;
-		metallicRoughnessSamplerBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		const vk::DescriptorSetLayoutBinding metallicRoughnessSamplerBinding = vk::DescriptorSetLayoutBinding()
+			.setBinding(3)
+			.setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setPImmutableSamplers(nullptr)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
 		std::array<vk::DescriptorSetLayoutBinding, 4> bindings = {
 			uboLayoutBinding,
@@ -425,8 +420,8 @@ namespace Pelican
 			metallicRoughnessSamplerBinding
 		};
 
-		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.setBindings(bindings);
+		const vk::DescriptorSetLayoutCreateInfo layoutInfo = vk::DescriptorSetLayoutCreateInfo()
+			.setBindings(bindings);
 
 		try
 		{
@@ -445,48 +440,42 @@ namespace Pelican
 		auto bindingDescription = Vertex::GetBindingDescription();
 		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
 
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.vertexBindingDescriptionCount = 1;
-		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+		const vk::PipelineVertexInputStateCreateInfo vertexInputInfo = vk::PipelineVertexInputStateCreateInfo()
+			.setVertexBindingDescriptions(bindingDescription)
+			.setVertexAttributeDescriptions(attributeDescriptions);
 
-		vk::PipelineInputAssemblyStateCreateInfo inputAssembly{};
-		inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
-		inputAssembly.primitiveRestartEnable = false;
+		const vk::PipelineInputAssemblyStateCreateInfo inputAssembly = vk::PipelineInputAssemblyStateCreateInfo()
+			.setTopology(vk::PrimitiveTopology::eTriangleList)
+			.setPrimitiveRestartEnable(false);
 
-		vk::Viewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(m_pSwapChain->GetExtent().width);
-		viewport.height = static_cast<float>(m_pSwapChain->GetExtent().height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
+		vk::Viewport viewport = vk::Viewport()
+			.setX(0.0f).setY(0.0f)
+			.setWidth(static_cast<float>(m_pSwapChain->GetExtent().width))
+			.setHeight(static_cast<float>(m_pSwapChain->GetExtent().height))
+			.setMinDepth(0.0f).setMaxDepth(1.0f);
 
-		vk::Rect2D scissor{};
-		scissor.offset = vk::Offset2D{ 0, 0 };
-		scissor.extent = m_pSwapChain->GetExtent();
+		vk::Rect2D scissor = vk::Rect2D()
+			.setOffset(vk::Offset2D(0, 0))
+			.setExtent(m_pSwapChain->GetExtent());
 
-		vk::PipelineViewportStateCreateInfo viewportState{};
-		viewportState.viewportCount = 1;
-		viewportState.pViewports = &viewport;
-		viewportState.scissorCount = 1;
-		viewportState.pScissors = &scissor;
+		const vk::PipelineViewportStateCreateInfo viewportState = vk::PipelineViewportStateCreateInfo()
+			.setViewports(viewport)
+			.setScissors(scissor);
 
 		vk::PipelineRasterizationStateCreateInfo rasterizer = VkInit::RasterizationStateCreateInfo(vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack);
 		vk::PipelineMultisampleStateCreateInfo multisampling = VkInit::MultisampleStateCreateInfo();
 		vk::PipelineDepthStencilStateCreateInfo depthStencil = VkInit::DepthStencilCreateInfo(true, true, vk::CompareOp::eLess);
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment = VkInit::ColorBlendAttachmentState();
-		vk::PipelineColorBlendStateCreateInfo colorBlending = VkInit::ColorBlendState();
-		colorBlending.attachmentCount = 1;
-		colorBlending.pAttachments = &colorBlendAttachment;
-		colorBlending.blendConstants[0] = 0.0f;
-		colorBlending.blendConstants[1] = 0.0f;
-		colorBlending.blendConstants[2] = 0.0f;
-		colorBlending.blendConstants[3] = 0.0f;
+		vk::PipelineColorBlendAttachmentState colorBlendAttachment = vk::PipelineColorBlendAttachmentState()
+			.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
+			.setBlendEnable(false);
+		vk::PipelineColorBlendStateCreateInfo colorBlending = vk::PipelineColorBlendStateCreateInfo()
+			.setLogicOpEnable(false)
+			.setLogicOp(vk::LogicOp::eCopy)
+			.setAttachments(colorBlendAttachment)
+			.setBlendConstants({ 0.0f, 0.0f, 0.0f, 0.0f });
 
-		vk::PipelineLayoutCreateInfo pipelineLayoutInfo = VkInit::PipelineLayoutCreateInfo();
-		pipelineLayoutInfo.setSetLayouts(m_DescriptorSetLayout);
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo = vk::PipelineLayoutCreateInfo()
+			.setSetLayouts(m_DescriptorSetLayout);
 
 		try
 		{
@@ -497,26 +486,25 @@ namespace Pelican
 			throw std::runtime_error("Failed to create pipeline layout: "s + e.what());
 		}
 
-		vk::GraphicsPipelineCreateInfo pipelineInfo{};
 		std::vector<vk::PipelineShaderStageCreateInfo> stages = pShader->GetShaderStages();
-		pipelineInfo.stageCount = static_cast<uint32_t>(stages.size());
-		pipelineInfo.pStages = stages.data();
+		const vk::GraphicsPipelineCreateInfo pipelineInfo = vk::GraphicsPipelineCreateInfo()
+			.setStages(stages)
 
-		pipelineInfo.pVertexInputState = &vertexInputInfo;
-		pipelineInfo.pInputAssemblyState = &inputAssembly;
-		pipelineInfo.pViewportState = &viewportState;
-		pipelineInfo.pRasterizationState = &rasterizer;
-		pipelineInfo.pMultisampleState = &multisampling;
-		pipelineInfo.pDepthStencilState = &depthStencil;
-		pipelineInfo.pColorBlendState = &colorBlending;
-		pipelineInfo.pDynamicState = nullptr;
+			.setPVertexInputState(&vertexInputInfo)
+			.setPInputAssemblyState(&inputAssembly)
+			.setPViewportState(&viewportState)
+			.setPRasterizationState(&rasterizer)
+			.setPMultisampleState(&multisampling)
+			.setPDepthStencilState(&depthStencil)
+			.setPColorBlendState(&colorBlending)
+			.setPDynamicState(nullptr)
 
-		pipelineInfo.layout = m_PipelineLayout;
-		pipelineInfo.renderPass = m_RenderPass;
-		pipelineInfo.subpass = 0;
+			.setLayout(m_PipelineLayout)
+			.setRenderPass(m_RenderPass)
+			.setSubpass(0)
 
-		pipelineInfo.basePipelineHandle = nullptr;
-		pipelineInfo.basePipelineIndex = -1;
+			.setBasePipelineHandle(nullptr)
+			.setBasePipelineIndex(-1);
 
 		m_PipelineCache = m_pDevice->GetDevice().createPipelineCache(vk::PipelineCacheCreateInfo());
 
@@ -536,8 +524,9 @@ namespace Pelican
 	{
 		QueueFamilyIndices queueFamilyIndices = m_pDevice->FindQueueFamilies();
 
-		vk::CommandPoolCreateInfo poolInfo = VkInit::CommandPoolCreateInfo(queueFamilyIndices.graphicsFamily.value(),
-			vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+		const vk::CommandPoolCreateInfo poolInfo = vk::CommandPoolCreateInfo()
+			.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+			.setQueueFamilyIndex(queueFamilyIndices.graphicsFamily.value());
 
 		try
 		{
@@ -589,9 +578,9 @@ namespace Pelican
 		poolSizes[1].type = vk::DescriptorType::eCombinedImageSampler;
 		poolSizes[1].descriptorCount = static_cast<uint32_t>(m_pSwapChain->GetImages().size());
 
-		vk::DescriptorPoolCreateInfo poolInfo;
-		poolInfo.maxSets = static_cast<uint32_t>(m_pSwapChain->GetImages().size());
-		poolInfo.setPoolSizes(poolSizes);
+		const vk::DescriptorPoolCreateInfo poolInfo = vk::DescriptorPoolCreateInfo()
+			.setMaxSets(static_cast<uint32_t>(m_pSwapChain->GetImages().size()))
+			.setPoolSizes(poolSizes);
 
 		try
 		{
@@ -607,8 +596,10 @@ namespace Pelican
 	{
 		m_CommandBuffers.resize(m_pSwapChain->GetFramebuffers().size());
 
-		vk::CommandBufferAllocateInfo allocInfo = VkInit::CommandBufferAllocateInfo(m_CommandPool);
-		allocInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
+		const vk::CommandBufferAllocateInfo allocInfo = vk::CommandBufferAllocateInfo()
+			.setCommandPool(m_CommandPool)
+			.setCommandBufferCount(static_cast<uint32_t>(m_CommandBuffers.size()))
+			.setLevel(vk::CommandBufferLevel::ePrimary);
 
 		try
 		{
@@ -627,8 +618,8 @@ namespace Pelican
 		m_InFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 		m_ImagesInFlight.resize(m_pSwapChain->GetImages().size(), nullptr);
 
-		const vk::SemaphoreCreateInfo semaphoreInfo = VkInit::SemaphoreCreateInfo();
-		const vk::FenceCreateInfo fenceInfo = VkInit::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled);
+		const vk::SemaphoreCreateInfo semaphoreInfo = vk::SemaphoreCreateInfo();
+		const vk::FenceCreateInfo fenceInfo = vk::FenceCreateInfo(vk::FenceCreateFlagBits::eSignaled);
 
 		try
 		{
@@ -733,13 +724,17 @@ namespace Pelican
 	void VulkanRenderer::CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
 		vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory) const
 	{
-		vk::ImageCreateInfo imageInfo = VkInit::ImageCreateInfo(vk::ImageType::e2D);
-		imageInfo.extent.width = width;
-		imageInfo.extent.height = height;
-		imageInfo.extent.depth = 1;
-		imageInfo.format = format;
-		imageInfo.tiling = tiling;
-		imageInfo.usage = usage;
+		const vk::ImageCreateInfo imageInfo = vk::ImageCreateInfo()
+			.setImageType(vk::ImageType::e2D)
+			.setExtent(vk::Extent3D(width, height, 1))
+			.setFormat(format)
+			.setTiling(tiling)
+			.setUsage(usage)
+			.setMipLevels(1)
+			.setArrayLayers(1)
+			.setInitialLayout(vk::ImageLayout::eUndefined)
+			.setSharingMode(vk::SharingMode::eExclusive)
+			.setSamples(vk::SampleCountFlagBits::e1);
 
 		try
 		{
@@ -750,12 +745,11 @@ namespace Pelican
 			throw std::runtime_error("Failed to create image: "s + e.what());
 		}
 
-		vk::MemoryRequirements memRequirements = m_pDevice->GetDevice().getImageMemoryRequirements(image);
+		const vk::MemoryRequirements memRequirements = m_pDevice->GetDevice().getImageMemoryRequirements(image);
 
-		vk::MemoryAllocateInfo allocInfo(
-			memRequirements.size,
-			VulkanHelpers::FindMemoryType(memRequirements.memoryTypeBits, properties)
-		);
+		const vk::MemoryAllocateInfo allocInfo = vk::MemoryAllocateInfo()
+			.setAllocationSize(memRequirements.size)
+			.setMemoryTypeIndex(VulkanHelpers::FindMemoryType(memRequirements.memoryTypeBits, properties));
 
 		imageMemory = m_pDevice->GetDevice().allocateMemory(allocInfo);
 
@@ -765,7 +759,7 @@ namespace Pelican
 	void VulkanRenderer::TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout,
 		vk::ImageLayout newLayout) const
 	{
-		vk::CommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
+		const vk::CommandBuffer cmd = VulkanHelpers::BeginSingleTimeCommands();
 
 		vk::ImageMemoryBarrier barrier = VkInit::ImageMemoryBarrier(image, oldLayout, newLayout);
 		
@@ -815,7 +809,7 @@ namespace Pelican
 			throw std::runtime_error("Unsupported layout transition!");
 		}
 
-		commandBuffer.pipelineBarrier(
+		cmd.pipelineBarrier(
 			sourceStage,
 			destinationStage,
 			vk::DependencyFlags(),
@@ -824,26 +818,29 @@ namespace Pelican
 			1, &barrier
 		);
 
-		VulkanHelpers::EndSingleTimeCommands(commandBuffer);
+		VulkanHelpers::EndSingleTimeCommands(cmd);
 	}
 	
 	void VulkanRenderer::CopyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height) const
 	{
-		vk::CommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
+		const vk::CommandBuffer cmd = VulkanHelpers::BeginSingleTimeCommands();
 
-		vk::BufferImageCopy region;
-		region.imageSubresource = vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1);
-		region.imageExtent = vk::Extent3D(width, height, 1);
+		const vk::BufferImageCopy region = vk::BufferImageCopy()
+			.setImageSubresource(vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1))
+			.setImageExtent(vk::Extent3D(width, height, 1));
 
-		commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
+		cmd.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
 
-		VulkanHelpers::EndSingleTimeCommands(commandBuffer);
+		VulkanHelpers::EndSingleTimeCommands(cmd);
 	}
 	
 	vk::ImageView VulkanRenderer::CreateImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags) const
 	{
-		vk::ImageViewCreateInfo viewInfo = VkInit::ImageViewCreateInfo(image, vk::ImageViewType::e2D, format);
-		viewInfo.setSubresourceRange(vk::ImageSubresourceRange(aspectFlags, 0, 1, 0, 1));
+		const vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
+			.setImage(image)
+			.setViewType(vk::ImageViewType::e2D)
+			.setFormat(format)
+			.setSubresourceRange(vk::ImageSubresourceRange(aspectFlags, 0, 1, 0, 1));
 
 		vk::ImageView imageView;
 		try
@@ -894,9 +891,9 @@ namespace Pelican
 
 	void VulkanRenderer::BeginCommandBuffers()
 	{
-		vk::CommandBufferBeginInfo beginInfo = VkInit::CommandBufferBeginInfo();
+		const vk::CommandBufferBeginInfo beginInfo = vk::CommandBufferBeginInfo();
 
-		vk::CommandBuffer& cmd = m_CommandBuffers[m_CurrentBuffer];
+		const vk::CommandBuffer& cmd = m_CommandBuffers[m_CurrentBuffer];
 
 		try
 		{
@@ -907,19 +904,17 @@ namespace Pelican
 			throw std::runtime_error("Failed to begin command buffer: "s + e.what());
 		}
 
-		// vk::RenderPassBeginInfo renderPassInfo = VkInit::RenderPassBeginInfo();
-		vk::RenderPassBeginInfo renderPassInfo = vk::RenderPassBeginInfo()
-			.setRenderPass(m_RenderPass)
-			.setFramebuffer(m_pSwapChain->GetFramebuffers()[m_CurrentBuffer])
-			.setRenderArea(vk::Rect2D()
-				.setOffset(vk::Offset2D(0, 0))
-				.setExtent(m_pSwapChain->GetExtent()));
-
 		std::array<vk::ClearValue, 2> clearValues{};
 		clearValues[0].setColor(vk::ClearColorValue(std::array<float, 4>{0.1f, 0.1f, 0.1f, 1.0f}));
 		clearValues[1].setDepthStencil(vk::ClearDepthStencilValue(1.0f, 0));
 
-		renderPassInfo.setClearValues(clearValues);
+		const vk::RenderPassBeginInfo renderPassInfo = vk::RenderPassBeginInfo()
+			.setRenderPass(m_RenderPass)
+			.setFramebuffer(m_pSwapChain->GetFramebuffers()[m_CurrentBuffer])
+			.setRenderArea(vk::Rect2D()
+				.setOffset(vk::Offset2D(0, 0))
+				.setExtent(m_pSwapChain->GetExtent()))
+			.setClearValues(clearValues);
 
 		cmd.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_GraphicsPipeline);

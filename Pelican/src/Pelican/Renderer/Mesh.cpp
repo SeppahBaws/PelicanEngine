@@ -259,14 +259,16 @@ namespace Pelican
 		descriptorWrites[0].dstBinding = 0;
 		descriptorWrites[0].dstArrayElement = 0;
 		descriptorWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer;
-		descriptorWrites[0].setBufferInfo(bufferInfo);
+		descriptorWrites[0].descriptorCount = 1;
+		descriptorWrites[0].pBufferInfo = &bufferInfo;
 
 		// Albedo texture
 		descriptorWrites[1].dstSet = m_DescriptorSet;
 		descriptorWrites[1].dstBinding = 1;
 		descriptorWrites[1].dstArrayElement = 0;
 		descriptorWrites[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		descriptorWrites[1].setBufferInfo(bufferInfo);
+		descriptorWrites[1].descriptorCount = 1;
+		descriptorWrites[1].pBufferInfo = &bufferInfo;
 		descriptorWrites[1].pImageInfo = &imageInfos[0];
 
 		// Normal texture
@@ -274,7 +276,8 @@ namespace Pelican
 		descriptorWrites[2].dstBinding = 2;
 		descriptorWrites[2].dstArrayElement = 0;
 		descriptorWrites[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		descriptorWrites[2].setBufferInfo(bufferInfo);
+		descriptorWrites[2].descriptorCount = 1;
+		descriptorWrites[2].pBufferInfo = &bufferInfo;
 		descriptorWrites[2].pImageInfo = &imageInfos[1];
 
 		// Metallic Roughness texture
@@ -282,7 +285,8 @@ namespace Pelican
 		descriptorWrites[3].dstBinding = 3;
 		descriptorWrites[3].dstArrayElement = 0;
 		descriptorWrites[3].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		descriptorWrites[3].setBufferInfo(bufferInfo);
+		descriptorWrites[3].descriptorCount = 1;
+		descriptorWrites[3].pBufferInfo = &bufferInfo;
 		descriptorWrites[3].pImageInfo = &imageInfos[2];
 
 		VulkanRenderer::GetDevice().updateDescriptorSets(descriptorWrites, {});

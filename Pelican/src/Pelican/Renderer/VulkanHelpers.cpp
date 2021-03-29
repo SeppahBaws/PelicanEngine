@@ -10,14 +10,17 @@ namespace Pelican
 {
 	vk::CommandBuffer VulkanHelpers::BeginSingleTimeCommands()
 	{
-		const vk::CommandBufferAllocateInfo allocInfo = VkInit::CommandBufferAllocateInfo(VulkanRenderer::GetCommandPool());
+		const vk::CommandBufferAllocateInfo allocInfo = vk::CommandBufferAllocateInfo()
+			.setCommandPool(VulkanRenderer::GetCommandPool())
+			.setCommandBufferCount(1)
+			.setLevel(vk::CommandBufferLevel::ePrimary);
 
-		vk::CommandBuffer commandBuffer = VulkanRenderer::GetDevice().allocateCommandBuffers(allocInfo)[0];
+		const vk::CommandBuffer cmd = VulkanRenderer::GetDevice().allocateCommandBuffers(allocInfo)[0];
 
 		const vk::CommandBufferBeginInfo beginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-		commandBuffer.begin(beginInfo);
+		cmd.begin(beginInfo);
 
-		return commandBuffer;
+		return cmd;
 	}
 
 	void VulkanHelpers::EndSingleTimeCommands(vk::CommandBuffer commandBuffer)

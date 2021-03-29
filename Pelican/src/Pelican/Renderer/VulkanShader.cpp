@@ -34,15 +34,15 @@ namespace Pelican
 		m_VertModule = CreateShaderModule(vertCode);
 		m_FragModule = CreateShaderModule(fragCode);
 
-		vk::PipelineShaderStageCreateInfo vertStageInfo{};
-		vertStageInfo.setStage(vk::ShaderStageFlagBits::eVertex);
-		vertStageInfo.setModule(m_VertModule);
-		vertStageInfo.setPName("main");
+		const vk::PipelineShaderStageCreateInfo vertStageInfo = vk::PipelineShaderStageCreateInfo()
+			.setStage(vk::ShaderStageFlagBits::eVertex)
+			.setModule(m_VertModule)
+			.setPName("main");
 
-		vk::PipelineShaderStageCreateInfo fragStageInfo;
-		fragStageInfo.setStage(vk::ShaderStageFlagBits::eFragment);
-		fragStageInfo.setModule(m_FragModule);
-		fragStageInfo.setPName("main");
+		const vk::PipelineShaderStageCreateInfo fragStageInfo = vk::PipelineShaderStageCreateInfo()
+			.setStage(vk::ShaderStageFlagBits::eFragment)
+			.setModule(m_FragModule)
+			.setPName("main");
 
 		m_ShaderStages = { vertStageInfo, fragStageInfo };
 	}
@@ -72,9 +72,9 @@ namespace Pelican
 
 	vk::ShaderModule VulkanShader::CreateShaderModule(const std::vector<char>& code) const
 	{
-		vk::ShaderModuleCreateInfo createInfo{};
-		createInfo.codeSize = code.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+		const vk::ShaderModuleCreateInfo createInfo = vk::ShaderModuleCreateInfo()
+			.setCodeSize(code.size())
+			.setPCode(reinterpret_cast<const uint32_t*>(code.data()));
 
 		vk::ShaderModule shaderModule;
 
