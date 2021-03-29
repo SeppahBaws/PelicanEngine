@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 #pragma warning(push, 0)
 #include <glm/vec4.hpp>

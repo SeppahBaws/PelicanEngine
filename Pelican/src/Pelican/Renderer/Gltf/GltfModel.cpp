@@ -237,16 +237,20 @@ namespace Pelican
 
 	void GltfModel::CreateDescriptorPool()
 	{
-		VkDescriptorPoolSize poolSize{};
-		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = static_cast<uint32_t>(m_Meshes.size());
+		vk::DescriptorPoolSize poolSize(vk::DescriptorType::eUniformBuffer, static_cast<uint32_t>(m_Meshes.size()));
 
-		VkDescriptorPoolCreateInfo createInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-		createInfo.poolSizeCount = 1;
-		createInfo.pPoolSizes = &poolSize;
-		createInfo.maxSets = static_cast<uint32_t>(m_Meshes.size());
+		vk::DescriptorPoolCreateInfo createInfo = vk::DescriptorPoolCreateInfo()
+			.setPoolSizes(poolSize)
+			.setMaxSets(static_cast<uint32_t>(m_Meshes.size()));
 
-		VK_CHECK(vkCreateDescriptorPool(VulkanRenderer::GetDevice(), &createInfo, nullptr, &m_DescriptorPool));
+		try
+		{
+			m_DescriptorPool = VulkanRenderer::GetDevice().createDescriptorPool(createInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to create descriptor pool: "s + e.what());
+		}
 
 		for (size_t i = 0; i < m_Meshes.size(); i++)
 		{

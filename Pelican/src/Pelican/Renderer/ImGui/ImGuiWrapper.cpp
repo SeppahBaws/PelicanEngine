@@ -29,28 +29,34 @@ namespace Pelican
 		m_Device = initInfo.device;
 
 		// Create ImGui descriptor pool
-		VkDescriptorPoolSize poolSizes[] =
+		std::vector<vk::DescriptorPoolSize> poolSizes =
 		{
-			{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-			{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-			{VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-			{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-			{VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-			{VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-			{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-			{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-			{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-			{VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}
+			{vk::DescriptorType::eSampler, 1000},
+			{vk::DescriptorType::eCombinedImageSampler, 1000},
+			{vk::DescriptorType::eSampledImage, 1000},
+			{vk::DescriptorType::eStorageImage, 1000},
+			{vk::DescriptorType::eUniformTexelBuffer, 1000},
+			{vk::DescriptorType::eStorageTexelBuffer, 1000},
+			{vk::DescriptorType::eUniformBuffer, 1000},
+			{vk::DescriptorType::eStorageBuffer, 1000},
+			{vk::DescriptorType::eUniformBufferDynamic, 1000},
+			{vk::DescriptorType::eStorageBufferDynamic, 1000},
+			{vk::DescriptorType::eInputAttachment, 1000}
 		};
 
-		VkDescriptorPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
-		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		poolInfo.maxSets = 1000;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(std::size(poolSizes));
-		poolInfo.pPoolSizes = poolSizes;
+		vk::DescriptorPoolCreateInfo poolInfo = vk::DescriptorPoolCreateInfo()
+			.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
+			.setMaxSets(1000)
+			.setPoolSizes(poolSizes);
 
-		VK_CHECK(vkCreateDescriptorPool(initInfo.device, &poolInfo, nullptr, &m_Pool));
+		try
+		{
+			m_Pool = initInfo.device.createDescriptorPool(poolInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to create imgui descriptor pool: "s + e.what());
+		}
 
 		// Initialize ImGui
 
@@ -134,7 +140,7 @@ namespace Pelican
 
 		ImGui_ImplVulkan_Init(&imguiInit, initInfo.renderPass);
 
-		VkCommandBuffer cmd = VulkanHelpers::BeginSingleTimeCommands();
+		vk::CommandBuffer cmd = VulkanHelpers::BeginSingleTimeCommands();
 		ImGui_ImplVulkan_CreateFontsTexture(cmd);
 		VulkanHelpers::EndSingleTimeCommands(cmd);
 
@@ -156,7 +162,7 @@ namespace Pelican
 		ImGui::NewFrame();
 	}
 
-	void ImGuiWrapper::Render(VkCommandBuffer cmdBuffer)
+	void ImGuiWrapper::Render(vk::CommandBuffer cmdBuffer)
 	{
 		VkDebugMarker::BeginRegion(cmdBuffer, "Debug UI Render", glm::vec4(0.2f, 0.2f, 0.8f, 1.0f));
 

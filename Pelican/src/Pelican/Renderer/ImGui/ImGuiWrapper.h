@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <glm/vec2.hpp>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 struct GLFWwindow;
 
@@ -12,11 +12,11 @@ namespace Pelican
 
 	struct ImGuiInitInfo
 	{
-		VkInstance instance;
-		VkPhysicalDevice physicalDevice;
-		VkDevice device;
-		VkQueue queue;
-		VkRenderPass renderPass;
+		vk::Instance instance;
+		vk::PhysicalDevice physicalDevice;
+		vk::Device device;
+		vk::Queue queue;
+		vk::RenderPass renderPass;
 	};
 
 	class ImGuiWrapper
@@ -28,10 +28,10 @@ namespace Pelican
 		void Cleanup();
 
 		void NewFrame();
-		void Render(VkCommandBuffer cmdBuffer);
+		void Render(vk::CommandBuffer cmdBuffer);
 
 	private:
-		VkDevice m_Device{};
-		VkDescriptorPool m_Pool{};
+		vk::Device m_Device{};
+		vk::DescriptorPool m_Pool{};
 	};
 }

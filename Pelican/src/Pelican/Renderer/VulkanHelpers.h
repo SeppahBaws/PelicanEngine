@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 namespace Pelican
 {
@@ -8,9 +8,9 @@ namespace Pelican
 
 	struct SwapChainSupportDetails
 	{
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> presentModes;
+		vk::SurfaceCapabilitiesKHR capabilities;
+		std::vector<vk::SurfaceFormatKHR> formats;
+		std::vector<vk::PresentModeKHR> presentModes;
 	};
 
 	inline std::vector<const char*> g_DeviceExtensions = {
@@ -47,15 +47,15 @@ namespace Pelican
 	class VulkanHelpers
 	{
 	public:
-		static VkCommandBuffer BeginSingleTimeCommands();
-		static void EndSingleTimeCommands(VkCommandBuffer commandBuffer);
+		static vk::CommandBuffer BeginSingleTimeCommands();
+		static void EndSingleTimeCommands(vk::CommandBuffer commandBuffer);
 
-		static uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-		static void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-			VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-		static void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+		static uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+		static void CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
+			vk::Buffer& buffer, vk::DeviceMemory& bufferMemory);
+		static void CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
 
-		static bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
-		static SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+		static bool CheckDeviceExtensionSupport(vk::PhysicalDevice physicalDevice);
+		static SwapChainSupportDetails QuerySwapChainSupport(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
 	};
 }

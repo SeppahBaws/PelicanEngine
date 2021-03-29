@@ -27,26 +27,35 @@ namespace Pelican
 		CreateImageViews();
 	}
 
-	void VulkanSwapChain::CreateFramebuffers(VkImageView depthImageView, VkRenderPass renderPass)
+	void VulkanSwapChain::CreateFramebuffers(vk::ImageView depthImageView, vk::RenderPass renderPass)
 	{
 		m_Framebuffers.resize(m_SwapChainImageViews.size());
 
 		for (size_t i = 0; i < m_SwapChainImageViews.size(); i++)
 		{
-			std::array<VkImageView, 2> attachments = {
+			std::array<vk::ImageView, 2> attachments = {
 				m_SwapChainImageViews[i],
 				depthImageView
 			};
 
-			VkFramebufferCreateInfo framebufferInfo = { VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-			framebufferInfo.renderPass = renderPass;
-			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-			framebufferInfo.pAttachments = attachments.data();
-			framebufferInfo.width = m_SwapChainExtent.width;
-			framebufferInfo.height = m_SwapChainExtent.height;
-			framebufferInfo.layers = 1;
+			vk::FramebufferCreateInfo framebufferInfo(
+				{},
+				renderPass,
+				static_cast<uint32_t>(attachments.size()),
+				attachments.data(),
+				m_SwapChainExtent.width,
+				m_SwapChainExtent.height,
+				1
+			);
 
-			VK_CHECK(vkCreateFramebuffer(m_pDevice->GetDevice(), &framebufferInfo, nullptr, &m_Framebuffers[i]));
+			try
+			{
+				m_Framebuffers[i] = m_pDevice->GetDevice().createFramebuffer(framebufferInfo);
+			}
+			catch (vk::SystemError& e)
+			{
+				throw std::runtime_error("Failed to create framebuffer: "s + e.what());
+			}
 
 			VkDebugMarker::SetFramebufferName(m_pDevice->GetDevice(), m_Framebuffers[i], std::string("Framebuffer " + i).c_str());
 		}
@@ -56,29 +65,29 @@ namespace Pelican
 	{
 		// Due to RAII, when closing the window this function gets called twice
 		// hence why we check if the SwapChain has been cleared already.
-		if (m_SwapChain == VK_NULL_HANDLE)
+		if (!m_SwapChain)
 			return;
 
-		for (VkFramebuffer framebuffer : m_Framebuffers)
+		for (vk::Framebuffer framebuffer : m_Framebuffers)
 		{
-			vkDestroyFramebuffer(m_pDevice->GetDevice(), framebuffer, nullptr);
+			m_pDevice->GetDevice().destroyFramebuffer(framebuffer);
 		}
 
 		for (size_t i = 0; i < m_SwapChainImageViews.size(); i++)
 		{
-			vkDestroyImageView(m_pDevice->GetDevice(), m_SwapChainImageViews[i], nullptr);
-			m_SwapChainImageViews[i] = VK_NULL_HANDLE;
+			m_pDevice->GetDevice().destroyImageView(m_SwapChainImageViews[i]);
+			m_SwapChainImageViews[i] = nullptr;
 		}
 
-		vkDestroySwapchainKHR(m_pDevice->GetDevice(), m_SwapChain, nullptr);
-		m_SwapChain = VK_NULL_HANDLE;
+		m_pDevice->GetDevice().destroySwapchainKHR(m_SwapChain);
+		m_SwapChain = nullptr;
 	}
 
-	VkSurfaceFormatKHR VulkanSwapChain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+	vk::SurfaceFormatKHR VulkanSwapChain::ChooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) const
 	{
 		for (const auto& availableFormat : availableFormats)
 		{
-			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR)
+			if (availableFormat.format == vk::Format::eB8G8R8A8Unorm && availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
 			{
 				return availableFormat;
 			}
@@ -87,22 +96,22 @@ namespace Pelican
 		return availableFormats[0];
 	}
 
-	VkPresentModeKHR VulkanSwapChain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+	vk::PresentModeKHR VulkanSwapChain::ChooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) const
 	{
 		// TODO: return FIFO if we want VSync, otherwise return the next best thing.
 
 		for (const auto& availablePresentMode : availablePresentModes)
 		{
-			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+			if (availablePresentMode == vk::PresentModeKHR::eMailbox)
 			{
 				return availablePresentMode;
 			}
 		}
 
-		return VK_PRESENT_MODE_FIFO_KHR;
+		return vk::PresentModeKHR::eFifo;
 	}
 
-	VkExtent2D VulkanSwapChain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+	vk::Extent2D VulkanSwapChain::ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const
 	{
 		if (capabilities.currentExtent.width != UINT32_MAX)
 		{
@@ -111,7 +120,7 @@ namespace Pelican
 
 		Window::Params params = Application::Get().GetWindow()->GetParams();
 
-		VkExtent2D actualExtent = { static_cast<uint32_t>(params.width), static_cast<uint32_t>(params.height) };
+		vk::Extent2D actualExtent = { static_cast<uint32_t>(params.width), static_cast<uint32_t>(params.height) };
 
 		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
 		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
@@ -123,9 +132,9 @@ namespace Pelican
 	{
 		SwapChainSupportDetails swapChainSupport = VulkanHelpers::QuerySwapChainSupport(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
 
-		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
-		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
-		VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
+		vk::SurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
+		vk::PresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
+		vk::Extent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
 
 		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 
@@ -134,42 +143,60 @@ namespace Pelican
 			imageCount = swapChainSupport.capabilities.maxImageCount;
 		}
 
-		VkSwapchainCreateInfoKHR createInfo = VkInit::SwapchainCreateInfo();
+		vk::SwapchainCreateInfoKHR createInfo;
 		createInfo.surface = m_pDevice->GetSurface();
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
 		createInfo.imageExtent = extent;
 		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
 
 		QueueFamilyIndices indices = m_pDevice->FindQueueFamilies();
 		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 		if (indices.graphicsFamily != indices.presentFamily)
 		{
-			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
 			createInfo.queueFamilyIndexCount = 2;
 			createInfo.pQueueFamilyIndices = queueFamilyIndices;
 		}
 		else
 		{
-			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.imageSharingMode = vk::SharingMode::eExclusive;
 			createInfo.queueFamilyIndexCount = 0;
 			createInfo.pQueueFamilyIndices = nullptr;
 		}
 
 		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
 		createInfo.presentMode = presentMode;
 		createInfo.clipped = VK_TRUE;
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
+		createInfo.oldSwapchain = nullptr;
 
-		VK_CHECK(vkCreateSwapchainKHR(m_pDevice->GetDevice(), &createInfo, nullptr, &m_SwapChain));
+		try
+		{
+			m_SwapChain = m_pDevice->GetDevice().createSwapchainKHR(createInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to create the swapchain: "s + e.what());
+		}
 
-		vkGetSwapchainImagesKHR(m_pDevice->GetDevice(), m_SwapChain, &imageCount, nullptr);
+		vk::Result result = m_pDevice->GetDevice().getSwapchainImagesKHR(m_SwapChain, &imageCount, nullptr);
+		if (result != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to get the swapchain images");
+		}
+
 		m_SwapChainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(m_pDevice->GetDevice(), m_SwapChain, &imageCount, m_SwapChainImages.data());
+
+		result = m_pDevice->GetDevice().getSwapchainImagesKHR(m_SwapChain, &imageCount, m_SwapChainImages.data());
+		if (result != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to get the swapchain images");
+		}
+
 		m_SwapChainImageFormat = surfaceFormat.format;
 		m_SwapChainExtent = extent;
 	}
@@ -180,21 +207,31 @@ namespace Pelican
 
 		for (size_t i = 0; i < m_SwapChainImages.size(); i++)
 		{
-			m_SwapChainImageViews[i] = CreateImageView(m_SwapChainImages[i], m_SwapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+			m_SwapChainImageViews[i] = CreateImageView(m_SwapChainImages[i], m_SwapChainImageFormat, vk::ImageAspectFlagBits::eColor);
 		}
 	}
 
-	VkImageView VulkanSwapChain::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+	vk::ImageView VulkanSwapChain::CreateImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags) const
 	{
-		VkImageViewCreateInfo viewInfo = VkInit::ImageViewCreateInfo(image, VK_IMAGE_VIEW_TYPE_2D, format);
-		viewInfo.subresourceRange.aspectMask = aspectFlags;
-		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = 1;
-		viewInfo.subresourceRange.baseArrayLayer = 0;
-		viewInfo.subresourceRange.layerCount = 1;
+		const vk::ImageViewCreateInfo viewInfo(
+			{},
+			image,
+			vk::ImageViewType::e2D,
+			format,
+			{},
+			vk::ImageSubresourceRange{ aspectFlags, 0, 1, 0, 1 }
+		);
 
-		VkImageView imageView;
-		VK_CHECK(vkCreateImageView(m_pDevice->GetDevice(), &viewInfo, nullptr, &imageView));
+		vk::ImageView imageView;
+
+		try
+		{
+			imageView = m_pDevice->GetDevice().createImageView(viewInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to create image view: "s + e.what());
+		}
 
 		return imageView;
 	}

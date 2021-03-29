@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 namespace Pelican
 {
@@ -9,7 +9,7 @@ namespace Pelican
 		VulkanShader(std::string vertPath, std::string fragPath);
 		~VulkanShader();
 
-		std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() const { return m_ShaderStages; }
+		std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStages() const { return m_ShaderStages; }
 
 		void Reload();
 
@@ -17,15 +17,15 @@ namespace Pelican
 		void Initialize();
 		void Cleanup();
 
-		std::vector<char> ReadFile(const std::string& filename);
-		VkShaderModule CreateShaderModule(const std::vector<char>& code);
+		std::vector<char> ReadFile(const std::string& filename) const;
+		vk::ShaderModule CreateShaderModule(const std::vector<char>& code) const;
 
 	private:
 		std::string m_VertPath;
 		std::string m_FragPath;
 
-		VkShaderModule m_VertModule;
-		VkShaderModule m_FragModule;
-		std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages;
+		vk::ShaderModule m_VertModule;
+		vk::ShaderModule m_FragModule;
+		std::vector<vk::PipelineShaderStageCreateInfo> m_ShaderStages;
 	};
 }

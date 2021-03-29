@@ -4,7 +4,6 @@
 #include <stb_image.h>
 #include <glm/vec4.hpp>
 
-
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 
@@ -23,10 +22,10 @@ namespace Pelican
 
 	VulkanTexture::~VulkanTexture()
 	{
-		vkDestroySampler(VulkanRenderer::GetDevice(), m_ImageSampler, nullptr);
-		vkDestroyImageView(VulkanRenderer::GetDevice(), m_ImageView, nullptr);
-		vkDestroyImage(VulkanRenderer::GetDevice(), m_Image, nullptr);
-		vkFreeMemory(VulkanRenderer::GetDevice(), m_ImageMemory, nullptr);
+		VulkanRenderer::GetDevice().destroySampler(m_ImageSampler);
+		VulkanRenderer::GetDevice().destroyImageView(m_ImageView);
+		VulkanRenderer::GetDevice().destroyImage(m_Image);
+		VulkanRenderer::GetDevice().freeMemory(m_ImageMemory);
 	}
 
 	void VulkanTexture::InitFromFile(const std::string& path)
@@ -57,79 +56,88 @@ namespace Pelican
 		CreateTextureSampler();
 	}
 
-	VkDescriptorImageInfo VulkanTexture::GetDescriptorImageInfo() const
+	vk::DescriptorImageInfo VulkanTexture::GetDescriptorImageInfo() const
 	{
-		VkDescriptorImageInfo info;
-		info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		info.imageView = m_ImageView;
-		info.sampler = m_ImageSampler;
+		vk::DescriptorImageInfo info(
+			m_ImageSampler,
+			m_ImageView,
+			vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		return info;
 	}
 
 	void VulkanTexture::CreateTextureImage(void* pixelData, int width, int height, int channels)
 	{
-		VkDeviceSize size = width * height * channels;
+		const vk::DeviceSize size = width * height * channels;
 
-		VkBuffer stagingBuffer;
-		VkDeviceMemory stagingBufferMemory;
+		vk::Buffer stagingBuffer;
+		vk::DeviceMemory stagingBufferMemory;
 
-		VulkanHelpers::CreateBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		VulkanHelpers::CreateBuffer(
+			size,
+			vk::BufferUsageFlagBits::eTransferSrc,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
 			stagingBuffer, stagingBufferMemory);
 
-		void* data;
-		vkMapMemory(VulkanRenderer::GetDevice(), stagingBufferMemory, 0, size, 0, &data);
-		memcpy(data, pixelData, static_cast<size_t>(size));
-		vkUnmapMemory(VulkanRenderer::GetDevice(), stagingBufferMemory);
+		void* data = VulkanRenderer::GetDevice().mapMemory(stagingBufferMemory, 0, size);
+			memcpy(data, pixelData, static_cast<size_t>(size));
+		VulkanRenderer::GetDevice().unmapMemory(stagingBufferMemory);
 
-		CreateImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		CreateImage(width, height, vk::Format::eR8G8B8A8Srgb, vk::ImageTiling::eOptimal,
+			vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal,
 			m_Image, m_ImageMemory);
 
-		TransitionImageLayout(m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		TransitionImageLayout(m_Image, vk::Format::eR8G8B8A8Srgb, vk::ImageLayout::eUndefined,
+			vk::ImageLayout::eTransferDstOptimal);
 
 		CopyBufferToImage(stagingBuffer, m_Image, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
-		TransitionImageLayout(m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		TransitionImageLayout(m_Image, vk::Format::eR8G8B8A8Srgb, vk::ImageLayout::eTransferDstOptimal,
+			vk::ImageLayout::eShaderReadOnlyOptimal);
 
-		vkDestroyBuffer(VulkanRenderer::GetDevice(), stagingBuffer, nullptr);
-		vkFreeMemory(VulkanRenderer::GetDevice(), stagingBufferMemory, nullptr);
+		VulkanRenderer::GetDevice().destroyBuffer(stagingBuffer);
+		VulkanRenderer::GetDevice().freeMemory(stagingBufferMemory);
 	}
 
 	void VulkanTexture::CreateTextureImageView()
 	{
-		m_ImageView = CreateImageView(m_Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+		m_ImageView = CreateImageView(m_Image, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
 	}
 
 	void VulkanTexture::CreateTextureSampler()
 	{
-		VkSamplerCreateInfo samplerInfo = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		vk::SamplerCreateInfo samplerInfo;
+		samplerInfo.magFilter = vk::Filter::eLinear;
+		samplerInfo.minFilter = vk::Filter::eLinear;
+		samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
+		samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
+		samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
 		samplerInfo.anisotropyEnable = VK_TRUE;
 		samplerInfo.maxAnisotropy = 16.0f;
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;
+		samplerInfo.unnormalizedCoordinates = false;
+		samplerInfo.compareEnable = false;
+		samplerInfo.compareOp = vk::CompareOp::eAlways;
+		samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
 		samplerInfo.mipLodBias = 0.0f;
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = 0.0f;
 
-		VK_CHECK(vkCreateSampler(VulkanRenderer::GetDevice(), &samplerInfo, nullptr, &m_ImageSampler));
+		try
+		{
+			m_ImageSampler = VulkanRenderer::GetDevice().createSampler(samplerInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to create image sampler: "s + e.what());
+		}
 	}
 
-	void VulkanTexture::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
-		VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
+	void VulkanTexture::CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
+		vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory)
 	{
-		VkImageCreateInfo imageInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		vk::ImageCreateInfo imageInfo;
+		imageInfo.imageType = vk::ImageType::e2D;
 		imageInfo.extent.width = width;
 		imageInfo.extent.height = height;
 		imageInfo.extent.depth = 1;
@@ -137,31 +145,43 @@ namespace Pelican
 		imageInfo.arrayLayers = 1;
 		imageInfo.format = format;
 		imageInfo.tiling = tiling;
-		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
 		imageInfo.usage = usage;
-		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-		imageInfo.flags = 0;
+		imageInfo.sharingMode = vk::SharingMode::eExclusive;
+		imageInfo.samples = vk::SampleCountFlagBits::e1;
+		imageInfo.flags = {};
 
-		VK_CHECK(vkCreateImage(VulkanRenderer::GetDevice(), &imageInfo, nullptr, &image));
+		try
+		{
+			image = VulkanRenderer::GetDevice().createImage(imageInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to create image: "s + e.what());
+		}
 
-		VkMemoryRequirements memRequirements;
-		vkGetImageMemoryRequirements(VulkanRenderer::GetDevice(), image, &memRequirements);
+		vk::MemoryRequirements memRequirements = VulkanRenderer::GetDevice().getImageMemoryRequirements(image);
+		vk::MemoryAllocateInfo allocInfo(
+			memRequirements.size,
+			VulkanHelpers::FindMemoryType(memRequirements.memoryTypeBits, properties));
 
-		VkMemoryAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = VulkanHelpers::FindMemoryType(memRequirements.memoryTypeBits, properties);
+		try
+		{
+			imageMemory = VulkanRenderer::GetDevice().allocateMemory(allocInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to allocate image memory: "s + e.what());
+		}
 
-		VK_CHECK(vkAllocateMemory(VulkanRenderer::GetDevice(), &allocInfo, nullptr, &imageMemory));
-
-		vkBindImageMemory(VulkanRenderer::GetDevice(), image, imageMemory, 0);
+		VulkanRenderer::GetDevice().bindImageMemory(image, imageMemory, 0);
 	}
 
-	VkImageView VulkanTexture::CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
+	vk::ImageView VulkanTexture::CreateImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags)
 	{
-		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+		vk::ImageViewCreateInfo viewInfo;
 		viewInfo.image = image;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.viewType = vk::ImageViewType::e2D;
 		viewInfo.format = format;
 		viewInfo.subresourceRange.aspectMask = aspectFlags;
 		viewInfo.subresourceRange.baseMipLevel = 0;
@@ -169,104 +189,104 @@ namespace Pelican
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
 
-		VkImageView imageView;
-		VK_CHECK(vkCreateImageView(VulkanRenderer::GetDevice(), &viewInfo, nullptr, &imageView));
+		vk::ImageView imageView;
+		try
+		{
+			imageView = VulkanRenderer::GetDevice().createImageView(viewInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to create image view: "s + e.what());
+		}
 
 		return imageView;
 	}
 
-	void VulkanTexture::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout,
-		VkImageLayout newLayout)
+	void VulkanTexture::TransitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout,
+		vk::ImageLayout newLayout)
 	{
-		VkCommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
+		vk::CommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
 
-		VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+		vk::ImageMemoryBarrier barrier;
 		barrier.oldLayout = oldLayout;
 		barrier.newLayout = newLayout;
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		barrier.image = image;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
 
-		VkPipelineStageFlags sourceStage{};
-		VkPipelineStageFlags destinationStage{};
+		vk::PipelineStageFlags sourceStage{};
+		vk::PipelineStageFlags destinationStage{};
 
-		if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+		if (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
 		{
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+			barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
 
 			// Check if the format has a stencil component.
-			if (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT)
+			if (format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint)
 			{
-				barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+				barrier.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
 			}
 		}
 		else
 		{
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 		}
 
-		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal)
 		{
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.srcAccessMask = {};
+			barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
 
-			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+			destinationStage = vk::PipelineStageFlagBits::eTransfer;
 		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		else if (oldLayout == vk::ImageLayout::eTransferDstOptimal && newLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
 		{
-			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
-			sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			sourceStage = vk::PipelineStageFlagBits::eTransfer;
+			destinationStage = vk::PipelineStageFlagBits::eFragmentShader;
 		}
-		else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+		else if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal)
 		{
-			barrier.srcAccessMask = 0;
-			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			barrier.srcAccessMask = {};
+			barrier.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 
-			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			sourceStage = vk::PipelineStageFlagBits::eTopOfPipe;
+			destinationStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
 		}
 		else
 		{
-			ASSERT_MSG(false, "unsupported layout transition!");
+			throw std::runtime_error("Unsupported layout transition!");
 		}
 
-		vkCmdPipelineBarrier(
-			commandBuffer,
-			sourceStage, destinationStage,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &barrier
-		);
+		commandBuffer.pipelineBarrier(sourceStage, destinationStage, {}, {}, {}, barrier);
 
 		VulkanHelpers::EndSingleTimeCommands(commandBuffer);
 	}
 
-	void VulkanTexture::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+	void VulkanTexture::CopyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height)
 	{
-		VkCommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
+		vk::CommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
 
-		VkBufferImageCopy region{};
+		vk::BufferImageCopy region{};
 		region.bufferOffset = 0;
 		region.bufferRowLength = 0;
 		region.bufferImageHeight = 0;
-		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
 		region.imageSubresource.mipLevel = 0;
 		region.imageSubresource.baseArrayLayer = 0;
 		region.imageSubresource.layerCount = 1;
-		region.imageOffset = { 0, 0, 0 };
-		region.imageExtent = { width, height, 1 };
+		region.imageOffset = vk::Offset3D(0, 0, 0);
+		region.imageExtent = vk::Extent3D(width, height, 1);
 
-		vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+		commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region);
 
 		VulkanHelpers::EndSingleTimeCommands(commandBuffer);
 	}
