@@ -198,9 +198,23 @@ namespace Pelican
 			.setImageIndices(m_CurrentBuffer)
 			.setSwapchains(swapChains);
 
-		const vk::Result result = m_pDevice->GetPresentQueue().presentKHR(presentInfo);
+		vk::Result result{};
 
-		if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR || m_FrameBufferResized)
+		try
+		{
+			result = m_pDevice->GetPresentQueue().presentKHR(presentInfo);
+		}
+		catch (vk::OutOfDateKHRError& /*e*/)
+		{
+			m_FrameBufferResized = false;
+			RecreateSwapChain();
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to present: "s + e.what());
+		}
+
+		if (result == vk::Result::eSuboptimalKHR || m_FrameBufferResized)
 		{
 			m_FrameBufferResized = false;
 			RecreateSwapChain();
