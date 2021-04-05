@@ -35,5 +35,9 @@ void main()
     diffuseStrength = clamp(diffuseStrength, 0, 1);
     finalColor = baseColor * diffuseStrength;
 
-    outColor = vec4(finalColor, 1.0);
+    float alpha = texture(texAlbedo, vTexCoord).a;
+    if (alpha <= 0.001f)
+        discard; // The discard helps a bit with the current transparency issue, although it should still be fixed properly later on.
+
+    outColor = vec4(finalColor, alpha);
 }
