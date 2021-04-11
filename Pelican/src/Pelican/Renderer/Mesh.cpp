@@ -23,6 +23,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "UniformBufferObject.h"
+#include "Pelican/Assets/AssetManager.h"
 #pragma warning(pop)
 
 namespace tinygltf
@@ -62,7 +63,7 @@ namespace Pelican
 	Mesh::Mesh()
 	{
 		// Empty texture as fallback.
-		m_pWhiteTexture = new VulkanTexture("res/textures/white.png");
+		m_pWhiteTexture = AssetManager::GetInstance().LoadTexture("res/textures/white.png");
 
 		// Setup defaults for the texture slots
 		for (uint32_t i = 0; i < static_cast<uint32_t>(TextureSlot::SLOT_COUNT); i++)
@@ -75,7 +76,7 @@ namespace Pelican
 		: m_Vertices(std::move(vertices)), m_Indices(std::move(indices))
 	{
 		// Empty texture as fallback.
-		m_pWhiteTexture = new VulkanTexture("res/textures/white.png");
+		m_pWhiteTexture = AssetManager::GetInstance().LoadTexture("res/textures/white.png");
 
 		// Setup defaults for the texture slots
 		for (uint32_t i = 0; i < static_cast<uint32_t>(TextureSlot::SLOT_COUNT); i++)
@@ -91,12 +92,12 @@ namespace Pelican
 			if (m_pTextures[i])
 			{
 				if (m_pTextures[i] != m_pWhiteTexture)
-					delete m_pTextures[i];
+					AssetManager::GetInstance().UnloadTexture(m_pTextures[i]);
 				m_pTextures[i] = nullptr;
 			}
 		}
 
-		delete m_pWhiteTexture;
+		AssetManager::GetInstance().UnloadTexture(m_pWhiteTexture);
 		m_pWhiteTexture = nullptr;
 
 		const vk::Device device = VulkanRenderer::GetDevice();
@@ -121,7 +122,7 @@ namespace Pelican
 
 	void Mesh::SetupTexture(TextureSlot slot, const std::string& path)
 	{
-		m_pTextures[static_cast<uint32_t>(slot)] = new VulkanTexture(path);
+		m_pTextures[static_cast<uint32_t>(slot)] = AssetManager::GetInstance().LoadTexture(path);
 	}
 
 	VulkanTexture* Mesh::GetTexture(TextureSlot slot)

@@ -3,9 +3,11 @@
 
 #include <glm/vec4.hpp>
 
+#include "Pelican/Assets/BaseAsset.h"
+
 namespace Pelican
 {
-	class VulkanTexture
+	class VulkanTexture : public BaseAsset
 	{
 	public:
 		// VulkanTexture();
@@ -16,6 +18,7 @@ namespace Pelican
 
 		void InitFromFile(const std::string& path);
 		void InitFromColor(const glm::vec4& color, int width, int height);
+		void InitFromData(void* data, int width, int height, int channels);
 
 		[[nodiscard]] vk::ImageView GetImageView() const { return m_ImageView; }
 		[[nodiscard]] vk::Sampler GetSampler() const { return m_ImageSampler; }
@@ -39,7 +42,5 @@ namespace Pelican
 		vk::DeviceMemory m_ImageMemory{};
 		vk::ImageView m_ImageView{};
 		vk::Sampler m_ImageSampler{};
-
-		std::string m_TexturePath{};
 	};
 }

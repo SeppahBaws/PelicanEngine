@@ -25,3 +25,6 @@
 #include "Pelican/Scene/Component.h"
 #include "Pelican/Scene/Entity.h"
 #include "Pelican/Scene/Scene.h"
+
+#include "Pelican/Assets/BaseAsset.h"
+#include "Pelican/Assets/AssetManager.h"

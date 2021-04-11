@@ -10,7 +10,7 @@
 namespace Pelican
 {
 	VulkanTexture::VulkanTexture(const std::string& path)
-		: m_TexturePath(path)
+		: BaseAsset(path)
 	{
 		InitFromFile(path);
 	}
@@ -30,7 +30,7 @@ namespace Pelican
 
 	void VulkanTexture::InitFromFile(const std::string& path)
 	{
-		m_TexturePath = path;
+		m_AssetPath = path;
 
 		int width, height, nrChannels;
 		stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
@@ -52,6 +52,13 @@ namespace Pelican
 		std::vector<glm::vec4> pixels{ color };
 
 		CreateTextureImage(pixels.data(), width, height, 4);
+		CreateTextureImageView();
+		CreateTextureSampler();
+	}
+
+	void VulkanTexture::InitFromData(void* data, int width, int height, int channels)
+	{
+		CreateTextureImage(data, width, height, channels);
 		CreateTextureImageView();
 		CreateTextureSampler();
 	}
