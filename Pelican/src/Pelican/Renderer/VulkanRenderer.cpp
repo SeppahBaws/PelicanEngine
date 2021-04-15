@@ -22,13 +22,15 @@
 
 #include "VkInit.h"
 #include "VulkanDebug.h"
-#include "UniformBufferObject.h"
+#include "UniformData.h"
 #include "Camera.h"
 
 #include "Vertex.h"
 #include "VulkanShader.h"
 #include "VulkanHelpers.h"
 #include "ImGui/ImGuiWrapper.h"
+#include "Pelican/Scene/Component.h"
+#include "Pelican/Scene/Scene.h"
 
 
 namespace Pelican
@@ -159,6 +161,7 @@ namespace Pelican
 
 		BeginCommandBuffers();
 
+		// TODO: ImGui should probably be rendered in its own command buffer.
 		m_pImGui->NewFrame();
 
 		return true;
@@ -399,36 +402,44 @@ namespace Pelican
 
 	void VulkanRenderer::CreateDescriptorSetLayout()
 	{
-		const vk::DescriptorSetLayoutBinding uboLayoutBinding = vk::DescriptorSetLayoutBinding()
+		const vk::DescriptorSetLayoutBinding mvpUboLayoutBinding = vk::DescriptorSetLayoutBinding()
 			.setBinding(0)
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDescriptorCount(1)
-			.setStageFlags(vk::ShaderStageFlagBits::eVertex)
+			.setStageFlags(vk::ShaderStageFlagBits::eAll)
+			.setPImmutableSamplers(nullptr);
+
+		const vk::DescriptorSetLayoutBinding lightUboBinding = vk::DescriptorSetLayoutBinding()
+			.setBinding(1)
+			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+			.setDescriptorCount(1)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
 			.setPImmutableSamplers(nullptr);
 
 		const vk::DescriptorSetLayoutBinding albedoSamplerBinding = vk::DescriptorSetLayoutBinding()
-			.setBinding(1)
-			.setDescriptorCount(1)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setPImmutableSamplers(nullptr)
-			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
-
-		const vk::DescriptorSetLayoutBinding normalSamplerBinding = vk::DescriptorSetLayoutBinding()
 			.setBinding(2)
 			.setDescriptorCount(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		const vk::DescriptorSetLayoutBinding metallicRoughnessSamplerBinding = vk::DescriptorSetLayoutBinding()
+		const vk::DescriptorSetLayoutBinding normalSamplerBinding = vk::DescriptorSetLayoutBinding()
 			.setBinding(3)
 			.setDescriptorCount(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		std::array<vk::DescriptorSetLayoutBinding, 4> bindings = {
-			uboLayoutBinding,
+		const vk::DescriptorSetLayoutBinding metallicRoughnessSamplerBinding = vk::DescriptorSetLayoutBinding()
+			.setBinding(4)
+			.setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setPImmutableSamplers(nullptr)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+		std::array<vk::DescriptorSetLayoutBinding, 5> bindings = {
+			mvpUboLayoutBinding,
+			lightUboBinding,
 			albedoSamplerBinding,
 			normalSamplerBinding,
 			metallicRoughnessSamplerBinding
@@ -572,19 +583,29 @@ namespace Pelican
 
 	void VulkanRenderer::CreateUniformBuffers()
 	{
-		const vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
+		const vk::DeviceSize uboBufferSize = sizeof(UniformBufferObject);
+		const vk::DeviceSize lightBufferSize = sizeof(DirectionalLight);
 
-		m_UniformBuffers.resize(m_pSwapChain->GetImages().size());
-		m_UniformBuffersMemory.resize(m_pSwapChain->GetImages().size());
+		m_MvpUbo.resize(m_pSwapChain->GetImages().size());
+		m_MvpUboMemory.resize(m_pSwapChain->GetImages().size());
+
+		m_LightUbo.resize(m_pSwapChain->GetImages().size());
+		m_LightUboMemory.resize(m_pSwapChain->GetImages().size());
 
 		for (size_t i = 0; i < m_pSwapChain->GetImages().size(); i++)
 		{
 			VulkanHelpers::CreateBuffer(
-				bufferSize,
+				uboBufferSize,
 				vk::BufferUsageFlagBits::eUniformBuffer,
 				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-				m_UniformBuffers[i], m_UniformBuffersMemory[i]
+				m_MvpUbo[i], m_MvpUboMemory[i]
 			);
+
+			VulkanHelpers::CreateBuffer(
+				lightBufferSize,
+				vk::BufferUsageFlagBits::eUniformBuffer,
+				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+				m_LightUbo[i], m_LightUboMemory[i]);
 		}
 	}
 
@@ -673,8 +694,11 @@ namespace Pelican
 
 		for (size_t i = 0; i < m_pSwapChain->GetImages().size(); i++)
 		{
-			m_pDevice->GetDevice().destroyBuffer(m_UniformBuffers[i]);
-			m_pDevice->GetDevice().freeMemory(m_UniformBuffersMemory[i]);
+			m_pDevice->GetDevice().destroyBuffer(m_MvpUbo[i]);
+			m_pDevice->GetDevice().freeMemory(m_MvpUboMemory[i]);
+
+			m_pDevice->GetDevice().destroyBuffer(m_LightUbo[i]);
+			m_pDevice->GetDevice().freeMemory(m_LightUboMemory[i]);
 		}
 
 		m_pDevice->GetDevice().destroyDescriptorPool(m_DescriptorPool);
@@ -736,9 +760,15 @@ namespace Pelican
 		ubo.proj = m_pCamera->GetProjection();
 		ubo.proj[1][1] *= -1;
 
-		void* data = m_pDevice->GetDevice().mapMemory(m_UniformBuffersMemory[currentImage], 0, sizeof(ubo));
+		void* data = m_pDevice->GetDevice().mapMemory(m_MvpUboMemory[currentImage], 0, sizeof(ubo));
 			memcpy(data, &ubo, sizeof(ubo));
-		m_pDevice->GetDevice().unmapMemory(m_UniformBuffersMemory[currentImage]);
+		m_pDevice->GetDevice().unmapMemory(m_MvpUboMemory[currentImage]);
+
+		const DirectionalLight& light = Application::Get().GetScene()->GetDirectionalLight();
+
+		data = m_pDevice->GetDevice().mapMemory(m_LightUboMemory[currentImage], 0, sizeof(light));
+			memcpy(data, &light, sizeof(light));
+		m_pDevice->GetDevice().unmapMemory(m_LightUboMemory[currentImage]);
 	}
 
 	void VulkanRenderer::CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,

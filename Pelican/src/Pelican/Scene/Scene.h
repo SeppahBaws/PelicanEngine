@@ -2,6 +2,8 @@
 
 #include <entt.hpp>
 
+#include "Pelican/Renderer/UniformData.h"
+
 namespace Pelican
 {
 	class Camera;
@@ -20,6 +22,8 @@ namespace Pelican
 		Entity CreateEntity(const std::string& name = "new entity");
 		void DestroyEntity(Entity& entity);
 
+		const DirectionalLight& GetDirectionalLight() { return m_DirectionalLight; }
+
 		void SetName(const std::string& name) { m_Name = name; }
 		std::string GetName() const { return m_Name; }
 
@@ -36,6 +40,7 @@ namespace Pelican
 		entt::registry m_Registry;
 
 		std::string m_Name{};
+		DirectionalLight m_DirectionalLight;
 
 		// TEMP
 		Camera* m_pCamera;

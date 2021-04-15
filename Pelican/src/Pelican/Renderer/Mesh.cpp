@@ -21,10 +21,12 @@
 #pragma warning(push)
 #pragma warning(disable:4201)
 #include <glm/gtc/type_ptr.hpp>
-
-#include "UniformBufferObject.h"
-#include "Pelican/Assets/AssetManager.h"
 #pragma warning(pop)
+
+#include "Pelican/Renderer/UniformData.h"
+#include "Pelican/Assets/AssetManager.h"
+#include "Pelican/Core/Application.h"
+#include "Pelican/Scene/Scene.h"
 
 namespace tinygltf
 {
@@ -109,6 +111,8 @@ namespace Pelican
 
 		device.destroyBuffer(m_UniformBuffer);
 		device.freeMemory(m_UniformBufferMemory);
+		device.destroyBuffer(m_LightBuffer);
+		device.freeMemory(m_LightBufferMemory);
 	}
 
 	void Mesh::SetupVerticesIndices(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
@@ -137,10 +141,14 @@ namespace Pelican
 		ubo.view = view;
 		ubo.proj = proj;
 
-
 		void* data = VulkanRenderer::GetDevice().mapMemory(m_UniformBufferMemory, 0, sizeof(ubo));
 			memcpy(data, &ubo, sizeof(ubo));
 		VulkanRenderer::GetDevice().unmapMemory(m_UniformBufferMemory);
+
+		const DirectionalLight& light = Application::Get().GetScene()->GetDirectionalLight();
+		data = VulkanRenderer::GetDevice().mapMemory(m_LightBufferMemory, 0, sizeof(DirectionalLight));
+			memcpy(data, &light, sizeof(light));
+		VulkanRenderer::GetDevice().unmapMemory(m_LightBufferMemory);
 	}
 
 	void Mesh::Draw() const
@@ -159,7 +167,7 @@ namespace Pelican
 
 	void Mesh::CreateBuffers()
 	{
-		// Uniform buffer
+		// MVP Uniform buffer
 		{
 			const vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
 			VulkanHelpers::CreateBuffer(
@@ -167,6 +175,16 @@ namespace Pelican
 				vk::BufferUsageFlagBits::eUniformBuffer,
 				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
 				m_UniformBuffer, m_UniformBufferMemory);
+		}
+
+		// Light Uniform buffer
+		{
+			const vk::DeviceSize bufferSize = sizeof(DirectionalLight);
+			VulkanHelpers::CreateBuffer(
+				bufferSize,
+				vk::BufferUsageFlagBits::eUniformBuffer,
+				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+				m_LightBuffer, m_LightBufferMemory);
 		}
 
 		// Vertex Buffer
@@ -228,7 +246,8 @@ namespace Pelican
 
 	void Mesh::CreateDescriptorSet(const vk::DescriptorPool& pool)
 	{
-		vk::DescriptorBufferInfo bufferInfo(m_UniformBuffer, 0, sizeof(UniformBufferObject));
+		vk::DescriptorBufferInfo mvpBufferInfo(m_UniformBuffer, 0, sizeof(UniformBufferObject));
+		vk::DescriptorBufferInfo lightBufferInfo(m_LightBuffer, 0, sizeof(DirectionalLight));
 
 		std::array<vk::DescriptorImageInfo, static_cast<uint32_t>(TextureSlot::SLOT_COUNT)> imageInfos =
 		{
@@ -254,41 +273,47 @@ namespace Pelican
 			throw std::runtime_error("Failed to allocate descriptor sets: "s + e.what());
 		}
 
-		std::array<vk::WriteDescriptorSet, 4> descriptorWrites{};
+		std::array<vk::WriteDescriptorSet, 5> descriptorWrites{};
 
+		// MVP Uniform buffer
 		descriptorWrites[0].dstSet = m_DescriptorSet;
 		descriptorWrites[0].dstBinding = 0;
 		descriptorWrites[0].dstArrayElement = 0;
 		descriptorWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer;
 		descriptorWrites[0].descriptorCount = 1;
-		descriptorWrites[0].pBufferInfo = &bufferInfo;
+		descriptorWrites[0].pBufferInfo = &mvpBufferInfo;
 
-		// Albedo texture
+		// Lights Uniform buffer
 		descriptorWrites[1].dstSet = m_DescriptorSet;
 		descriptorWrites[1].dstBinding = 1;
 		descriptorWrites[1].dstArrayElement = 0;
-		descriptorWrites[1].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		descriptorWrites[1].descriptorType = vk::DescriptorType::eUniformBuffer;
 		descriptorWrites[1].descriptorCount = 1;
-		descriptorWrites[1].pBufferInfo = &bufferInfo;
-		descriptorWrites[1].pImageInfo = &imageInfos[0];
+		descriptorWrites[1].pBufferInfo = &lightBufferInfo;
 
-		// Normal texture
+		// Albedo texture
 		descriptorWrites[2].dstSet = m_DescriptorSet;
 		descriptorWrites[2].dstBinding = 2;
 		descriptorWrites[2].dstArrayElement = 0;
 		descriptorWrites[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		descriptorWrites[2].descriptorCount = 1;
-		descriptorWrites[2].pBufferInfo = &bufferInfo;
-		descriptorWrites[2].pImageInfo = &imageInfos[1];
+		descriptorWrites[2].pImageInfo = &imageInfos[0];
 
-		// Metallic Roughness texture
+		// Normal texture
 		descriptorWrites[3].dstSet = m_DescriptorSet;
 		descriptorWrites[3].dstBinding = 3;
 		descriptorWrites[3].dstArrayElement = 0;
 		descriptorWrites[3].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		descriptorWrites[3].descriptorCount = 1;
-		descriptorWrites[3].pBufferInfo = &bufferInfo;
-		descriptorWrites[3].pImageInfo = &imageInfos[2];
+		descriptorWrites[3].pImageInfo = &imageInfos[1];
+
+		// Metallic Roughness texture
+		descriptorWrites[4].dstSet = m_DescriptorSet;
+		descriptorWrites[4].dstBinding = 4;
+		descriptorWrites[4].dstArrayElement = 0;
+		descriptorWrites[4].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		descriptorWrites[4].descriptorCount = 1;
+		descriptorWrites[4].pImageInfo = &imageInfos[2];
 
 		VulkanRenderer::GetDevice().updateDescriptorSets(descriptorWrites, {});
 	}

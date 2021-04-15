@@ -18,6 +18,8 @@ namespace Pelican
 
 		json jsonScene = json::object();
 		jsonScene["name"] = pScene->m_Name;
+		jsonScene["lighting"] = pScene->m_DirectionalLight;
+
 		json jEntities = json::array();
 
 		pScene->m_Registry.each([&](auto entity)
@@ -63,6 +65,7 @@ namespace Pelican
 		json jsonScene = json::parse(serialized);
 
 		const json jName = jsonScene["name"];
+		const json jLighting = jsonScene["lighting"];
 		const json jEntities = jsonScene["entities"];
 
 		if (!jName.is_string())
@@ -77,6 +80,8 @@ namespace Pelican
 
 		// Get the scene name
 		jName.get_to(pScene->m_Name);
+
+		jLighting.get_to(pScene->m_DirectionalLight);
 
 		for (json jEntity : jEntities)
 		{
@@ -113,9 +118,7 @@ namespace Pelican
 					if (!jComponent["scale"].is_array())
 						throw std::exception("Transform component doesn't have a scale!");
 
-					glm::vec3 position;
-					glm::vec3 rotation;
-					glm::vec3 scale;
+					glm::vec3 position, rotation, scale;
 
 					jComponent["position"].get_to(position);
 					jComponent["rotation"].get_to(rotation);

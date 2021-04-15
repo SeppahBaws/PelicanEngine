@@ -36,6 +36,7 @@ namespace Pelican
 		Window* GetWindow() const { return m_pWindow; }
 		VulkanRenderer& GetRenderer() const { return *m_pRenderer; }
 		static Application& Get() { return *m_Instance; }
+		Scene* GetScene() const { return m_pScene; }
 
 	private:
 		void Init();

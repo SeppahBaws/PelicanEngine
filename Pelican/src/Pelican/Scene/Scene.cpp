@@ -14,6 +14,7 @@
 #include "Pelican/Core/System/FileDialog.h"
 
 #include "Pelican/Renderer/Camera.h"
+#include "Pelican/Renderer/UniformData.h"
 #include "Pelican/Renderer/VulkanDebug.h"
 
 
@@ -112,6 +113,8 @@ namespace Pelican
 		VkDebugMarker::EndRegion(VulkanRenderer::GetCurrentBuffer());
 
 
+		// TODO: move this out to an editor or so...
+
 		bool isOpen = true;
 		// Debug UI
 		if (ImGui::Begin("Scene debugger", &isOpen, ImGuiWindowFlags_MenuBar))
@@ -166,6 +169,14 @@ namespace Pelican
 			}
 			ImGui::End();
 		}
+
+		if (ImGui::Begin(std::string("Directional Light").c_str()))
+		{
+			ImGui::DragFloat3("direction", reinterpret_cast<float*>(&m_DirectionalLight.direction), 0.01f, -1.0f, 1.0f, "%.3f");
+			ImGui::ColorEdit3("light color", reinterpret_cast<float*>(&m_DirectionalLight.lightColor));
+			ImGui::ColorEdit3("ambient color", reinterpret_cast<float*>(&m_DirectionalLight.ambientColor));
+		}
+		ImGui::End();
 	}
 
 	void Scene::Cleanup()

@@ -44,6 +44,8 @@ namespace Pelican
 
 		vk::Buffer m_UniformBuffer{};
 		vk::DeviceMemory m_UniformBufferMemory{};
+		vk::Buffer m_LightBuffer{};
+		vk::DeviceMemory m_LightBufferMemory{};
 
 		vk::Buffer m_VertexBuffer{};
 		vk::DeviceMemory m_VertexBufferMemory{};
@@ -51,7 +53,6 @@ namespace Pelican
 		vk::DeviceMemory m_IndexBufferMemory{};
 		vk::DescriptorSet m_DescriptorSet{};
 
-		// VulkanTexture* m_pTexture{};
 		VulkanTexture* m_pTextures[static_cast<uint32_t>(TextureSlot::SLOT_COUNT)]{};
 		VulkanTexture* m_pWhiteTexture{};
 	};

@@ -1,5 +1,11 @@
 #version 450
-#extension GL_ARB_separate_shader_objects : enable
+
+struct DirectionalLight
+{
+    vec3 direction;
+    vec3 lightColor;
+    vec3 ambientColor;
+};
 
 layout(set = 0, binding = 0) uniform UniformBufferObject
 {
@@ -8,17 +14,20 @@ layout(set = 0, binding = 0) uniform UniformBufferObject
     mat4 proj;
 } ubo;
 
+layout(set = 0, binding = 1) uniform LightInformation
+{
+    DirectionalLight directionalLight;
+} lights;
+
 layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec3 vNormal;
 layout(location = 2) in vec2 vTexCoord;
 
 layout(location = 0) out vec4 outColor;
 
-layout(binding = 1) uniform sampler2D texAlbedo;
-layout(binding = 2) uniform sampler2D texNormal;
-layout(binding = 3) uniform sampler2D texMetallicRoughness;
-
-const vec3 lightDir = vec3(0.577, -0.577, -0.577);
+layout(binding = 2) uniform sampler2D texAlbedo;
+layout(binding = 3) uniform sampler2D texNormal;
+layout(binding = 4) uniform sampler2D texMetallicRoughness;
 
 void main()
 {
@@ -30,14 +39,17 @@ void main()
 
     vec3 normal = normalize(vNormal * sampledNormal);
     
+    // Halflambert Diffuse shading.
+    const vec3 lightDir = normalize(lights.directionalLight.direction);
     float diffuseStrength = dot(normal, -lightDir);
     diffuseStrength = diffuseStrength * 0.5 + 0.5;
     diffuseStrength = clamp(diffuseStrength, 0, 1);
-    finalColor = baseColor * diffuseStrength;
+    vec3 diffuse = baseColor * diffuseStrength * lights.directionalLight.lightColor;
 
     float alpha = texture(texAlbedo, vTexCoord).a;
-    if (alpha <= 0.001f)
+    if (alpha <= 0.1f)
         discard; // The discard helps a bit with the current transparency issue, although it should still be fixed properly later on.
 
+    finalColor = diffuse + lights.directionalLight.ambientColor;
     outColor = vec4(finalColor, alpha);
 }

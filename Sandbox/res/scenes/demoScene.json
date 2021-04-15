@@ -3,14 +3,14 @@
     {
       "components": [
         {
-          "name": "Gun",
+          "name": "Flashlight",
           "type": "TagComponent"
         },
         {
           "position": [
-            3.0,
-            0.0,
-            10.0
+            -3.0,
+            -2.0,
+            20.0
           ],
           "rotation": [
             -90.0,
@@ -18,14 +18,14 @@
             0.0
           ],
           "scale": [
-            0.10000000149011612,
-            0.10000000149011612,
-            0.10000000149011612
+            0.5,
+            0.5,
+            0.5
           ],
           "type": "TransformComponent"
         },
         {
-          "assetPath": "res/models/cerberus_gun/scene.gltf",
+          "assetPath": "res/models/tactical_flashlight/scene.gltf",
           "type": "ModelComponent"
         }
       ]
@@ -63,33 +63,50 @@
     {
       "components": [
         {
-          "name": "Flashlight",
+          "name": "Gun",
           "type": "TagComponent"
         },
         {
           "position": [
-            -3.0,
-            -2.0,
-            20.0
+            0.0,
+            15.0,
+            8.0
           ],
           "rotation": [
             -90.0,
-            0.0,
+            45.0,
             0.0
           ],
           "scale": [
-            0.5,
-            0.5,
-            0.5
+            0.10000000149011612,
+            0.10000000149011612,
+            0.10000000149011612
           ],
           "type": "TransformComponent"
         },
         {
-          "assetPath": "res/models/tactical_flashlight/scene.gltf",
+          "assetPath": "res/models/cerberus_gun/scene.gltf",
           "type": "ModelComponent"
         }
       ]
     }
   ],
+  "lighting": {
+    "ambientColor": [
+      0.09059017151594162,
+      0.10576816648244858,
+      0.12745100259780884
+    ],
+    "direction": [
+      0.6700000166893005,
+      0.699999988079071,
+      -0.699999988079071
+    ],
+    "lightColor": [
+      0.9117646813392639,
+      0.9007224440574646,
+      0.7240484356880188
+    ]
+  },
   "name": "Demo Scene"
 }

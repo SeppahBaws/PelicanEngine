@@ -125,8 +125,10 @@ namespace Pelican
 
 		bool m_ReloadShadersFlag = false;
 
-		std::vector<vk::Buffer> m_UniformBuffers;
-		std::vector<vk::DeviceMemory> m_UniformBuffersMemory;
+		std::vector<vk::Buffer> m_MvpUbo;
+		std::vector<vk::DeviceMemory> m_MvpUboMemory;
+		std::vector<vk::Buffer> m_LightUbo;
+		std::vector<vk::DeviceMemory> m_LightUboMemory;
 		vk::DescriptorPool m_DescriptorPool;
 
 		vk::Image m_DepthImage;

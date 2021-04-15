@@ -88,4 +88,23 @@ namespace nlohmann
 			t.pModel = new Pelican::GltfModel(assetPath);
 		}
 	};
+
+	template<>
+	struct adl_serializer<Pelican::DirectionalLight>
+	{
+		static void to_json(json& j, const Pelican::DirectionalLight& t)
+		{
+			j = json::object();
+			j["direction"] = t.direction;
+			j["lightColor"] = t.lightColor;
+			j["ambientColor"] = t.ambientColor;
+		}
+
+		static void from_json(const json& j, Pelican::DirectionalLight& t)
+		{
+			t.direction = j["direction"];
+			t.lightColor = j["lightColor"];
+			t.ambientColor = j["ambientColor"];
+		}
+	};
 }
