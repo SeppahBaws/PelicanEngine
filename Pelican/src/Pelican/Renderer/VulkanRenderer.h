@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "VulkanDevice.h"
+#include "VulkanPipeline.h"
 #include "VulkanSwapChain.h"
 
 namespace Pelican
@@ -43,7 +44,7 @@ namespace Pelican
 		static vk::DescriptorSetLayout& GetDescriptorSetLayout() { return m_pInstance->m_DescriptorSetLayout; }
 		static vk::CommandPool GetCommandPool() { return m_pInstance->m_CommandPool; }
 		static vk::CommandBuffer GetCurrentBuffer() { return m_pInstance->m_CommandBuffers[m_pInstance->m_CurrentBuffer]; }
-		static vk::PipelineLayout GetPipelineLayout() { return m_pInstance->m_PipelineLayout; }
+		static vk::PipelineLayout GetPipelineLayout() { return m_pInstance->m_Pipeline.GetLayout(); }
 
 	private:
 		void CreateInstance();
@@ -107,9 +108,8 @@ namespace Pelican
 
 		vk::RenderPass m_RenderPass;
 		vk::DescriptorSetLayout m_DescriptorSetLayout;
-		vk::PipelineLayout m_PipelineLayout;
-		vk::PipelineCache m_PipelineCache;
-		vk::Pipeline m_GraphicsPipeline;
+
+		VulkanPipeline m_Pipeline;
 
 		vk::CommandPool m_CommandPool;
 		std::vector<vk::CommandBuffer> m_CommandBuffers;

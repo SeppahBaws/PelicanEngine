@@ -28,6 +28,7 @@
 #include "Vertex.h"
 #include "VulkanShader.h"
 #include "VulkanHelpers.h"
+#include "VulkanPipeline.h"
 #include "ImGui/ImGuiWrapper.h"
 #include "Pelican/Scene/Component.h"
 #include "Pelican/Scene/Scene.h"
@@ -462,90 +463,20 @@ namespace Pelican
 	{
 		VulkanShader* pShader = new VulkanShader("res/shaders/vert.spv", "res/shaders/frag.spv");
 
-		auto bindingDescription = Vertex::GetBindingDescription();
-		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
+		std::array<vk::DescriptorSetLayout, 1> descLayouts = { m_DescriptorSetLayout };
 
-		const vk::PipelineVertexInputStateCreateInfo vertexInputInfo = vk::PipelineVertexInputStateCreateInfo()
-			.setVertexBindingDescriptions(bindingDescription)
-			.setVertexAttributeDescriptions(attributeDescriptions);
+		GraphicsPipelineBuilder builder{ m_pDevice->GetDevice() };
+		builder.SetShader(pShader);
+		builder.SetInputAssembly(vk::PrimitiveTopology::eTriangleList, false);
+		builder.SetViewport(0.0f, 0.0f, static_cast<float>(m_pSwapChain->GetExtent().width), static_cast<float>(m_pSwapChain->GetExtent().height), 0.0f, 1.0f);
+		builder.SetScissor(vk::Offset2D(0, 0), m_pSwapChain->GetExtent());
+		builder.SetRasterizer(vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack);
+		builder.SetMultisampling();
+		builder.SetDepthStencil(true, true, vk::CompareOp::eLess);
+		builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
+		builder.SetDescriptorSetLayout(static_cast<uint32_t>(descLayouts.size()), descLayouts.data());
 
-		const vk::PipelineInputAssemblyStateCreateInfo inputAssembly = vk::PipelineInputAssemblyStateCreateInfo()
-			.setTopology(vk::PrimitiveTopology::eTriangleList)
-			.setPrimitiveRestartEnable(false);
-
-		vk::Viewport viewport = vk::Viewport()
-			.setX(0.0f).setY(0.0f)
-			.setWidth(static_cast<float>(m_pSwapChain->GetExtent().width))
-			.setHeight(static_cast<float>(m_pSwapChain->GetExtent().height))
-			.setMinDepth(0.0f).setMaxDepth(1.0f);
-
-		vk::Rect2D scissor = vk::Rect2D()
-			.setOffset(vk::Offset2D(0, 0))
-			.setExtent(m_pSwapChain->GetExtent());
-
-		const vk::PipelineViewportStateCreateInfo viewportState = vk::PipelineViewportStateCreateInfo()
-			.setViewports(viewport)
-			.setScissors(scissor);
-
-		vk::PipelineRasterizationStateCreateInfo rasterizer = VkInit::RasterizationStateCreateInfo(vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack);
-		vk::PipelineMultisampleStateCreateInfo multisampling = VkInit::MultisampleStateCreateInfo();
-		vk::PipelineDepthStencilStateCreateInfo depthStencil = VkInit::DepthStencilCreateInfo(true, true, vk::CompareOp::eLess);
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment = vk::PipelineColorBlendAttachmentState()
-			.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
-			.setBlendEnable(true)
-			.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
-			.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-			.setColorBlendOp(vk::BlendOp::eAdd)
-			.setSrcAlphaBlendFactor(vk::BlendFactor::eSrcAlpha)
-			.setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-			.setAlphaBlendOp(vk::BlendOp::eAdd);
-		vk::PipelineColorBlendStateCreateInfo colorBlending = vk::PipelineColorBlendStateCreateInfo()
-			.setLogicOpEnable(false)
-			.setLogicOp(vk::LogicOp::eCopy)
-			.setAttachments(colorBlendAttachment)
-			.setBlendConstants({ 0.0f, 0.0f, 0.0f, 0.0f });
-
-		vk::PipelineLayoutCreateInfo pipelineLayoutInfo = vk::PipelineLayoutCreateInfo()
-			.setSetLayouts(m_DescriptorSetLayout);
-
-		try
-		{
-			m_PipelineLayout = m_pDevice->GetDevice().createPipelineLayout(pipelineLayoutInfo);
-		}
-		catch (vk::SystemError& e)
-		{
-			throw std::runtime_error("Failed to create pipeline layout: "s + e.what());
-		}
-
-		std::vector<vk::PipelineShaderStageCreateInfo> stages = pShader->GetShaderStages();
-		const vk::GraphicsPipelineCreateInfo pipelineInfo = vk::GraphicsPipelineCreateInfo()
-			.setStages(stages)
-
-			.setPVertexInputState(&vertexInputInfo)
-			.setPInputAssemblyState(&inputAssembly)
-			.setPViewportState(&viewportState)
-			.setPRasterizationState(&rasterizer)
-			.setPMultisampleState(&multisampling)
-			.setPDepthStencilState(&depthStencil)
-			.setPColorBlendState(&colorBlending)
-			.setPDynamicState(nullptr)
-
-			.setLayout(m_PipelineLayout)
-			.setRenderPass(m_RenderPass)
-			.setSubpass(0)
-
-			.setBasePipelineHandle(nullptr)
-			.setBasePipelineIndex(-1);
-
-		m_PipelineCache = m_pDevice->GetDevice().createPipelineCache(vk::PipelineCacheCreateInfo());
-
-		vk::ResultValue<vk::Pipeline> pipelineResult = m_pDevice->GetDevice().createGraphicsPipeline(m_PipelineCache, pipelineInfo);
-
-		if (pipelineResult.result != vk::Result::eSuccess)
-		{
-			throw std::runtime_error("Failed to create graphics pipeline");
-		}
-		m_GraphicsPipeline = pipelineResult.value;
+		m_Pipeline = builder.Build(m_RenderPass);
 
 		delete pShader;
 		pShader = nullptr;
@@ -685,9 +616,7 @@ namespace Pelican
 
 		m_pDevice->GetDevice().freeCommandBuffers(m_CommandPool, m_CommandBuffers);
 
-		m_pDevice->GetDevice().destroyPipeline(m_GraphicsPipeline);
-		m_pDevice->GetDevice().destroyPipelineCache(m_PipelineCache);
-		m_pDevice->GetDevice().destroyPipelineLayout(m_PipelineLayout);
+		m_Pipeline.Cleanup(m_pDevice->GetDevice());
 		m_pDevice->GetDevice().destroyRenderPass(m_RenderPass);
 
 		m_pSwapChain->Cleanup();
@@ -738,10 +667,8 @@ namespace Pelican
 		m_pDevice->WaitIdle();
 
 		// Cleanup pipeline
-		m_pDevice->GetDevice().destroyPipeline(m_GraphicsPipeline);
 		// TODO: we should not have to destroy the pipeline cache and pipeline layout, for faster pipeline rebuilding.
-		m_pDevice->GetDevice().destroyPipelineCache(m_PipelineCache);
-		m_pDevice->GetDevice().destroyPipelineLayout(m_PipelineLayout);
+		m_Pipeline.Cleanup(m_pDevice->GetDevice());
 		m_pDevice->GetDevice().destroyRenderPass(m_RenderPass);
 
 		CreateRenderPass();
@@ -967,7 +894,7 @@ namespace Pelican
 			.setClearValues(clearValues);
 
 		cmd.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
-		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_GraphicsPipeline);
+		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_Pipeline.GetPipeline());
 	}
 
 	void VulkanRenderer::EndCommandBuffers()

@@ -9,7 +9,7 @@ namespace Pelican
 		VulkanShader(std::string vertPath, std::string fragPath);
 		~VulkanShader();
 
-		std::vector<vk::PipelineShaderStageCreateInfo> GetShaderStages() const { return m_ShaderStages; }
+		const std::vector<vk::PipelineShaderStageCreateInfo>& GetShaderStages() const { return m_ShaderStages; }
 
 		void Reload();
 
