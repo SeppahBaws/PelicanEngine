@@ -247,6 +247,11 @@ namespace Pelican
 		m_ReloadShadersFlag = true;
 	}
 
+	vk::PipelineLayout VulkanRenderer::GetPipelineLayout()
+	{
+		return m_pInstance->m_Pipelines[static_cast<int>(Application::Get().m_RenderMode)].GetLayout();
+	}
+
 	void VulkanRenderer::CreateInstance()
 	{
 		if (m_EnableValidationLayers && !CheckValidationLayerSupport())
@@ -476,7 +481,13 @@ namespace Pelican
 		builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
 		builder.SetDescriptorSetLayout(static_cast<uint32_t>(descLayouts.size()), descLayouts.data());
 
-		m_Pipeline = builder.Build(m_RenderPass);
+		m_Pipelines[static_cast<int>(RenderMode::Filled)] = builder.Build(m_RenderPass);
+
+		builder.SetRasterizer(vk::PolygonMode::eLine, vk::CullModeFlagBits::eBack);
+		m_Pipelines[static_cast<int>(RenderMode::Lines)] = builder.Build(m_RenderPass);
+
+		builder.SetRasterizer(vk::PolygonMode::ePoint, vk::CullModeFlagBits::eBack);
+		m_Pipelines[static_cast<int>(RenderMode::Points)] = builder.Build(m_RenderPass);
 
 		delete pShader;
 		pShader = nullptr;
@@ -616,7 +627,10 @@ namespace Pelican
 
 		m_pDevice->GetDevice().freeCommandBuffers(m_CommandPool, m_CommandBuffers);
 
-		m_Pipeline.Cleanup(m_pDevice->GetDevice());
+		for (int i = 0; i < static_cast<int>(RenderMode::RENDERING_MODE_MAX); i++)
+		{
+			m_Pipelines[i].Cleanup(m_pDevice->GetDevice());
+		}
 		m_pDevice->GetDevice().destroyRenderPass(m_RenderPass);
 
 		m_pSwapChain->Cleanup();
@@ -668,7 +682,10 @@ namespace Pelican
 
 		// Cleanup pipeline
 		// TODO: we should not have to destroy the pipeline cache and pipeline layout, for faster pipeline rebuilding.
-		m_Pipeline.Cleanup(m_pDevice->GetDevice());
+		for (int i = 0; i < static_cast<int>(RenderMode::RENDERING_MODE_MAX); i++)
+		{
+			m_Pipelines[i].Cleanup(m_pDevice->GetDevice());
+		}
 		m_pDevice->GetDevice().destroyRenderPass(m_RenderPass);
 
 		CreateRenderPass();
@@ -894,7 +911,7 @@ namespace Pelican
 			.setClearValues(clearValues);
 
 		cmd.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
-		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_Pipeline.GetPipeline());
+		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_Pipelines[static_cast<int>(Application::Get().m_RenderMode)].GetPipeline());
 	}
 
 	void VulkanRenderer::EndCommandBuffers()

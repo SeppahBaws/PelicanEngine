@@ -38,6 +38,9 @@ namespace Pelican
 		static Application& Get() { return *m_Instance; }
 		Scene* GetScene() const { return m_pScene; }
 
+	public:
+		RenderMode m_RenderMode = RenderMode::Filled;
+
 	private:
 		void Init();
 		void Cleanup();

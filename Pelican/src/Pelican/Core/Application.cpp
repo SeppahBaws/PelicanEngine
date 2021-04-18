@@ -137,6 +137,21 @@ namespace Pelican
 					}
 				}
 				ImGui::End();
+
+				if (ImGui::Begin("Renderer Settings"))
+				{
+					if (ImGui::CollapsingHeader("Rasterization Settings"))
+					{
+						ImGui::Text("Rendering Mode");
+
+						int mode = static_cast<int>(m_RenderMode);
+						ImGui::RadioButton("Solid", &mode, static_cast<int>(RenderMode::Filled));
+						ImGui::RadioButton("Lines", &mode, static_cast<int>(RenderMode::Lines));
+						ImGui::RadioButton("Points", &mode, static_cast<int>(RenderMode::Points));
+						m_RenderMode = static_cast<RenderMode>(mode);
+					}
+				}
+				ImGui::End();
 			}
 
 			m_pRenderer->EndScene();

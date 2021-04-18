@@ -121,7 +121,8 @@ namespace Pelican
 		);
 
 		vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
-		deviceFeatures.samplerAnisotropy = VK_TRUE;
+		deviceFeatures.samplerAnisotropy = true;
+		deviceFeatures.fillModeNonSolid = true;
 
 		if (PELICAN_VALIDATE)
 		{

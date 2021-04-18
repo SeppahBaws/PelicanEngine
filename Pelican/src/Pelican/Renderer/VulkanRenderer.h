@@ -12,6 +12,16 @@ namespace Pelican
 	class Camera;
 	class ImGuiWrapper;
 
+	enum class RenderMode : int
+	{
+		Filled = 0,
+		Lines,
+		Points,
+
+		// Keep as last!!!
+		RENDERING_MODE_MAX
+	};
+
 	class VulkanRenderer final
 	{
 	public:
@@ -44,7 +54,7 @@ namespace Pelican
 		static vk::DescriptorSetLayout& GetDescriptorSetLayout() { return m_pInstance->m_DescriptorSetLayout; }
 		static vk::CommandPool GetCommandPool() { return m_pInstance->m_CommandPool; }
 		static vk::CommandBuffer GetCurrentBuffer() { return m_pInstance->m_CommandBuffers[m_pInstance->m_CurrentBuffer]; }
-		static vk::PipelineLayout GetPipelineLayout() { return m_pInstance->m_Pipeline.GetLayout(); }
+		static vk::PipelineLayout GetPipelineLayout();
 
 	private:
 		void CreateInstance();
@@ -109,7 +119,9 @@ namespace Pelican
 		vk::RenderPass m_RenderPass;
 		vk::DescriptorSetLayout m_DescriptorSetLayout;
 
-		VulkanPipeline m_Pipeline;
+		VulkanPipeline m_Pipelines[static_cast<int>(RenderMode::RENDERING_MODE_MAX)];
+		// VulkanPipeline m_Pipeline;
+		// VulkanPipeline m_PipelineLines;
 
 		vk::CommandPool m_CommandPool;
 		std::vector<vk::CommandBuffer> m_CommandBuffers;
