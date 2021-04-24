@@ -443,7 +443,7 @@ namespace Pelican
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		std::array<vk::DescriptorSetLayoutBinding, 5> bindings = {
+		const std::array<vk::DescriptorSetLayoutBinding, 5> bindings = {
 			mvpUboLayoutBinding,
 			lightUboBinding,
 			albedoSamplerBinding,
@@ -470,7 +470,7 @@ namespace Pelican
 		pShader->AddShader(ShaderType::Vertex, "res/shaders/vert.spv");
 		pShader->AddShader(ShaderType::Fragment, "res/shaders/frag.spv");
 
-		std::array<vk::DescriptorSetLayout, 1> descLayouts = { m_DescriptorSetLayout };
+		const std::array<vk::DescriptorSetLayout, 1> descLayouts = { m_DescriptorSetLayout };
 
 		PipelineBuilder builder{ m_pDevice->GetDevice() };
 		builder.SetShader(pShader);
@@ -930,24 +930,5 @@ namespace Pelican
 		{
 			throw std::runtime_error("Failed to end command buffer: "s + e.what());
 		}
-	}
-
-	std::vector<char> VulkanRenderer::ReadFile(const std::string& filename)
-	{
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-		if (!file.is_open())
-		{
-			ASSERT_MSG(false, "failed to open file!");
-		}
-
-		size_t fileSize = static_cast<size_t>(file.tellg());
-		std::vector<char> buffer(fileSize);
-
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
-		file.close();
-
-		return buffer;
 	}
 }

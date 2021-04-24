@@ -158,4 +158,36 @@ namespace Pelican
 		pipeline.Init(pipelineResult.value, pipelineCache, pipelineLayout);
 		return pipeline;
 	}
+
+	VulkanPipeline PipelineBuilder::BuildCompute()
+	{
+		vk::PipelineLayout pipelineLayout;
+
+		try
+		{
+			pipelineLayout = m_Device.createPipelineLayout(m_PipelineLayoutInfo);
+		}
+		catch (vk::SystemError& e)
+		{
+			throw std::runtime_error("Failed to create pipeline layout: "s + e.what());
+		}
+
+		const vk::ComputePipelineCreateInfo pipelineInfo = vk::ComputePipelineCreateInfo()
+			.setStage(m_pShader->GetShaderStage(ShaderType::Compute))
+			.setLayout(pipelineLayout)
+			.setBasePipelineHandle(nullptr)
+			.setBasePipelineIndex(-1);
+
+		const vk::PipelineCache pipelineCache = m_Device.createPipelineCache(vk::PipelineCacheCreateInfo());
+
+		const vk::ResultValue<vk::Pipeline> pipelineResult = m_Device.createComputePipeline(pipelineCache, pipelineInfo);
+		if (pipelineResult.result != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to create compute pipeline");
+		}
+
+		VulkanPipeline pipeline;
+		pipeline.Init(pipelineResult.value, pipelineCache, pipelineLayout);
+		return pipeline;
+	}
 }

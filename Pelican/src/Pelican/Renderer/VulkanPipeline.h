@@ -40,6 +40,7 @@ namespace Pelican
 		void SetDescriptorSetLayout(uint32_t count, const vk::DescriptorSetLayout* pLayouts);
 
 		VulkanPipeline BuildGraphics(const vk::RenderPass& renderPass);
+		VulkanPipeline BuildCompute();
 
 	private:
 		vk::Device m_Device;

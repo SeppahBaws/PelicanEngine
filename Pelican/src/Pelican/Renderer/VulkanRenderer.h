@@ -65,7 +65,6 @@ namespace Pelican
 		void CreateRenderPass();
 
 		void CreateDescriptorSetLayout();
-
 		void CreateGraphicsPipeline();
 
 		void CreateCommandPool();
@@ -95,9 +94,6 @@ namespace Pelican
 
 		void BeginCommandBuffers();
 		void EndCommandBuffers();
-
-	private:
-		static std::vector<char> ReadFile(const std::string& filename);
 
 	private:
 		Camera* m_pCamera = nullptr;

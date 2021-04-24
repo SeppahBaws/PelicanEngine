@@ -1,0 +1,18 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(binding = 0, rgba8) uniform readonly image2D inputImage;
+layout(binding = 1, rgba8) uniform image2D resultImage;
+
+void main()
+{
+    // Load this pixel's color from the inputImage
+    vec4 col = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.xy));
+
+    // Grayscale
+    float avg = (col.r + col.g + col.b) / 3;
+    col = vec4(avg, avg, avg, col.a);
+
+    // Store the pixel's result in the resultImage
+    imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), col);
+}
