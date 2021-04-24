@@ -7,9 +7,6 @@ struct GLFWwindow;
 
 namespace Pelican
 {
-	class VulkanDevice;
-	class VulkanShader;
-
 	struct ImGuiInitInfo
 	{
 		vk::Instance instance;

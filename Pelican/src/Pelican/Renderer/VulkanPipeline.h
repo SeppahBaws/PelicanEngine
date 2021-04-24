@@ -24,10 +24,10 @@ namespace Pelican
 		vk::PipelineLayout m_Layout;
 	};
 
-	class GraphicsPipelineBuilder
+	class PipelineBuilder
 	{
 	public:
-		GraphicsPipelineBuilder(vk::Device device);
+		PipelineBuilder(vk::Device device);
 
 		void SetShader(VulkanShader* pShader);
 		void SetInputAssembly(vk::PrimitiveTopology topology, bool primitiveRestartEnable);
@@ -39,7 +39,7 @@ namespace Pelican
 		void SetColorBlend(bool blendEnable, vk::BlendOp colorBlendOp, vk::BlendOp alphaBlendOp, bool logicOpEnable, vk::LogicOp logicOp);
 		void SetDescriptorSetLayout(uint32_t count, const vk::DescriptorSetLayout* pLayouts);
 
-		VulkanPipeline Build(const vk::RenderPass& renderPass);
+		VulkanPipeline BuildGraphics(const vk::RenderPass& renderPass);
 
 	private:
 		vk::Device m_Device;

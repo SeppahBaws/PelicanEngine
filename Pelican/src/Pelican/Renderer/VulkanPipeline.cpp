@@ -23,24 +23,24 @@ namespace Pelican
 		device.destroyPipelineLayout(m_Layout);
 	}
 
-	GraphicsPipelineBuilder::GraphicsPipelineBuilder(vk::Device device)
+	PipelineBuilder::PipelineBuilder(vk::Device device)
 		: m_Device(device)
 	{
 	}
 
-	void GraphicsPipelineBuilder::SetShader(VulkanShader* pShader)
+	void PipelineBuilder::SetShader(VulkanShader* pShader)
 	{
 		m_pShader = pShader;
 	}
 
-	void GraphicsPipelineBuilder::SetInputAssembly(vk::PrimitiveTopology topology, bool primitiveRestartEnable)
+	void PipelineBuilder::SetInputAssembly(vk::PrimitiveTopology topology, bool primitiveRestartEnable)
 	{
 		m_InputAssembly = vk::PipelineInputAssemblyStateCreateInfo()
 			.setTopology(topology)
 			.setPrimitiveRestartEnable(primitiveRestartEnable);
 	}
 
-	void GraphicsPipelineBuilder::SetViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+	void PipelineBuilder::SetViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
 	{
 		m_Viewport = vk::Viewport()
 			.setX(x).setY(y)
@@ -48,29 +48,29 @@ namespace Pelican
 			.setMinDepth(minDepth).setMaxDepth(maxDepth);
 	}
 
-	void GraphicsPipelineBuilder::SetScissor(const vk::Offset2D& offset, const vk::Extent2D& extent)
+	void PipelineBuilder::SetScissor(const vk::Offset2D& offset, const vk::Extent2D& extent)
 	{
 		m_Scissor = vk::Rect2D()
 			.setOffset(offset)
 			.setExtent(extent);
 	}
 
-	void GraphicsPipelineBuilder::SetRasterizer(vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode)
+	void PipelineBuilder::SetRasterizer(vk::PolygonMode polygonMode, vk::CullModeFlagBits cullMode)
 	{
 		m_Rasterizer = VkInit::RasterizationStateCreateInfo(polygonMode, cullMode);
 	}
 
-	void GraphicsPipelineBuilder::SetMultisampling()
+	void PipelineBuilder::SetMultisampling()
 	{
 		m_Multisampling = VkInit::MultisampleStateCreateInfo();
 	}
 
-	void GraphicsPipelineBuilder::SetDepthStencil(bool depthTest, bool depthWrite, vk::CompareOp compareOp)
+	void PipelineBuilder::SetDepthStencil(bool depthTest, bool depthWrite, vk::CompareOp compareOp)
 	{
 		m_DepthStencil = VkInit::DepthStencilCreateInfo(depthTest, depthWrite, compareOp);
 	}
 
-	void GraphicsPipelineBuilder::SetColorBlend(bool blendEnable, vk::BlendOp colorBlendOp, vk::BlendOp alphaBlendOp,
+	void PipelineBuilder::SetColorBlend(bool blendEnable, vk::BlendOp colorBlendOp, vk::BlendOp alphaBlendOp,
 		bool logicOpEnable, vk::LogicOp logicOp)
 	{
 		m_ColorBlendAttachment = vk::PipelineColorBlendAttachmentState()
@@ -90,7 +90,7 @@ namespace Pelican
 			.setBlendConstants({ 0.0f, 0.0f, 0.0f, 0.0f });
 	}
 
-	void GraphicsPipelineBuilder::SetDescriptorSetLayout(uint32_t count, const vk::DescriptorSetLayout* pLayouts)
+	void PipelineBuilder::SetDescriptorSetLayout(uint32_t count, const vk::DescriptorSetLayout* pLayouts)
 	{
 		m_PipelineLayoutInfo = vk::PipelineLayoutCreateInfo()
 			.setSetLayoutCount(count)
@@ -100,7 +100,7 @@ namespace Pelican
 			// .setPushConstantRanges({});
 	}
 
-	VulkanPipeline GraphicsPipelineBuilder::Build(const vk::RenderPass& renderPass)
+	VulkanPipeline PipelineBuilder::BuildGraphics(const vk::RenderPass& renderPass)
 	{
 		auto bindingDescription = Vertex::GetBindingDescription();
 		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
@@ -125,7 +125,7 @@ namespace Pelican
 			throw std::runtime_error("Failed to create pipeline layout: "s + e.what());
 		}
 
-		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = m_pShader->GetShaderStages();
+		std::vector<vk::PipelineShaderStageCreateInfo> shaderStages = m_pShader->GetAllShaderStages();
 		const vk::GraphicsPipelineCreateInfo pipelineInfo = vk::GraphicsPipelineCreateInfo()
 			.setStages(shaderStages)
 

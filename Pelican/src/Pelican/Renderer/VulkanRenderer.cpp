@@ -466,11 +466,13 @@ namespace Pelican
 
 	void VulkanRenderer::CreateGraphicsPipeline()
 	{
-		VulkanShader* pShader = new VulkanShader("res/shaders/vert.spv", "res/shaders/frag.spv");
+		VulkanShader* pShader = new VulkanShader();
+		pShader->AddShader(ShaderType::Vertex, "res/shaders/vert.spv");
+		pShader->AddShader(ShaderType::Fragment, "res/shaders/frag.spv");
 
 		std::array<vk::DescriptorSetLayout, 1> descLayouts = { m_DescriptorSetLayout };
 
-		GraphicsPipelineBuilder builder{ m_pDevice->GetDevice() };
+		PipelineBuilder builder{ m_pDevice->GetDevice() };
 		builder.SetShader(pShader);
 		builder.SetInputAssembly(vk::PrimitiveTopology::eTriangleList, false);
 		builder.SetViewport(0.0f, 0.0f, static_cast<float>(m_pSwapChain->GetExtent().width), static_cast<float>(m_pSwapChain->GetExtent().height), 0.0f, 1.0f);
@@ -481,13 +483,13 @@ namespace Pelican
 		builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
 		builder.SetDescriptorSetLayout(static_cast<uint32_t>(descLayouts.size()), descLayouts.data());
 
-		m_Pipelines[static_cast<int>(RenderMode::Filled)] = builder.Build(m_RenderPass);
+		m_Pipelines[static_cast<int>(RenderMode::Filled)] = builder.BuildGraphics(m_RenderPass);
 
 		builder.SetRasterizer(vk::PolygonMode::eLine, vk::CullModeFlagBits::eBack);
-		m_Pipelines[static_cast<int>(RenderMode::Lines)] = builder.Build(m_RenderPass);
+		m_Pipelines[static_cast<int>(RenderMode::Lines)] = builder.BuildGraphics(m_RenderPass);
 
 		builder.SetRasterizer(vk::PolygonMode::ePoint, vk::CullModeFlagBits::eBack);
-		m_Pipelines[static_cast<int>(RenderMode::Points)] = builder.Build(m_RenderPass);
+		m_Pipelines[static_cast<int>(RenderMode::Points)] = builder.BuildGraphics(m_RenderPass);
 
 		delete pShader;
 		pShader = nullptr;

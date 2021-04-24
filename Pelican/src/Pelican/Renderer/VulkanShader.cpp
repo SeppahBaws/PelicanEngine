@@ -1,92 +1,162 @@
 ﻿#include "PelicanPCH.h"
 #include "VulkanShader.h"
 
-#include <fstream>
+#include "Pelican/Core/System/FileUtils.h"
 
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
+#include "VulkanDebug.h"
 
 namespace Pelican
 {
-	VulkanShader::VulkanShader(std::string vertPath, std::string fragPath)
-		: m_VertPath(std::move(vertPath))
-		, m_FragPath(std::move(fragPath))
+	ShaderModule::ShaderModule(ShaderType type, const std::string& filePath)
+		: m_Type(type), m_FilePath(filePath)
 	{
 		Initialize();
 	}
 
-	VulkanShader::~VulkanShader()
+	ShaderModule::ShaderModule(ShaderModule&& other) noexcept
+	{
+		m_FilePath = other.m_FilePath;
+		m_Type = other.m_Type;
+		m_ShaderModule = other.m_ShaderModule;
+		m_ShaderInfo = other.m_ShaderInfo;
+
+		other.m_ShaderModule = nullptr;
+	}
+
+	ShaderModule& ShaderModule::operator=(ShaderModule&& other) noexcept
+	{
+		m_FilePath = other.m_FilePath;
+		m_Type = other.m_Type;
+		m_ShaderModule = other.m_ShaderModule;
+		m_ShaderInfo = other.m_ShaderInfo;
+
+		other.m_ShaderModule = nullptr;
+
+		return *this;
+	}
+
+	ShaderModule::~ShaderModule()
 	{
 		Cleanup();
 	}
 
-	void VulkanShader::Reload()
+	void ShaderModule::Reload()
 	{
 		Cleanup();
 		Initialize();
 	}
 
-	void VulkanShader::Initialize()
+	void ShaderModule::Initialize()
 	{
-		const std::vector<char> vertCode = ReadFile(m_VertPath);
-		const std::vector<char> fragCode = ReadFile(m_FragPath);
+		std::string buf;
+		if (!FileUtils::ReadFileSync(m_FilePath, buf))
+		{
+			throw std::runtime_error("Failed to read shader file: "s + m_FilePath);
+		}
 
-		m_VertModule = CreateShaderModule(vertCode);
-		m_FragModule = CreateShaderModule(fragCode);
+		std::vector<char> contents(buf.begin(), buf.end());
 
-		const vk::PipelineShaderStageCreateInfo vertStageInfo = vk::PipelineShaderStageCreateInfo()
-			.setStage(vk::ShaderStageFlagBits::eVertex)
-			.setModule(m_VertModule)
-			.setPName("main");
-
-		const vk::PipelineShaderStageCreateInfo fragStageInfo = vk::PipelineShaderStageCreateInfo()
-			.setStage(vk::ShaderStageFlagBits::eFragment)
-			.setModule(m_FragModule)
-			.setPName("main");
-
-		m_ShaderStages = { vertStageInfo, fragStageInfo };
-	}
-
-	void VulkanShader::Cleanup()
-	{
-		VulkanRenderer::GetDevice().destroyShaderModule(m_VertModule);
-		VulkanRenderer::GetDevice().destroyShaderModule(m_FragModule);
-	}
-
-	std::vector<char> VulkanShader::ReadFile(const std::string& filename) const
-	{
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-		if (!file.is_open())
-			throw std::runtime_error("Failed to open file!");
-
-		const size_t fileSize = static_cast<size_t>(file.tellg());
-		std::vector<char> buffer(fileSize);
-
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
-		file.close();
-
-		return buffer;
-	}
-
-	vk::ShaderModule VulkanShader::CreateShaderModule(const std::vector<char>& code) const
-	{
 		const vk::ShaderModuleCreateInfo createInfo = vk::ShaderModuleCreateInfo()
-			.setCodeSize(code.size())
-			.setPCode(reinterpret_cast<const uint32_t*>(code.data()));
-
-		vk::ShaderModule shaderModule;
+			.setCodeSize(contents.size())
+			.setPCode(reinterpret_cast<const uint32_t*>(contents.data()));
 
 		try
 		{
-			shaderModule = VulkanRenderer::GetDevice().createShaderModule(createInfo);
+			m_ShaderModule = VulkanRenderer::GetDevice().createShaderModule(createInfo);
+			VkDebugMarker::SetShaderModuleName(VulkanRenderer::GetDevice(), m_ShaderModule, m_FilePath.c_str());
 		}
 		catch (vk::SystemError& e)
 		{
 			throw std::runtime_error("Failed to create shader module: "s + e.what());
 		}
 
-		return shaderModule;
+		m_ShaderInfo = vk::PipelineShaderStageCreateInfo()
+			.setStage(static_cast<vk::ShaderStageFlagBits>(m_Type))
+			.setModule(m_ShaderModule)
+			.setPName("main");
+	}
+
+	void ShaderModule::Cleanup() const
+	{
+		if (m_ShaderModule)
+		{
+			VulkanRenderer::GetDevice().destroyShaderModule(m_ShaderModule);
+		}
+	}
+
+	void VulkanShader::AddShader(ShaderType type, const std::string& path)
+	{
+#ifdef PELICAN_DEBUG
+		if (m_ShaderModules.find(type) != m_ShaderModules.end())
+		{
+			throw std::runtime_error("Shader \""s + path + "\" already exists in this collection!");
+		}
+#endif
+
+		m_ShaderModules[type] = ShaderModule(type, path);
+	}
+
+	void VulkanShader::Reload()
+	{
+		auto it = m_ShaderModules.begin();
+		while (it != m_ShaderModules.end())
+		{
+			it->second.Reload();
+			++it;
+		}
+	}
+
+	vk::ShaderModule VulkanShader::GetShaderModule(ShaderType type) const
+	{
+#ifdef PELICAN_DEBUG
+		if (m_ShaderModules.find(type) == m_ShaderModules.end())
+		{
+			throw std::runtime_error("Shader module of this type was not found!");
+		}
+#endif
+		
+		return m_ShaderModules.at(type).GetShaderModule();
+	}
+
+	vk::PipelineShaderStageCreateInfo VulkanShader::GetShaderStage(ShaderType type) const
+	{
+#ifdef PELICAN_DEBUG
+		if (m_ShaderModules.find(type) == m_ShaderModules.end())
+		{
+			throw std::runtime_error("Shader module of this type was not found!");
+		}
+#endif
+
+		return  m_ShaderModules.at(type).GetShaderInfo();
+	}
+
+	std::vector<vk::ShaderModule> VulkanShader::GetAllShaderModules() const
+	{
+		std::vector<vk::ShaderModule> modules;
+
+		auto it = m_ShaderModules.begin();
+		while (it != m_ShaderModules.end())
+		{
+			modules.push_back(it->second.GetShaderModule());
+			++it;
+		}
+
+		return modules;
+	}
+
+	std::vector<vk::PipelineShaderStageCreateInfo> VulkanShader::GetAllShaderStages() const
+	{
+		std::vector<vk::PipelineShaderStageCreateInfo> infos;
+
+		auto it = m_ShaderModules.begin();
+		while (it != m_ShaderModules.end())
+		{
+			infos.push_back(it->second.GetShaderInfo());
+			++it;
+		}
+
+		return infos;
 	}
 }
