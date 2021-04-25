@@ -1,6 +1,5 @@
+#ifdef SANDBOX_USE_VLD
 // ReSharper disable once CppUnusedIncludeDirective
-
-#if 0 // Re-enable this but on a pc that has VLD properly installed :)
 #include <vld.h>
 #endif
 

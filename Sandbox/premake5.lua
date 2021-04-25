@@ -1,3 +1,6 @@
+local targetDir = ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+local objDir = ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+
 project "Sandbox"
     kind "ConsoleApp"
     language "C++"
@@ -5,8 +8,8 @@ project "Sandbox"
     staticruntime "on"
     warnings "extra"
 
-    targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-    objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+    targetdir(targetDir)
+    objdir(objDir)
 
     files
     {
@@ -28,6 +31,22 @@ project "Sandbox"
     {
         "Pelican"
     }
+
+    if (_OPTIONS["use-vld"]) then
+        defines { "SANDBOX_USE_VLD" }
+        includedirs
+        {
+            (VLDLocation .. "/include")
+        }
+        libdirs
+        {
+            (VLDLocation .. "/lib/Win64")
+        }
+        links
+        {
+            "vld"
+        }
+    end
 
     filter "system:windows"
         systemversion "latest"

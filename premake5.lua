@@ -19,6 +19,17 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 local vulkanDir = os.getenv("VULKAN_SDK")
 print("Vulkan is installed at " .. vulkanDir)
 
+newoption {
+    trigger = "use-vld",
+    description = "Enable the use of VLD to check for memory leaks."
+}
+
+if (_OPTIONS["use-vld"]) then
+    print("VLD was enabled, memory leaks will get detected.")
+end
+
+VLDLocation = "C:/Program Files (x86)/Visual Leak Detector"
+
 IncludeDir = {}
 IncludeDir["GLFW"] = "%{wks.location}/Pelican/dependencies/GLFW/include"
 IncludeDir["Glm"] = "%{wks.location}/Pelican/dependencies/glm"
