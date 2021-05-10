@@ -45,6 +45,7 @@ namespace Pelican
 
 	private:
 		std::vector<Mesh> m_Meshes;
+		std::vector<GltfMaterial> m_Materials;
 		std::vector<VulkanTexture*> m_pTextures;
 
 		std::string m_AssetPath{};

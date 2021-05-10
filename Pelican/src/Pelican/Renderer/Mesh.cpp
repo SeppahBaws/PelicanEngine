@@ -65,7 +65,7 @@ namespace Pelican
 	Mesh::Mesh()
 	{
 		// Empty texture as fallback.
-		m_pWhiteTexture = AssetManager::GetInstance().LoadTexture("res/textures/white.png");
+		m_pWhiteTexture = AssetManager::GetInstance().LoadTexture("res/textures/error.png");
 
 		// Setup defaults for the texture slots
 		for (uint32_t i = 0; i < static_cast<uint32_t>(TextureSlot::SLOT_COUNT); i++)
@@ -78,7 +78,7 @@ namespace Pelican
 		: m_Vertices(std::move(vertices)), m_Indices(std::move(indices))
 	{
 		// Empty texture as fallback.
-		m_pWhiteTexture = AssetManager::GetInstance().LoadTexture("res/textures/white.png");
+		m_pWhiteTexture = AssetManager::GetInstance().LoadTexture("res/textures/error.png");
 
 		// Setup defaults for the texture slots
 		for (uint32_t i = 0; i < static_cast<uint32_t>(TextureSlot::SLOT_COUNT); i++)

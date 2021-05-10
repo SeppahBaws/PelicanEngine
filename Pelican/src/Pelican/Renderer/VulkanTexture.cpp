@@ -4,6 +4,7 @@
 #include <stb_image.h>
 #include <glm/vec4.hpp>
 
+#include "VulkanDebug.h"
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 
@@ -104,6 +105,8 @@ namespace Pelican
 
 		VulkanRenderer::GetDevice().destroyBuffer(stagingBuffer);
 		VulkanRenderer::GetDevice().freeMemory(stagingBufferMemory);
+
+		VkDebugMarker::SetImageName(VulkanRenderer::GetDevice(), m_Image, m_AssetPath.c_str());
 	}
 
 	void VulkanTexture::CreateTextureImageView()
