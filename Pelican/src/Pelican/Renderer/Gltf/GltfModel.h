@@ -1,13 +1,9 @@
 ﻿#pragma once
 
-#include "Pelican/Renderer/Camera.h"
-#include "Pelican/Renderer/Camera.h"
-#include "Pelican/Renderer/Camera.h"
-#include "Pelican/Renderer/Camera.h"
-#include "Pelican/Renderer/Camera.h"
-#include "Pelican/Renderer/Camera.h"
 #include "Pelican/Renderer/Mesh.h"
 #include "Pelican/Renderer/VulkanTexture.h"
+
+#include "GltfMaterial.h"
 
 namespace tinygltf
 {
@@ -18,11 +14,6 @@ namespace Pelican
 {
 	class Camera;
 
-	struct GltfMaterial
-	{
-		int ColorTextureIdx;
-	};
-
 	class GltfModel
 	{
 	public:
@@ -32,7 +23,9 @@ namespace Pelican
 		void Update(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj);
 		void Draw();
 
-		std::string GetAssetPath() const { return m_AssetPath; }
+		[[nodiscard]] std::string GetAssetPath() const { return m_AssetPath; }
+
+		[[nodiscard]] const GltfMaterial& GetMaterial(int32_t idx) const { return m_Materials[idx]; }
 
 	private:
 		void Initialize(const std::string& file);
@@ -41,7 +34,7 @@ namespace Pelican
 
 		void CreateDescriptorPool();
 
-		std::string GetAbsolutePath(const std::string& uri) const;
+		[[nodiscard]] std::string GetAbsolutePath(const std::string& uri) const;
 
 	private:
 		std::vector<Mesh> m_Meshes;

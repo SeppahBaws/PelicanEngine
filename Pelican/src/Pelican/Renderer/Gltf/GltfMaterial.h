@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <glm/vec4.hpp>
+#include <glm/vec3.hpp>
 
 namespace Pelican
 {
@@ -7,14 +8,8 @@ namespace Pelican
 
 	// Wraps around a Gltf Material. More information:
 	// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#materials
-	class GltfMaterial final
+	struct GltfMaterial final
 	{
-	public:
-		
-
-	private:
-		friend class GltfModel;
-
 		glm::vec4 m_AlbedoColor;
 		VulkanTexture* m_pAlbedoTexture;
 
@@ -26,5 +21,6 @@ namespace Pelican
 		VulkanTexture* m_pNormalTexture;
 		VulkanTexture* m_pAOTexture;
 		VulkanTexture* m_pEmissiveTexture;
+		glm::vec3 m_EmissiveFactor;
 	};
 }

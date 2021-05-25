@@ -1,6 +1,8 @@
 ﻿#include "PelicanPCH.h"
 #include "VulkanTexture.h"
 
+
+#include <logtools.h>
 #include <stb_image.h>
 #include <glm/vec4.hpp>
 
@@ -38,6 +40,7 @@ namespace Pelican
 
 		if (!pixels)
 		{
+			Logger::LogDebug("Tried loading texture \"%s\"", path.c_str());
 			ASSERT_MSG(false, "failed to load texture image!");
 		}
 

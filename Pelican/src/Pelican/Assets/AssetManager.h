@@ -11,7 +11,7 @@ namespace Pelican
 	struct AssetReference
 	{
 		T* pAsset;
-		int refCount;
+		int32_t refCount;
 	};
 
 	using TextureMap = std::unordered_map<std::string, AssetReference<VulkanTexture>>;
