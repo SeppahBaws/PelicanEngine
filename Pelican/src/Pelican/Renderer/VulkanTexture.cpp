@@ -1,9 +1,12 @@
 ﻿#include "PelicanPCH.h"
 #include "VulkanTexture.h"
 
+
+#include <logtools.h>
 #include <stb_image.h>
 #include <glm/vec4.hpp>
 
+#include "VulkanDebug.h"
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 
@@ -37,6 +40,7 @@ namespace Pelican
 
 		if (!pixels)
 		{
+			Logger::LogDebug("Tried loading texture \"%s\"", path.c_str());
 			ASSERT_MSG(false, "failed to load texture image!");
 		}
 
@@ -104,6 +108,8 @@ namespace Pelican
 
 		VulkanRenderer::GetDevice().destroyBuffer(stagingBuffer);
 		VulkanRenderer::GetDevice().freeMemory(stagingBufferMemory);
+
+		VkDebugMarker::SetImageName(VulkanRenderer::GetDevice(), m_Image, m_AssetPath.c_str());
 	}
 
 	void VulkanTexture::CreateTextureImageView()

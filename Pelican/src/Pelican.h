@@ -22,6 +22,15 @@
 #include "Pelican/Core/Layer.h"
 #include "Pelican/Core/LayerStack.h"
 
+#include "Pelican/Events/ApplicationEvent.h"
+#include "Pelican/Events/Event.h"
+#include "Pelican/Events/KeyEvent.h"
+#include "Pelican/Events/MouseEvent.h"
+
+#include "Pelican/Input/Input.h"
+#include "Pelican/Input/KeyCodes.h"
+#include "Pelican/Input/MouseCodes.h"
+
 #include "Pelican/Scene/Component.h"
 #include "Pelican/Scene/Entity.h"
 #include "Pelican/Scene/Scene.h"

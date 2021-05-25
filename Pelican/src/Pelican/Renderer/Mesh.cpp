@@ -23,85 +23,22 @@
 #include <glm/gtc/type_ptr.hpp>
 #pragma warning(pop)
 
+#include "Gltf/GltfMaterial.h"
+#include "Gltf/GltfModel.h"
 #include "Pelican/Renderer/UniformData.h"
 #include "Pelican/Assets/AssetManager.h"
 #include "Pelican/Core/Application.h"
 #include "Pelican/Scene/Scene.h"
 
-namespace tinygltf
-{
-	static inline int32_t GetTypeSizeInBytes(uint32_t ty) {
-		if (ty == TINYGLTF_TYPE_SCALAR) {
-			return 1;
-		}
-		else if (ty == TINYGLTF_TYPE_VEC2) {
-			return 2;
-		}
-		else if (ty == TINYGLTF_TYPE_VEC3) {
-			return 3;
-		}
-		else if (ty == TINYGLTF_TYPE_VEC4) {
-			return 4;
-		}
-		else if (ty == TINYGLTF_TYPE_MAT2) {
-			return 4;
-		}
-		else if (ty == TINYGLTF_TYPE_MAT3) {
-			return 9;
-		}
-		else if (ty == TINYGLTF_TYPE_MAT4) {
-			return 16;
-		}
-		else {
-			// Unknown componenty type
-			return -1;
-		}
-	}
-
-}
-
 namespace Pelican
 {
-	Mesh::Mesh()
+	Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices, int32_t materialIdx)
+		: m_Vertices(std::move(vertices)), m_Indices(std::move(indices)), m_MaterialIdx(materialIdx)
 	{
-		// Empty texture as fallback.
-		m_pWhiteTexture = AssetManager::GetInstance().LoadTexture("res/textures/white.png");
-
-		// Setup defaults for the texture slots
-		for (uint32_t i = 0; i < static_cast<uint32_t>(TextureSlot::SLOT_COUNT); i++)
-		{
-			m_pTextures[i] = m_pWhiteTexture;
-		}
-	}
-
-	Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices)
-		: m_Vertices(std::move(vertices)), m_Indices(std::move(indices))
-	{
-		// Empty texture as fallback.
-		m_pWhiteTexture = AssetManager::GetInstance().LoadTexture("res/textures/white.png");
-
-		// Setup defaults for the texture slots
-		for (uint32_t i = 0; i < static_cast<uint32_t>(TextureSlot::SLOT_COUNT); i++)
-		{
-			m_pTextures[i] = m_pWhiteTexture;
-		}
 	}
 
 	void Mesh::Cleanup()
 	{
-		for (uint32_t i = 0; i < static_cast<uint32_t>(TextureSlot::SLOT_COUNT); i++)
-		{
-			if (m_pTextures[i])
-			{
-				if (m_pTextures[i] != m_pWhiteTexture)
-					AssetManager::GetInstance().UnloadTexture(m_pTextures[i]);
-				m_pTextures[i] = nullptr;
-			}
-		}
-
-		AssetManager::GetInstance().UnloadTexture(m_pWhiteTexture);
-		m_pWhiteTexture = nullptr;
-
 		const vk::Device device = VulkanRenderer::GetDevice();
 		device.destroyBuffer(m_IndexBuffer);
 		device.freeMemory(m_IndexBufferMemory);
@@ -122,16 +59,6 @@ namespace Pelican
 
 		CreateBuffers();
 		// CreateDescriptorSet();
-	}
-
-	void Mesh::SetupTexture(TextureSlot slot, const std::string& path)
-	{
-		m_pTextures[static_cast<uint32_t>(slot)] = AssetManager::GetInstance().LoadTexture(path);
-	}
-
-	VulkanTexture* Mesh::GetTexture(TextureSlot slot)
-	{
-		return m_pTextures[static_cast<uint32_t>(slot)];
 	}
 
 	void Mesh::Update(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj)
@@ -244,16 +171,18 @@ namespace Pelican
 		}
 	}
 
-	void Mesh::CreateDescriptorSet(const vk::DescriptorPool& pool)
+	void Mesh::CreateDescriptorSet(const GltfModel* pParent, const vk::DescriptorPool& pool)
 	{
 		vk::DescriptorBufferInfo mvpBufferInfo(m_UniformBuffer, 0, sizeof(UniformBufferObject));
 		vk::DescriptorBufferInfo lightBufferInfo(m_LightBuffer, 0, sizeof(DirectionalLight));
 
+		const GltfMaterial& mat = pParent->GetMaterial(m_MaterialIdx);
+
 		std::array<vk::DescriptorImageInfo, static_cast<uint32_t>(TextureSlot::SLOT_COUNT)> imageInfos =
 		{
-			GetTexture(TextureSlot::ALBEDO)->GetDescriptorImageInfo(),
-			GetTexture(TextureSlot::NORMAL)->GetDescriptorImageInfo(),
-			GetTexture(TextureSlot::METALLIC_ROUGHNESS)->GetDescriptorImageInfo(),
+			mat.m_pAlbedoTexture->GetDescriptorImageInfo(),
+			mat.m_pNormalTexture->GetDescriptorImageInfo(),
+			mat.m_pMetallicRoughnessTexture->GetDescriptorImageInfo(),
 		};
 
 		vk::DescriptorSetAllocateInfo allocInfo;

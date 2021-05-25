@@ -1,6 +1,8 @@
 ﻿#include "PelicanPCH.h"
 #include "GltfModel.h"
 
+#include "Pelican/Assets/AssetManager.h"
+
 #include "Pelican/Renderer/Camera.h"
 #include "Pelican/Renderer/Mesh.h"
 #include "Pelican/Renderer/VulkanHelpers.h"
@@ -32,6 +34,16 @@ namespace Pelican
 
 	GltfModel::~GltfModel()
 	{
+		// Cleanup the material textures
+		for (GltfMaterial& mat : m_Materials)
+		{
+			AssetManager::GetInstance().UnloadTexture(mat.m_pAlbedoTexture);
+			AssetManager::GetInstance().UnloadTexture(mat.m_pMetallicRoughnessTexture);
+			AssetManager::GetInstance().UnloadTexture(mat.m_pNormalTexture);
+			AssetManager::GetInstance().UnloadTexture(mat.m_pAOTexture);
+			AssetManager::GetInstance().UnloadTexture(mat.m_pEmissiveTexture);
+		}
+
 		vkDestroyDescriptorPool(VulkanRenderer::GetDevice(), m_DescriptorPool, nullptr);
 
 		for (size_t i = 0; i < m_Meshes.size(); i++)
@@ -202,29 +214,71 @@ namespace Pelican
 					}
 				}
 
-				Mesh mesh{ vertices, indices };
+				Mesh mesh{ vertices, indices, primitive.material };
 
-				if (!model.materials.empty())
+				for (tinygltf::Material material : model.materials)
 				{
-					tinygltf::Material material = model.materials[primitive.material];
+					GltfMaterial mat{};
+					mat.m_AlbedoColor = glm::vec4{
+						material.pbrMetallicRoughness.baseColorFactor[0],
+						material.pbrMetallicRoughness.baseColorFactor[1],
+						material.pbrMetallicRoughness.baseColorFactor[2],
+						material.pbrMetallicRoughness.baseColorFactor[3]
+					};
 
-					if (material.pbrMetallicRoughness.baseColorTexture.index > -1)
+					tinygltf::Image albedoImage = model.images[material.pbrMetallicRoughness.baseColorTexture.index];
+					mat.m_pAlbedoTexture = AssetManager::GetInstance().LoadTexture(GetAbsolutePath(albedoImage.uri));
+
+					mat.m_MetallicFactor = static_cast<float>(material.pbrMetallicRoughness.metallicFactor);
+					mat.m_RoughnessFactor = static_cast<float>(material.pbrMetallicRoughness.roughnessFactor);
+
+					if (material.pbrMetallicRoughness.metallicRoughnessTexture.index > -1)
 					{
-						tinygltf::Image albedoImage = model.images[material.pbrMetallicRoughness.baseColorTexture.index];
-						mesh.SetupTexture(TextureSlot::ALBEDO, GetAbsolutePath(albedoImage.uri));
+						tinygltf::Image metallicRoughnessImage = model.images[material.pbrMetallicRoughness.metallicRoughnessTexture.index];
+						mat.m_pMetallicRoughnessTexture = AssetManager::GetInstance().LoadTexture(GetAbsolutePath(metallicRoughnessImage.uri));
+					}
+					else
+					{
+						mat.m_pMetallicRoughnessTexture = AssetManager::GetInstance().LoadTexture("res/textures/default-white.png");
 					}
 
 					if (material.normalTexture.index > -1)
 					{
 						tinygltf::Image normalImage = model.images[material.normalTexture.index];
-						mesh.SetupTexture(TextureSlot::NORMAL, GetAbsolutePath(normalImage.uri));
+						mat.m_pNormalTexture = AssetManager::GetInstance().LoadTexture(GetAbsolutePath(normalImage.uri));
+					}
+					else
+					{
+						mat.m_pNormalTexture = AssetManager::GetInstance().LoadTexture("res/textures/default-normal.png");
 					}
 
-					if (material.pbrMetallicRoughness.metallicRoughnessTexture.index > -1)
+					if (material.occlusionTexture.index > -1)
 					{
-						tinygltf::Image metallicRoughnessImage = model.images[material.pbrMetallicRoughness.metallicRoughnessTexture.index];
-						mesh.SetupTexture(TextureSlot::METALLIC_ROUGHNESS, GetAbsolutePath(metallicRoughnessImage.uri));
+						tinygltf::Image aoImage = model.images[material.occlusionTexture.index];
+						mat.m_pAOTexture = AssetManager::GetInstance().LoadTexture(GetAbsolutePath(aoImage.uri));
 					}
+					else
+					{
+						mat.m_pAOTexture = AssetManager::GetInstance().LoadTexture("res/textures/default-white.png");
+					}
+
+					if (material.emissiveTexture.index > -1)
+					{
+						tinygltf::Image emissiveImage = model.images[material.emissiveTexture.index];
+						mat.m_pEmissiveTexture = AssetManager::GetInstance().LoadTexture(GetAbsolutePath(emissiveImage.uri));
+					}
+					else
+					{
+						mat.m_pEmissiveTexture = AssetManager::GetInstance().LoadTexture("res/textures/default-white.png");
+					}
+
+					mat.m_EmissiveFactor = glm::vec3{
+						material.emissiveFactor[0],
+						material.emissiveFactor[1],
+						material.emissiveFactor[2]
+					};
+
+					m_Materials.push_back(mat);
 				}
 
 				mesh.CreateBuffers();
@@ -254,7 +308,7 @@ namespace Pelican
 
 		for (size_t i = 0; i < m_Meshes.size(); i++)
 		{
-			m_Meshes[i].CreateDescriptorSet(m_DescriptorPool);
+			m_Meshes[i].CreateDescriptorSet(this, m_DescriptorPool);
 		}
 	}
 
