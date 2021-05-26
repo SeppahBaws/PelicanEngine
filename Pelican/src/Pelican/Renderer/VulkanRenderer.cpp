@@ -443,12 +443,20 @@ namespace Pelican
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		const std::array<vk::DescriptorSetLayoutBinding, 5> bindings = {
+		const vk::DescriptorSetLayoutBinding ambientOcclusionSamplerBinding = vk::DescriptorSetLayoutBinding()
+			.setBinding(5)
+			.setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setPImmutableSamplers(nullptr)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+		const std::array<vk::DescriptorSetLayoutBinding, 6> bindings = {
 			mvpUboLayoutBinding,
 			lightUboBinding,
 			albedoSamplerBinding,
 			normalSamplerBinding,
-			metallicRoughnessSamplerBinding
+			metallicRoughnessSamplerBinding,
+			ambientOcclusionSamplerBinding,
 		};
 
 		const vk::DescriptorSetLayoutCreateInfo layoutInfo = vk::DescriptorSetLayoutCreateInfo()

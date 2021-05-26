@@ -16,6 +16,7 @@ namespace Pelican
 		ALBEDO = 0,
 		NORMAL,
 		METALLIC_ROUGHNESS,
+		AMBIENT_OCCLUSION,
 
 		SLOT_COUNT
 	};

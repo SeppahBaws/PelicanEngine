@@ -207,14 +207,40 @@ namespace Pelican
 			
 					indexCount = static_cast<uint32_t>(accessor.count);
 					const void* dataPtr = &(buffer.data[accessor.byteOffset + bufferView.byteOffset]);
-			
-					const uint32_t* buf = static_cast<const uint32_t*>(dataPtr);
-					for (size_t index = 0; index < accessor.count; index++) {
-						indices.push_back(static_cast<uint16_t>(buf[index] + vertexStart));
+
+					// glTF supports different component types of indices
+					switch (accessor.componentType)
+					{
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
+					{
+						const uint32_t* buf = static_cast<const uint32_t*>(dataPtr);
+						for (size_t index = 0; index < accessor.count; index++) {
+							indices.push_back(static_cast<uint32_t>(buf[index] + vertexStart));
+						}
+						break;
+					}
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
+					{
+						const uint16_t* buf = static_cast<const uint16_t*>(dataPtr);
+						for (size_t index = 0; index < accessor.count; index++)
+						{
+							indices.push_back(static_cast<uint32_t>(buf[index] + vertexStart));
+						}
+						break;
+					}
+					case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
+					{
+						const uint8_t* buf = static_cast<const uint8_t*>(dataPtr);
+						for (size_t index = 0; index < accessor.count; index++)
+						{
+							indices.push_back(static_cast<uint32_t>(buf[index] + vertexStart));
+						}
+						break;
+					}
+					default:
+						throw std::runtime_error("Index component type "s + std::to_string(accessor.componentType) + " not supported!");
 					}
 				}
-
-				Mesh mesh{ vertices, indices, primitive.material };
 
 				for (tinygltf::Material material : model.materials)
 				{
@@ -226,8 +252,15 @@ namespace Pelican
 						material.pbrMetallicRoughness.baseColorFactor[3]
 					};
 
-					tinygltf::Image albedoImage = model.images[material.pbrMetallicRoughness.baseColorTexture.index];
-					mat.m_pAlbedoTexture = AssetManager::GetInstance().LoadTexture(GetAbsolutePath(albedoImage.uri));
+					if (material.pbrMetallicRoughness.baseColorTexture.index > -1)
+					{
+						tinygltf::Image albedoImage = model.images[material.pbrMetallicRoughness.baseColorTexture.index];
+						mat.m_pAlbedoTexture = AssetManager::GetInstance().LoadTexture(GetAbsolutePath(albedoImage.uri));
+					}
+					else
+					{
+						mat.m_pAlbedoTexture = AssetManager::GetInstance().LoadTexture("res/textures/default-white.png");
+					}
 
 					mat.m_MetallicFactor = static_cast<float>(material.pbrMetallicRoughness.metallicFactor);
 					mat.m_RoughnessFactor = static_cast<float>(material.pbrMetallicRoughness.roughnessFactor);
@@ -280,6 +313,28 @@ namespace Pelican
 
 					m_Materials.push_back(mat);
 				}
+
+				// If there are no materials present, we need to add a default material!
+				if (m_Materials.empty())
+				{
+					GltfMaterial mat{};
+					mat.m_AlbedoColor = glm::vec4(1, 1, 1, 1);
+					mat.m_pAlbedoTexture = AssetManager::GetInstance().LoadTexture("res/textures/default-white.png");
+					mat.m_MetallicFactor = 0.0f;
+					mat.m_RoughnessFactor = 0.5f;
+					mat.m_pMetallicRoughnessTexture = AssetManager::GetInstance().LoadTexture("res/textures/default-white.png");
+					mat.m_pNormalTexture = AssetManager::GetInstance().LoadTexture("res/textures/default-normal.png");
+					mat.m_pAOTexture = AssetManager::GetInstance().LoadTexture("res/textures/default-white.png");
+					mat.m_pEmissiveTexture = AssetManager::GetInstance().LoadTexture("res/textures/default-white.png");
+					mat.m_EmissiveFactor = glm::vec3(1, 1, 1);
+					m_Materials.push_back(mat);
+				}
+
+				Mesh mesh{
+					vertices,
+					indices,
+					primitive.material > -1 ? primitive.material : 0 // Assign material 0 if none were added. this is the default material.
+				};
 
 				mesh.CreateBuffers();
 				m_Meshes.push_back(mesh);

@@ -3,6 +3,36 @@
     {
       "components": [
         {
+          "name": "Damaged Helmet",
+          "type": "TagComponent"
+        },
+        {
+          "position": [
+            0.0,
+            22.0,
+            5.0
+          ],
+          "rotation": [
+            90.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            5.0,
+            5.0,
+            5.0
+          ],
+          "type": "TransformComponent"
+        },
+        {
+          "assetPath": "res/models/damaged_helmet/DamagedHelmet.gltf",
+          "type": "ModelComponent"
+        }
+      ]
+    },
+    {
+      "components": [
+        {
           "name": "Gun",
           "type": "TagComponent"
         },
@@ -89,6 +119,36 @@
           "type": "ModelComponent"
         }
       ]
+    },
+    {
+      "components": [
+        {
+          "name": "Debug Sphere",
+          "type": "TagComponent"
+        },
+        {
+          "position": [
+            -20.0,
+            20.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            2.0,
+            2.0,
+            2.0
+          ],
+          "type": "TransformComponent"
+        },
+        {
+          "assetPath": "res/models/uvSphere.gltf",
+          "type": "ModelComponent"
+        }
+      ]
     }
   ],
   "lighting": {
@@ -99,7 +159,7 @@
     ],
     "direction": [
       0.6700000166893005,
-      0.699999988079071,
+      -0.699999988079071,
       -0.699999988079071
     ],
     "lightColor": [

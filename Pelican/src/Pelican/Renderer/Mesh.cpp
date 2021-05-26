@@ -183,6 +183,7 @@ namespace Pelican
 			mat.m_pAlbedoTexture->GetDescriptorImageInfo(),
 			mat.m_pNormalTexture->GetDescriptorImageInfo(),
 			mat.m_pMetallicRoughnessTexture->GetDescriptorImageInfo(),
+			mat.m_pAOTexture->GetDescriptorImageInfo(),
 		};
 
 		vk::DescriptorSetAllocateInfo allocInfo;
@@ -202,7 +203,7 @@ namespace Pelican
 			throw std::runtime_error("Failed to allocate descriptor sets: "s + e.what());
 		}
 
-		std::array<vk::WriteDescriptorSet, 5> descriptorWrites{};
+		std::array<vk::WriteDescriptorSet, 6> descriptorWrites{};
 
 		// MVP Uniform buffer
 		descriptorWrites[0].dstSet = m_DescriptorSet;
@@ -243,6 +244,14 @@ namespace Pelican
 		descriptorWrites[4].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		descriptorWrites[4].descriptorCount = 1;
 		descriptorWrites[4].pImageInfo = &imageInfos[2];
+
+		// AO texture
+		descriptorWrites[5].dstSet = m_DescriptorSet;
+		descriptorWrites[5].dstBinding = 5;
+		descriptorWrites[5].dstArrayElement = 0;
+		descriptorWrites[5].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		descriptorWrites[5].descriptorCount = 1;
+		descriptorWrites[5].pImageInfo = &imageInfos[3];
 
 		VulkanRenderer::GetDevice().updateDescriptorSets(descriptorWrites, {});
 	}

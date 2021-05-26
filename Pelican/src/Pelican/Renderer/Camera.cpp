@@ -13,7 +13,7 @@
 namespace Pelican
 {
 	Camera::Camera(float fov, float width, float height, float zNear, float zFar)
-		: m_Position(0.0f, 0.0f, 0.0f)
+		: m_Position(-20.0f, 20.0f, 20.0f)
 		, m_Forward(0.0f, 0.0f, 1.0f)
 		, m_Yaw(0.0f)
 		, m_Pitch(0.0f)

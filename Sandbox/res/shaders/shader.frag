@@ -28,6 +28,7 @@ layout(location = 0) out vec4 outColor;
 layout(binding = 2) uniform sampler2D texAlbedo;
 layout(binding = 3) uniform sampler2D texNormal;
 layout(binding = 4) uniform sampler2D texMetallicRoughness;
+layout(binding = 5) uniform sampler2D texAmbientOcclusion;
 
 void main()
 {
