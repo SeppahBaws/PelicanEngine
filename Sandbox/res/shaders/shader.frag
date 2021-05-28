@@ -37,6 +37,7 @@ void main()
     vec3 baseColor = texture(texAlbedo, vTexCoord).rgb;
     vec3 sampledNormal = texture(texNormal, vTexCoord).rgb;
     vec3 metallicRoughness = texture(texMetallicRoughness, vTexCoord).rgb;
+    float ambient = texture(texAmbientOcclusion, vTexCoord).r;
 
     vec3 normal = normalize(vNormal * sampledNormal);
     
@@ -45,7 +46,7 @@ void main()
     float diffuseStrength = dot(normal, -lightDir);
     diffuseStrength = diffuseStrength * 0.5 + 0.5;
     diffuseStrength = clamp(diffuseStrength, 0, 1);
-    vec3 diffuse = baseColor * diffuseStrength * lights.directionalLight.lightColor;
+    vec3 diffuse = baseColor * diffuseStrength * ambient * lights.directionalLight.lightColor;
 
     float alpha = texture(texAlbedo, vTexCoord).a;
     if (alpha <= 0.1f)
