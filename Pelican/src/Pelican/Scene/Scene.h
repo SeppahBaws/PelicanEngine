@@ -28,8 +28,8 @@ namespace Pelican
 		std::string GetName() const { return m_Name; }
 
 		void Initialize();
-		void Update();
-		void Draw();
+		void Update(Camera* pCamera);
+		void Draw(Camera* pCamera);
 		void Cleanup();
 
 	private:
@@ -41,8 +41,5 @@ namespace Pelican
 
 		std::string m_Name{};
 		DirectionalLight m_DirectionalLight;
-
-		// TEMP
-		Camera* m_pCamera;
 	};
 }

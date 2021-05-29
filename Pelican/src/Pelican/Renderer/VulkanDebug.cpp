@@ -11,25 +11,44 @@ namespace Pelican
 		PFN_vkDestroyDebugUtilsMessengerEXT g_VkDestroyDebugUtilsMessenger;
 		VkDebugUtilsMessengerEXT debugMessenger;
 
-		VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT,
+		VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT messageType,
 			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void*)
 		{
+			const char* msgType = "";
+
+			switch (messageType)
+			{
+			case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
+				msgType = "GENERAL    ";
+				break;
+			case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
+				msgType = "VALIDATION ";
+				break;
+			case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
+				msgType = "PERFORMANCE";
+				break;
+			default:
+				break;
+			}
+
+			const char* fmt = "[VULKAN] (%s) %s";
+
 			switch (severity)
 			{
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-				Logger::LogTrace("[VULKAN] %s", pCallbackData->pMessage);
+				Logger::LogTrace(fmt, msgType, pCallbackData->pMessage);
 				break;
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-				Logger::LogInfo("[VULKAN] %s", pCallbackData->pMessage);
+				Logger::LogInfo(fmt, msgType, pCallbackData->pMessage);
 				break;
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-				Logger::LogWarning("[VULKAN] %s", pCallbackData->pMessage);
+				Logger::LogWarning(fmt, msgType, pCallbackData->pMessage);
 				break;
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-				Logger::LogError("[VULKAN] %s", pCallbackData->pMessage);
+				Logger::LogError(fmt, msgType, pCallbackData->pMessage);
 				break;
 			case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
-				Logger::LogDebug("[VULKAN] %s", pCallbackData->pMessage);
+				Logger::LogDebug(fmt, msgType, pCallbackData->pMessage);
 				break;
 			default: break;
 			}
@@ -43,8 +62,7 @@ namespace Pelican
 			g_VkDestroyDebugUtilsMessenger = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
 
 			VkDebugUtilsMessengerCreateInfoEXT info = { VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
-			info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
-				| VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+			info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 			info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
 				| VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 			info.pfnUserCallback = DebugCallback;

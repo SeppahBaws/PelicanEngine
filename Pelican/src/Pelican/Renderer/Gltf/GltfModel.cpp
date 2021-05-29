@@ -60,7 +60,7 @@ namespace Pelican
 		delete m_pWhiteTexture;
 	}
 
-	void GltfModel::Update(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj)
+	void GltfModel::UpdateMVP(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj)
 	{
 		for (size_t i = 0; i < m_Meshes.size(); i++)
 		{
@@ -82,6 +82,8 @@ namespace Pelican
 		tinygltf::TinyGLTF loader;
 		std::string err;
 		std::string warn;
+
+		Logger::LogTrace("Started loading GLTF file");
 
 		bool res = loader.LoadASCIIFromFile(&model, &err, &warn, file);
 		if (!warn.empty())
@@ -196,6 +198,8 @@ namespace Pelican
 						vert.texCoord = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
 						vertices.push_back(vert);
 					}
+
+					Logger::LogTrace("Loaded mesh vertices");
 				}
 			
 				// Indices
@@ -240,6 +244,8 @@ namespace Pelican
 					default:
 						throw std::runtime_error("Index component type "s + std::to_string(accessor.componentType) + " not supported!");
 					}
+
+					Logger::LogTrace("Loaded mesh indices");
 				}
 
 				for (tinygltf::Material material : model.materials)
@@ -312,6 +318,8 @@ namespace Pelican
 					};
 
 					m_Materials.push_back(mat);
+
+					Logger::LogTrace("Loaded material textures");
 				}
 
 				// If there are no materials present, we need to add a default material!

@@ -1,14 +1,18 @@
 ﻿#include "PelicanPCH.h"
 #include "Camera.h"
+
+#include <logtools.h>
+
 #include "Pelican/Core/Time.h"
+
+#include "Pelican/Events/Event.h"
+#include "Pelican/Events/KeyEvent.h"
 
 #include "Pelican/Input/Input.h"
 
-#include <iostream>
-
 #include <glm/gtc/matrix_transform.hpp>
-#include <logtools.h>
-#include <imgui.h>
+
+#include "Pelican/Events/ApplicationEvent.h"
 
 namespace Pelican
 {
@@ -21,31 +25,37 @@ namespace Pelican
 		UpdateProjection(fov, width, height, zNear, zFar);
 	}
 
+	void Camera::OnEvent(Event& e)
+	{
+		EventDispatcher dispatcher(e);
+		dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Camera::OnResize));
+		dispatcher.Dispatch<KeyPressedEvent>(BIND_EVENT_FN(Camera::OnKeyPressed));
+	}
+
 	void Camera::Update()
 	{
 		glm::vec3 movement{};
 
-		if (Input::GetKey(KeyCode::A))
-			movement.x -= 1;
-		if (Input::GetKey(KeyCode::D))
-			movement.x += 1;
-
-		if (Input::GetKey(KeyCode::W))
-			movement.y += 1;
-		if (Input::GetKey(KeyCode::S))
-			movement.y -= 1;
-
-		if (Input::GetKey(KeyCode::Q))
-			movement.z -= 1;
-		if (Input::GetKey(KeyCode::E))
-			movement.z += 1;
-
 		glm::vec2 mouseMov = Input::GetMouseMovement();
 		if (Input::GetMouseButton(MouseCode::ButtonRight))
 		{
-			// m_Yaw -= mouseMov.x * Time::GetDeltaTime() * m_MouseSpeed;
-			// m_Pitch += mouseMov.y * Time::GetDeltaTime() * m_MouseSpeed;
+			// Movement
+			if (Input::GetKey(KeyCode::A))
+				movement.x -= 1;
+			if (Input::GetKey(KeyCode::D))
+				movement.x += 1;
 
+			if (Input::GetKey(KeyCode::W))
+				movement.y += 1;
+			if (Input::GetKey(KeyCode::S))
+				movement.y -= 1;
+
+			if (Input::GetKey(KeyCode::Q))
+				movement.z -= 1;
+			if (Input::GetKey(KeyCode::E))
+				movement.z += 1;
+
+			// Camera look
 			m_Yaw -= mouseMov.x * 0.3f;
 			m_Pitch += mouseMov.y * 0.3f;
 
@@ -82,7 +92,7 @@ namespace Pelican
 			mov += movement.y * forward;
 			mov += movement.z * up;
 
-			m_Position += mov * Time::GetDeltaTime() * m_MoveSpeed;
+			m_Position += mov * Time::GetDeltaTime() * (m_IsSlowMovement ? m_MoveSpeedSlow : m_MoveSpeed);
 		}
 	}
 
@@ -98,24 +108,33 @@ namespace Pelican
 		return m_Projection;
 	}
 
-	void Camera::UpdateProjection(float fov, float width, float height, float zNear, float zFar)
+	bool Camera::OnResize(WindowResizeEvent& e)
 	{
-		if (fov != 0.0f)
-			m_Fov = fov;
-		if (width != 0.0f)
-			m_Width = width;
-		if (height != 0.0f)
-			m_Height = height;
-		if (zNear != 0.0f)
-			m_ZNear = zNear;
-		if (zFar != 0.0f)
-			m_ZFar = zFar;
+		UpdateProjection(m_Fov, static_cast<float>(e.GetWidth()), static_cast<float>(e.GetHeight()), m_ZNear, m_ZFar);
+		return false;
+	}
 
-		m_Projection = glm::perspective(glm::radians(m_Fov / 2), m_Width / m_Height, m_ZNear, m_ZFar);
+	bool Camera::OnKeyPressed(KeyPressedEvent& e)
+	{
+		if (e.GetKeyCode() == KeyCode::LeftShift)
+			m_IsSlowMovement = !m_IsSlowMovement;
+
+		return false;
 	}
 
 	void Camera::UpdateViewMatrix()
 	{
 		m_View = glm::lookAt(m_Position, m_Position + m_Forward, glm::vec3(0.0f, 1.0f, 0.0f));
+	}
+
+	void Camera::UpdateProjection(float fov, float width, float height, float zNear, float zFar)
+	{
+		m_Fov = fov;
+		m_Width = width;
+		m_Height = height;
+		m_ZNear = zNear;
+		m_ZFar = zFar;
+
+		m_Projection = glm::perspective(glm::radians(m_Fov / 2), m_Width / m_Height, m_ZNear, m_ZFar);
 	}
 }

@@ -22,12 +22,6 @@ namespace Pelican
 {
 	Scene::Scene()
 	{
-		m_pCamera = new Camera(120.0f,
-			static_cast<float>(Application::Get().GetWindow()->GetParams().width),
-			static_cast<float>(Application::Get().GetWindow()->GetParams().height),
-			0.1f, 1000.0f);
-		Application::Get().GetRenderer().SetCamera(m_pCamera);
-
 		Initialize();
 	}
 
@@ -83,23 +77,20 @@ namespace Pelican
 	{
 	}
 
-	void Scene::Update()
+	void Scene::Update(Camera* pCamera)
 	{
-		m_pCamera->Update();
-
-		// TODO: Hacky solution, should be made better in the future
 		for (auto [entity, transform, model] : m_Registry.view<TransformComponent, ModelComponent>().each())
 		{
 			glm::mat4 m = transform.GetTransform();
-			glm::mat4 v = m_pCamera->GetView();
-			glm::mat4 p = m_pCamera->GetProjection();
+			glm::mat4 v = pCamera->GetView();
+			glm::mat4 p = pCamera->GetProjection();
 			p[1][1] *= -1;
 
-			model.pModel->Update(m, v, p);
+			model.pModel->UpdateMVP(m, v, p);
 		}
 	}
 
-	void Scene::Draw()
+	void Scene::Draw(Camera* /*pCamera*/)
 	{
 		auto view = m_Registry.view<TransformComponent, ModelComponent>();
 
@@ -181,9 +172,6 @@ namespace Pelican
 
 	void Scene::Cleanup()
 	{
-		// TEMP - camera should be in a CameraComponent
-		delete m_pCamera;
-
 		// TODO: figure out a way to make this easier.
 		// (registry.destroy() on each entity might work, then we can move the memory free to the deconstructor of the components.)
 		// Will have to test when VLD works again.

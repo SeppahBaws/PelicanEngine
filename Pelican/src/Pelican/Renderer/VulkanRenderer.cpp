@@ -666,9 +666,6 @@ namespace Pelican
 			glfwWaitEvents();
 		}
 
-		// Passing 0 to not change those parameters
-		m_pCamera->UpdateProjection(0, static_cast<float>(params.width), static_cast<float>(params.height), 0, 0);
-
 		Logger::LogTrace("Framebuffer resized, recreating swap chain!");
 
 		m_pDevice->GetDevice().waitIdle();

@@ -49,6 +49,7 @@ namespace Pelican
 		Window* m_pWindow{};
 		VulkanRenderer* m_pRenderer{};
 		Scene* m_pScene{};
+		Camera* m_pCamera{};
 
 		LayerStack m_LayerStack;
 

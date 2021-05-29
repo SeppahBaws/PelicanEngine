@@ -17,7 +17,6 @@
 
 #include "Layer.h"
 #include "Pelican/Events/ApplicationEvent.h"
-#include "Pelican/Events/MouseEvent.h"
 
 namespace Pelican
 {
@@ -38,6 +37,8 @@ namespace Pelican
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(Application::OnWindowClose));
 		dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Application::OnWindowResize));
+
+		m_pCamera->OnEvent(e);
 
 		if (e.IsInCategory(EventCategoryApplication))
 		{
@@ -92,12 +93,11 @@ namespace Pelican
 			lastTime = currentTime;
 
 			m_pWindow->Update();
+			m_pCamera->Update();
 
 			// Update scene
 			{
-				// m_pCamera->Update();
-				m_pScene->Update();
-				// m_pModel->Update(m_pCamera);
+				m_pScene->Update(m_pCamera);
 			}
 
 			for (Layer* layer : m_LayerStack)
@@ -108,8 +108,7 @@ namespace Pelican
 
 			// Draw scene
 			{
-				// m_pModel->Draw();
-				m_pScene->Draw();
+				m_pScene->Draw(m_pCamera);
 			}
 
 			// Draw ImGui
@@ -169,20 +168,18 @@ namespace Pelican
 
 		m_pWindow = new Window(Window::Params{ 1280, 720, "Sandbox", true });
 		m_pRenderer = new VulkanRenderer();
-		// m_pCamera = new Camera(/*90.0f*/ 120.0f,
-		// 	static_cast<float>(m_pWindow->GetParams().width),
-		// 	static_cast<float>(m_pWindow->GetParams().height),
-		// 	0.1f, 1000.0f);
+		m_pCamera = new Camera(120.0f,
+			static_cast<float>(m_pWindow->GetParams().width),
+			static_cast<float>(m_pWindow->GetParams().height),
+			0.1f, 1000.0f);
+		m_pRenderer->SetCamera(m_pCamera);
 
 		m_pWindow->Init();
 		m_pWindow->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 		Input::Init(m_pWindow->GetGLFWWindow());
 		m_pRenderer->Initialize();
 
-		// m_pRenderer->SetCamera(m_pCamera);
-
 		m_pScene = new Scene();
-		// m_pModel = new GltfModel("res/models/pony_cartoon/scene.gltf");
 	}
 
 	void Application::Cleanup()
@@ -190,18 +187,16 @@ namespace Pelican
 		m_pRenderer->BeforeSceneCleanup();
 
 		delete m_pScene;
-		// delete m_pModel;
 
 		m_pRenderer->AfterSceneCleanup();
 		m_pWindow->Cleanup();
 
-		// delete m_pCamera;
+		delete m_pCamera;
 		delete m_pRenderer;
 		delete m_pWindow;
 
 		m_pScene = nullptr;
-		// m_pModel = nullptr;
-		// m_pCamera = nullptr;
+		m_pCamera = nullptr;
 		m_pRenderer = nullptr;
 		m_pWindow = nullptr;
 	}
