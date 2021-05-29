@@ -7,13 +7,6 @@ struct DirectionalLight
     vec3 ambientColor;
 };
 
-layout(set = 0, binding = 0) uniform UniformBufferObject
-{
-    mat4 model;
-    mat4 view;
-    mat4 proj;
-} ubo;
-
 layout(set = 0, binding = 1) uniform LightInformation
 {
     DirectionalLight directionalLight;
@@ -33,20 +26,20 @@ layout(binding = 5) uniform sampler2D texAmbientOcclusion;
 void main()
 {
     vec3 finalColor;
-    
+
     vec3 baseColor = texture(texAlbedo, vTexCoord).rgb;
     vec3 sampledNormal = texture(texNormal, vTexCoord).rgb;
     vec3 metallicRoughness = texture(texMetallicRoughness, vTexCoord).rgb;
-    float ambient = texture(texAmbientOcclusion, vTexCoord).r;
+    float ao = texture(texAmbientOcclusion, vTexCoord).r;
 
     vec3 normal = normalize(vNormal * sampledNormal);
-    
+
     // Halflambert Diffuse shading.
     const vec3 lightDir = normalize(lights.directionalLight.direction);
     float diffuseStrength = dot(normal, -lightDir);
     diffuseStrength = diffuseStrength * 0.5 + 0.5;
     diffuseStrength = clamp(diffuseStrength, 0, 1);
-    vec3 diffuse = baseColor * diffuseStrength * ambient * lights.directionalLight.lightColor;
+    vec3 diffuse = baseColor * diffuseStrength * ao * lights.directionalLight.lightColor;
 
     float alpha = texture(texAlbedo, vTexCoord).a;
     if (alpha <= 0.1f)

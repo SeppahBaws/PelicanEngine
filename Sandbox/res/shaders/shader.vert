@@ -17,8 +17,12 @@ layout(location = 2) out vec2 vTexCoord;
 
 void main()
 {
-    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
-    vPosition = inPosition;
-    vNormal = inNormal;
+    vec4 worldPos = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
+    vec3 worldNormal = normalize(mat3(ubo.model) * inNormal);
+
+    vPosition = worldPos.xyz;
+    vNormal = worldNormal;
     vTexCoord = inTexCoord;
+
+    gl_Position = worldPos;
 }
