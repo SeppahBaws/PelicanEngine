@@ -9,6 +9,7 @@ namespace Pelican
 		static std::chrono::high_resolution_clock::time_point GetTime();
 
 		static float GetDeltaTime();
+		static float GetTotalTime();
 		static void SetDeltaTime(float deltaTime);
 
 		static void Update(std::chrono::high_resolution_clock::time_point lastTime);

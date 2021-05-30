@@ -72,9 +72,12 @@ namespace Pelican
 			memcpy(data, &ubo, sizeof(ubo));
 		VulkanRenderer::GetDevice().unmapMemory(m_UniformBufferMemory);
 
-		const DirectionalLight& light = Application::Get().GetScene()->GetDirectionalLight();
-		data = VulkanRenderer::GetDevice().mapMemory(m_LightBufferMemory, 0, sizeof(DirectionalLight));
-			memcpy(data, &light, sizeof(light));
+		LightsData lights;
+		lights.directionalLight = Application::Get().GetScene()->GetDirectionalLight();
+		lights.pointLight = Application::Get().GetScene()->GetPointLight();
+
+		data = VulkanRenderer::GetDevice().mapMemory(m_LightBufferMemory, 0, sizeof(LightsData));
+			memcpy(data, &lights, sizeof(lights));
 		VulkanRenderer::GetDevice().unmapMemory(m_LightBufferMemory);
 	}
 
@@ -106,7 +109,7 @@ namespace Pelican
 
 		// Light Uniform buffer
 		{
-			const vk::DeviceSize bufferSize = sizeof(DirectionalLight);
+			const vk::DeviceSize bufferSize = sizeof(LightsData);
 			VulkanHelpers::CreateBuffer(
 				bufferSize,
 				vk::BufferUsageFlagBits::eUniformBuffer,
@@ -174,7 +177,7 @@ namespace Pelican
 	void Mesh::CreateDescriptorSet(const GltfModel* pParent, const vk::DescriptorPool& pool)
 	{
 		vk::DescriptorBufferInfo mvpBufferInfo(m_UniformBuffer, 0, sizeof(UniformBufferObject));
-		vk::DescriptorBufferInfo lightBufferInfo(m_LightBuffer, 0, sizeof(DirectionalLight));
+		vk::DescriptorBufferInfo lightBufferInfo(m_LightBuffer, 0, sizeof(LightsData));
 
 		const GltfMaterial& mat = pParent->GetMaterial(m_MaterialIdx);
 

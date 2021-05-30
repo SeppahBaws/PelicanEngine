@@ -107,4 +107,21 @@ namespace nlohmann
 			t.ambientColor = j["ambientColor"];
 		}
 	};
+
+	template<>
+	struct adl_serializer<Pelican::PointLight>
+	{
+		static void to_json(json& j, const Pelican::PointLight& l)
+		{
+			j = json::object();
+			j["position"] = l.position;
+			j["diffuse"] = l.diffuse;
+		}
+
+		static void from_json(const json& j, Pelican::PointLight& l)
+		{
+			l.position = j["position"];
+			l.diffuse = j["diffuse"];
+		}
+	};
 }

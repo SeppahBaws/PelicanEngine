@@ -18,7 +18,11 @@ namespace Pelican
 
 		json jsonScene = json::object();
 		jsonScene["name"] = pScene->m_Name;
-		jsonScene["lighting"] = pScene->m_DirectionalLight;
+
+		json lighting = json::object();
+		lighting["directionalLight"] = pScene->m_DirectionalLight;
+		lighting["pointLight"] = pScene->m_PointLight;
+		jsonScene["lighting"] = lighting;
 
 		json jEntities = json::array();
 
@@ -81,7 +85,8 @@ namespace Pelican
 		// Get the scene name
 		jName.get_to(pScene->m_Name);
 
-		jLighting.get_to(pScene->m_DirectionalLight);
+		jLighting["directionalLight"].get_to(pScene->m_DirectionalLight);
+		jLighting["pointLight"].get_to(pScene->m_PointLight);
 
 		for (json jEntity : jEntities)
 		{

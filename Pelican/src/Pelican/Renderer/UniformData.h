@@ -11,7 +11,19 @@ namespace Pelican
 		alignas(16) glm::vec3 lightColor;
 		alignas(16) glm::vec3 ambientColor;
 	};
+
+	struct PointLight
+	{
+		alignas(16) glm::vec3 position;
+		alignas(16) glm::vec3 diffuse;
+	};
 #pragma warning (pop)
+
+	struct LightsData
+	{
+		DirectionalLight directionalLight;
+		PointLight pointLight;
+	};
 
 	struct UniformBufferObject
 	{

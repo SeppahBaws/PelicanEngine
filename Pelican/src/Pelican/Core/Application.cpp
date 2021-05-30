@@ -166,7 +166,7 @@ namespace Pelican
 		Logger::Init();
 		Logger::Configure({ true, true });
 
-		m_pWindow = new Window(Window::Params{ 1280, 720, "Sandbox", true });
+		m_pWindow = new Window(Window::Params{ 1600, 900, "Sandbox", true });
 		m_pRenderer = new VulkanRenderer();
 		m_pCamera = new Camera(120.0f,
 			static_cast<float>(m_pWindow->GetParams().width),

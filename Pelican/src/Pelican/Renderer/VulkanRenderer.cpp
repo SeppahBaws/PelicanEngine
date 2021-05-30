@@ -116,8 +116,6 @@ namespace Pelican
 		{
 			VkDebug::FreeDebugCallback(m_Instance.get());
 		}
-
-		// vkDestroyInstance(m_Instance, nullptr);
 	}
 
 	bool VulkanRenderer::BeginScene()

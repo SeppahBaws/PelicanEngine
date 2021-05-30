@@ -16,6 +16,12 @@ namespace Pelican
 		return m_DeltaTime;
 	}
 
+	float Time::GetTotalTime()
+	{
+		const auto currentTime = std::chrono::high_resolution_clock::now();
+		return std::chrono::duration<float>(currentTime - m_StartTime).count();
+	}
+
 	void Time::SetDeltaTime(float deltaTime)
 	{
 		m_DeltaTime = deltaTime;

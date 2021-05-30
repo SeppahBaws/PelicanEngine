@@ -38,6 +38,8 @@ namespace Pelican
 			throw std::exception("Failed to create GLFW window!");
 		}
 
+		CenterWindow();
+
 		glfwSetWindowUserPointer(m_pGLFWwindow, this);
 
 		// Set GLFW callbacks
@@ -157,11 +159,77 @@ namespace Pelican
 	void Window::Update()
 	{
 		glfwPollEvents();
-		// glfwSwapBuffers(m_pGLFWwindow);
 	}
 
 	bool Window::ShouldClose() const
 	{
 		return glfwWindowShouldClose(m_pGLFWwindow);
+	}
+
+	// Credits to ValentinDev: https://vallentin.dev/2014/02/07/glfw-center-window
+	void Window::CenterWindow()
+	{
+		GLFWmonitor* monitor = GetBestMonitor();
+		if (!monitor)
+			return;
+
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		if (!mode)
+			return;
+
+		int monitorX, monitorY;
+		glfwGetMonitorPos(monitor, &monitorX, &monitorY);
+
+		int windowWidth, windowHeight;
+		glfwGetWindowSize(m_pGLFWwindow, &windowWidth, &windowHeight);
+
+		glfwSetWindowPos(m_pGLFWwindow,
+			monitorX + (mode->width - windowWidth) / 2,
+			monitorY + (mode->height - windowHeight) / 2);
+	}
+
+	// Credits to ValentinDev: https://vallentin.dev/2014/02/07/glfw-center-window
+	GLFWmonitor* Window::GetBestMonitor() const
+	{
+		int monitorCount;
+		GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+
+		if (!monitors)
+			return nullptr;
+
+		int windowX, windowY, windowWidth, windowHeight;
+		glfwGetWindowSize(m_pGLFWwindow, &windowWidth, &windowHeight);
+		glfwGetWindowPos(m_pGLFWwindow, &windowX, &windowY);
+
+		GLFWmonitor* bestMonitor = nullptr;
+		int bestArea = 0;
+
+		for (int i = 0; i < monitorCount; i++)
+		{
+			GLFWmonitor* monitor = monitors[i];
+
+			int monitorX, monitorY;
+			glfwGetMonitorPos(monitor, &monitorX, &monitorY);
+
+			const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+			if (!mode)
+				continue;
+
+			const int areaMinX = std::max(windowX, monitorX);
+			const int areaMinY = std::max(windowY, monitorY);
+
+			const int areaMaxX = std::min(windowX + windowWidth, monitorX + mode->width);
+			const int areaMaxY = std::min(windowY + windowHeight, monitorY + mode->height);
+
+			const int area = (areaMaxX - areaMinX) * (areaMaxY - areaMinY);
+
+			if (area > bestArea)
+			{
+				bestArea = area;
+				bestMonitor = monitor;
+			}
+		}
+
+		return bestMonitor;
 	}
 }

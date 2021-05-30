@@ -2,6 +2,7 @@
 #include "Pelican/Events/Event.h"
 
 struct GLFWwindow;
+struct GLFWmonitor;
 
 namespace Pelican
 {
@@ -33,6 +34,10 @@ namespace Pelican
 		[[nodiscard]] GLFWwindow* GetGLFWWindow() const { return m_pGLFWwindow; }
 
 		[[nodiscard]] Params GetParams() const { return m_Params; }
+
+	private:
+		void CenterWindow();
+		GLFWmonitor* GetBestMonitor() const;
 
 	private:
 		GLFWwindow* m_pGLFWwindow;

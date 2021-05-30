@@ -6,6 +6,7 @@
 
 namespace Pelican
 {
+	class GltfModel;
 	class Camera;
 	class Entity;
 	class SceneSerializer;
@@ -22,7 +23,8 @@ namespace Pelican
 		Entity CreateEntity(const std::string& name = "new entity");
 		void DestroyEntity(Entity& entity);
 
-		const DirectionalLight& GetDirectionalLight() { return m_DirectionalLight; }
+		const DirectionalLight& GetDirectionalLight() const { return m_DirectionalLight; }
+		const PointLight& GetPointLight() const { return m_PointLight; }
 
 		void SetName(const std::string& name) { m_Name = name; }
 		std::string GetName() const { return m_Name; }
@@ -41,5 +43,7 @@ namespace Pelican
 
 		std::string m_Name{};
 		DirectionalLight m_DirectionalLight;
+		PointLight m_PointLight;
+		bool m_AnimateLight{ false };
 	};
 }

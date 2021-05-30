@@ -10,6 +10,7 @@
 #include "Serializer/SceneSerializer.h"
 
 #include "Pelican/Core/Application.h"
+#include "Pelican/Core/Time.h"
 #include "Pelican/Core/System/FileUtils.h"
 #include "Pelican/Core/System/FileDialog.h"
 
@@ -79,6 +80,9 @@ namespace Pelican
 
 	void Scene::Update(Camera* pCamera)
 	{
+		if (m_AnimateLight)
+			m_PointLight.position = glm::vec3(cos(Time::GetTotalTime()) * 10.0f, 30.0f, sin(Time::GetTotalTime()) * 10.0f);
+
 		for (auto [entity, transform, model] : m_Registry.view<TransformComponent, ModelComponent>().each())
 		{
 			glm::mat4 m = transform.GetTransform();
@@ -169,11 +173,21 @@ namespace Pelican
 			ImGui::End();
 		}
 
-		if (ImGui::Begin(std::string("Directional Light").c_str()))
+		if (ImGui::Begin("Light Settings"))
 		{
-			ImGui::DragFloat3("direction", reinterpret_cast<float*>(&m_DirectionalLight.direction), 0.01f, -1.0f, 1.0f, "%.3f");
-			ImGui::ColorEdit3("light color", reinterpret_cast<float*>(&m_DirectionalLight.lightColor));
-			ImGui::ColorEdit3("ambient color", reinterpret_cast<float*>(&m_DirectionalLight.ambientColor));
+			if (ImGui::CollapsingHeader("Directional Light"))
+			{
+				ImGui::DragFloat3("direction", reinterpret_cast<float*>(&m_DirectionalLight.direction), 0.01f, -1.0f, 1.0f, "%.3f");
+				ImGui::ColorEdit3("light color", reinterpret_cast<float*>(&m_DirectionalLight.lightColor));
+				ImGui::ColorEdit3("ambient color", reinterpret_cast<float*>(&m_DirectionalLight.ambientColor));
+			}
+
+			if (ImGui::CollapsingHeader("Point Light"))
+			{
+				ImGui::Checkbox("Animate Light", &m_AnimateLight);
+				ImGui::InputFloat3("Position", reinterpret_cast<float*>(&m_PointLight.position));
+				ImGui::InputFloat3("Diffuse", reinterpret_cast<float*>(&m_PointLight.diffuse));
+			}
 		}
 		ImGui::End();
 	}
