@@ -60,7 +60,7 @@ namespace Pelican
 		delete m_pWhiteTexture;
 	}
 
-	void GltfModel::UpdateMVP(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj)
+	void GltfModel::UpdateDrawData(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj)
 	{
 		for (size_t i = 0; i < m_Meshes.size(); i++)
 		{
@@ -160,16 +160,16 @@ namespace Pelican
 					const float* bufferPos = nullptr;
 					const float* bufferNorm = nullptr;
 					const float* bufferTexCoordSet0 = nullptr;
+					const float* bufferTan = nullptr;
 			
 					int posByteStride{};
 					int normByteStride{};
 					int uv0ByteStride{};
+					int tanByteStride{};
 			
 					const tinygltf::Accessor& posAccessor = model.accessors[primitive.attributes.find("POSITION")->second];
 					const tinygltf::BufferView& posView = model.bufferViews[posAccessor.bufferView];
 					bufferPos = reinterpret_cast<const float*>(&(model.buffers[posView.buffer].data[posAccessor.byteOffset + posView.byteOffset]));
-					// posMin = glm::vec3(posAccessor.minValues[0], posAccessor.minValues[1], posAccessor.minValues[2]);
-					// posMax = glm::vec3(posAccessor.maxValues[0], posAccessor.maxValues[1], posAccessor.maxValues[2]);
 
 					vertexCount = static_cast<uint32_t>(posAccessor.count);
 					posByteStride = posAccessor.ByteStride(posView) ? (posAccessor.ByteStride(posView) / sizeof(float)) : GetTypeSizeInBytes(TINYGLTF_TYPE_VEC3);
@@ -189,6 +189,14 @@ namespace Pelican
 						bufferTexCoordSet0 = reinterpret_cast<const float*>(&(model.buffers[uvView.buffer].data[uvAccessor.byteOffset + uvView.byteOffset]));
 						uv0ByteStride = uvAccessor.ByteStride(uvView) ? (uvAccessor.ByteStride(uvView) / sizeof(float)) : GetTypeSizeInBytes(TINYGLTF_TYPE_VEC2);
 					}
+
+					if (primitive.attributes.find("TANGENT") != primitive.attributes.end())
+					{
+						const tinygltf::Accessor& tanAccessor = model.accessors[primitive.attributes.find("TANGENT")->second];
+						const tinygltf::BufferView& tanView = model.bufferViews[tanAccessor.bufferView];
+						bufferTan = reinterpret_cast<const float*>(&(model.buffers[tanView.buffer].data[tanAccessor.byteOffset + tanView.byteOffset]));
+						tanByteStride = tanAccessor.ByteStride(tanView) ? (tanAccessor.ByteStride(tanView) / sizeof(float)) : GetTypeSizeInBytes(TINYGLTF_TYPE_VEC4);
+					}
 			
 					for (size_t v = 0; v < posAccessor.count; v++)
 					{
@@ -196,6 +204,7 @@ namespace Pelican
 						vert.pos = glm::make_vec3(&bufferPos[v * posByteStride]);
 						vert.normal = bufferNorm ? glm::make_vec3(&bufferNorm[v * normByteStride]) : glm::vec3(0.0f);
 						vert.texCoord = bufferTexCoordSet0 ? glm::make_vec2(&bufferTexCoordSet0[v * uv0ByteStride]) : glm::vec3(0.0f);
+						vert.tangent = bufferTan ? glm::make_vec4(&bufferTan[v * tanByteStride]) : glm::vec3(0.0f);
 						vertices.push_back(vert);
 					}
 

@@ -20,7 +20,7 @@ namespace Pelican
 		GltfModel(const std::string& file);
 		~GltfModel();
 
-		void UpdateMVP(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj);
+		void UpdateDrawData(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj);
 		void Draw();
 
 		[[nodiscard]] std::string GetAssetPath() const { return m_AssetPath; }

@@ -90,14 +90,15 @@ namespace Pelican
 			.setBlendConstants({ 0.0f, 0.0f, 0.0f, 0.0f });
 	}
 
-	void PipelineBuilder::SetDescriptorSetLayout(uint32_t count, const vk::DescriptorSetLayout* pLayouts)
+	void PipelineBuilder::SetDescriptorSetLayout(uint32_t layoutsCount, const vk::DescriptorSetLayout* pLayouts,
+		uint32_t pushConstCount, const vk::PushConstantRange* pPushConstants)
 	{
 		m_PipelineLayoutInfo = vk::PipelineLayoutCreateInfo()
-			.setSetLayoutCount(count)
-			.setPSetLayouts(pLayouts);
+			.setSetLayoutCount(layoutsCount)
+			.setPSetLayouts(pLayouts)
 
-		// We'll ignore push constants for now. TODO: integrate push constants
-			// .setPushConstantRanges({});
+			.setPushConstantRangeCount(pushConstCount)
+			.setPPushConstantRanges(pPushConstants);
 	}
 
 	VulkanPipeline PipelineBuilder::BuildGraphics(const vk::RenderPass& renderPass)

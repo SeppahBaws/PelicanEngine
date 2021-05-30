@@ -7,7 +7,6 @@
 #include <fstream>
 #include <cstdint>
 #include <array>
-#include <chrono>
 
 #include <GLFW/glfw3.h>
 
@@ -25,9 +24,7 @@
 #include "UniformData.h"
 #include "Camera.h"
 
-#include "Vertex.h"
 #include "VulkanShader.h"
-#include "VulkanHelpers.h"
 #include "VulkanPipeline.h"
 #include "ImGui/ImGuiWrapper.h"
 #include "Pelican/Scene/Component.h"
@@ -412,7 +409,7 @@ namespace Pelican
 			.setBinding(0)
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDescriptorCount(1)
-			.setStageFlags(vk::ShaderStageFlagBits::eAll)
+			.setStageFlags(vk::ShaderStageFlagBits::eVertex)
 			.setPImmutableSamplers(nullptr);
 
 		const vk::DescriptorSetLayoutBinding lightUboBinding = vk::DescriptorSetLayoutBinding()
@@ -474,14 +471,24 @@ namespace Pelican
 
 	void VulkanRenderer::CreateGraphicsPipeline()
 	{
-		VulkanShader* pShader = new VulkanShader();
-		pShader->AddShader(ShaderType::Vertex, "res/shaders/vert.spv");
-		pShader->AddShader(ShaderType::Fragment, "res/shaders/frag.spv");
+		VulkanShader* pLitShader = new VulkanShader();
+		pLitShader->AddShader(ShaderType::Vertex, "res/shaders/vert.spv");
+		pLitShader->AddShader(ShaderType::Fragment, "res/shaders/frag.spv");
+
+		// VulkanShader* pUnlit = new VulkanShader();
+		// pUnlit->AddShader(ShaderType::Vertex, "res/shaders/unlit_vert.spv");
+		// pUnlit->AddShader(ShaderType::Fragment, "res/shaders/unlit_frag.spv");
+
+		vk::PushConstantRange pushConstant = vk::PushConstantRange()
+			.setOffset(0)
+			.setSize(sizeof(CameraPushConst))
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
 		const std::array<vk::DescriptorSetLayout, 1> descLayouts = { m_DescriptorSetLayout };
+		const std::array<vk::PushConstantRange, 1> pushConsts = { pushConstant };
 
 		PipelineBuilder builder{ m_pDevice->GetDevice() };
-		builder.SetShader(pShader);
+		builder.SetShader(pLitShader);
 		builder.SetInputAssembly(vk::PrimitiveTopology::eTriangleList, false);
 		builder.SetViewport(0.0f, 0.0f, static_cast<float>(m_pSwapChain->GetExtent().width), static_cast<float>(m_pSwapChain->GetExtent().height), 0.0f, 1.0f);
 		builder.SetScissor(vk::Offset2D(0, 0), m_pSwapChain->GetExtent());
@@ -489,7 +496,7 @@ namespace Pelican
 		builder.SetMultisampling();
 		builder.SetDepthStencil(true, true, vk::CompareOp::eLess);
 		builder.SetColorBlend(true, vk::BlendOp::eAdd, vk::BlendOp::eAdd, false, vk::LogicOp::eCopy);
-		builder.SetDescriptorSetLayout(static_cast<uint32_t>(descLayouts.size()), descLayouts.data());
+		builder.SetDescriptorSetLayout(static_cast<uint32_t>(descLayouts.size()), descLayouts.data(), static_cast<uint32_t>(pushConsts.size()), pushConsts.data());
 
 		m_Pipelines[static_cast<int>(RenderMode::Filled)] = builder.BuildGraphics(m_RenderPass);
 
@@ -499,8 +506,14 @@ namespace Pelican
 		builder.SetRasterizer(vk::PolygonMode::ePoint, vk::CullModeFlagBits::eBack);
 		m_Pipelines[static_cast<int>(RenderMode::Points)] = builder.BuildGraphics(m_RenderPass);
 
-		delete pShader;
-		pShader = nullptr;
+		// builder.SetShader(pUnlit);
+		// builder.SetRasterizer(vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack);
+		// m_UnlitPipeline = builder.BuildGraphics(m_RenderPass);
+
+		delete pLitShader;
+		pLitShader = nullptr;
+		// delete pUnlit;
+		// pUnlit = nullptr;
 	}
 
 	void VulkanRenderer::CreateCommandPool()
@@ -641,6 +654,7 @@ namespace Pelican
 		{
 			m_Pipelines[i].Cleanup(m_pDevice->GetDevice());
 		}
+		m_UnlitPipeline.Cleanup(m_pDevice->GetDevice());
 		m_pDevice->GetDevice().destroyRenderPass(m_RenderPass);
 
 		m_pSwapChain->Cleanup();
@@ -693,6 +707,7 @@ namespace Pelican
 		{
 			m_Pipelines[i].Cleanup(m_pDevice->GetDevice());
 		}
+		m_UnlitPipeline.Cleanup(m_pDevice->GetDevice());
 		m_pDevice->GetDevice().destroyRenderPass(m_RenderPass);
 
 		CreateRenderPass();

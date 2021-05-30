@@ -55,6 +55,7 @@ namespace Pelican
 		static vk::CommandPool GetCommandPool() { return m_pInstance->m_CommandPool; }
 		static vk::CommandBuffer GetCurrentBuffer() { return m_pInstance->m_CommandBuffers[m_pInstance->m_CurrentBuffer]; }
 		static vk::PipelineLayout GetPipelineLayout();
+		static vk::PipelineLayout GetUnlitPipelineLayout() { return m_pInstance->m_UnlitPipeline.GetLayout(); }
 
 	private:
 		void CreateInstance();
@@ -116,8 +117,7 @@ namespace Pelican
 		vk::DescriptorSetLayout m_DescriptorSetLayout;
 
 		VulkanPipeline m_Pipelines[static_cast<int>(RenderMode::RENDERING_MODE_MAX)];
-		// VulkanPipeline m_Pipeline;
-		// VulkanPipeline m_PipelineLines;
+		VulkanPipeline m_UnlitPipeline;
 
 		vk::CommandPool m_CommandPool;
 		std::vector<vk::CommandBuffer> m_CommandBuffers;

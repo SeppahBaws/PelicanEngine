@@ -37,7 +37,7 @@ namespace Pelican
 		void SetMultisampling();
 		void SetDepthStencil(bool depthTest, bool depthWrite, vk::CompareOp compareOp);
 		void SetColorBlend(bool blendEnable, vk::BlendOp colorBlendOp, vk::BlendOp alphaBlendOp, bool logicOpEnable, vk::LogicOp logicOp);
-		void SetDescriptorSetLayout(uint32_t count, const vk::DescriptorSetLayout* pLayouts);
+		void SetDescriptorSetLayout(uint32_t layoutsCount, const vk::DescriptorSetLayout* pLayouts, uint32_t pushConstCount, const vk::PushConstantRange* pPushConstants);
 
 		VulkanPipeline BuildGraphics(const vk::RenderPass& renderPass);
 		VulkanPipeline BuildCompute();

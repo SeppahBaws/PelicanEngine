@@ -86,16 +86,24 @@ namespace Pelican
 			glm::mat4 p = pCamera->GetProjection();
 			p[1][1] *= -1;
 
-			model.pModel->UpdateMVP(m, v, p);
+			model.pModel->UpdateDrawData(m, v, p);
 		}
 	}
 
-	void Scene::Draw(Camera* /*pCamera*/)
+	void Scene::Draw(Camera* pCamera)
 	{
 		auto view = m_Registry.view<TransformComponent, ModelComponent>();
 
 		VkDebugMarker::BeginRegion(VulkanRenderer::GetCurrentBuffer(), "Scene Render", glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
 
+		// Bind push constants
+		CameraPushConst pushConst;
+		pushConst.eyePos = pCamera->GetPosition();
+
+		vk::CommandBuffer cmd = VulkanRenderer::GetCurrentBuffer();
+		cmd.pushConstants(VulkanRenderer::GetPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, sizeof(CameraPushConst), &pushConst);
+
+		// Draw meshes
 		for (auto [entity, transform, model] : view.each())
 		{
 			model.pModel->Draw();

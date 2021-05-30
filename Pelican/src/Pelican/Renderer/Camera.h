@@ -10,6 +10,11 @@ namespace Pelican
 	enum class KeyCode;
 	class Event;
 
+	struct CameraPushConst
+	{
+		glm::vec3 eyePos;
+	};
+
 	class Camera
 	{
 	public:
@@ -20,6 +25,7 @@ namespace Pelican
 
 		[[nodiscard]] glm::mat4 GetView();
 		[[nodiscard]] glm::mat4 GetProjection() const;
+		[[nodiscard]] glm::vec3 GetPosition() const;
 
 	private:
 		bool OnResize(WindowResizeEvent& e);

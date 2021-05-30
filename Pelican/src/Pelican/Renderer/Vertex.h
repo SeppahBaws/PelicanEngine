@@ -10,6 +10,7 @@ namespace Pelican
 		glm::vec3 pos;
 		glm::vec3 normal;
 		glm::vec2 texCoord;
+		glm::vec3 tangent;
 
 		static vk::VertexInputBindingDescription GetBindingDescription()
 		{
@@ -21,9 +22,9 @@ namespace Pelican
 			return bindingDescription;
 		}
 
-		static std::array<vk::VertexInputAttributeDescription, 3> GetAttributeDescriptions()
+		static std::array<vk::VertexInputAttributeDescription, 4> GetAttributeDescriptions()
 		{
-			std::array<vk::VertexInputAttributeDescription, 3> attributeDescriptions{ 3 };
+			std::array<vk::VertexInputAttributeDescription, 4> attributeDescriptions{ 3 };
 
 			attributeDescriptions[0].binding = 0;
 			attributeDescriptions[0].location = 0;
@@ -39,6 +40,11 @@ namespace Pelican
 			attributeDescriptions[2].location = 2;
 			attributeDescriptions[2].format = vk::Format::eR32G32Sfloat;
 			attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
+			attributeDescriptions[3].binding = 0;
+			attributeDescriptions[3].location = 3;
+			attributeDescriptions[3].format = vk::Format::eR32G32B32Sfloat;
+			attributeDescriptions[3].offset = offsetof(Vertex, tangent);
 
 			return attributeDescriptions;
 		}

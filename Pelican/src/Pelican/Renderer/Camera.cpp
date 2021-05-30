@@ -108,8 +108,16 @@ namespace Pelican
 		return m_Projection;
 	}
 
+	glm::vec3 Camera::GetPosition() const
+	{
+		return m_Position;
+	}
+
 	bool Camera::OnResize(WindowResizeEvent& e)
 	{
+		if (e.GetWidth() <= 0 || e.GetHeight() <= 0)
+			return false;
+
 		UpdateProjection(m_Fov, static_cast<float>(e.GetWidth()), static_cast<float>(e.GetHeight()), m_ZNear, m_ZFar);
 		return false;
 	}
