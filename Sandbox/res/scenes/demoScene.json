@@ -3,89 +3,29 @@
     {
       "components": [
         {
-          "name": "Debug Sphere",
-          "type": "TagComponent"
-        },
-        {
-          "position": [
-            -20.0,
-            20.0,
-            0.0
-          ],
-          "rotation": [
-            0.0,
-            0.0,
-            0.0
-          ],
-          "scale": [
-            2.0,
-            2.0,
-            2.0
-          ],
-          "type": "TransformComponent"
-        },
-        {
-          "assetPath": "res/models/uvSphere.gltf",
-          "type": "ModelComponent"
-        }
-      ]
-    },
-    {
-      "components": [
-        {
-          "name": "Flashlight",
-          "type": "TagComponent"
-        },
-        {
-          "position": [
-            -3.0,
-            -2.0,
-            20.0
-          ],
-          "rotation": [
-            -90.0,
-            0.0,
-            0.0
-          ],
-          "scale": [
-            0.5,
-            0.5,
-            0.5
-          ],
-          "type": "TransformComponent"
-        },
-        {
-          "assetPath": "res/models/tactical_flashlight/scene.gltf",
-          "type": "ModelComponent"
-        }
-      ]
-    },
-    {
-      "components": [
-        {
-          "name": "Car",
+          "name": "Damaged Helmet",
           "type": "TagComponent"
         },
         {
           "position": [
             0.0,
-            0.0,
-            0.0
+            22.0,
+            5.0
           ],
           "rotation": [
-            -90.0,
+            90.0,
             0.0,
             0.0
           ],
           "scale": [
-            0.05000000074505806,
-            0.05000000074505806,
-            0.05000000074505806
+            5.0,
+            5.0,
+            5.0
           ],
           "type": "TransformComponent"
         },
         {
-          "assetPath": "res/models/pony_cartoon/scene.gltf",
+          "assetPath": "res/models/damaged_helmet/DamagedHelmet.gltf",
           "type": "ModelComponent"
         }
       ]
@@ -123,29 +63,89 @@
     {
       "components": [
         {
-          "name": "Damaged Helmet",
+          "name": "Car",
           "type": "TagComponent"
         },
         {
           "position": [
             0.0,
-            22.0,
-            5.0
+            0.0,
+            0.0
           ],
           "rotation": [
-            90.0,
+            -90.0,
             0.0,
             0.0
           ],
           "scale": [
-            5.0,
-            5.0,
-            5.0
+            0.05000000074505806,
+            0.05000000074505806,
+            0.05000000074505806
           ],
           "type": "TransformComponent"
         },
         {
-          "assetPath": "res/models/damaged_helmet/DamagedHelmet.gltf",
+          "assetPath": "res/models/pony_cartoon/scene.gltf",
+          "type": "ModelComponent"
+        }
+      ]
+    },
+    {
+      "components": [
+        {
+          "name": "Flashlight",
+          "type": "TagComponent"
+        },
+        {
+          "position": [
+            -3.0,
+            -2.0,
+            20.0
+          ],
+          "rotation": [
+            -90.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "type": "TransformComponent"
+        },
+        {
+          "assetPath": "res/models/tactical_flashlight/scene.gltf",
+          "type": "ModelComponent"
+        }
+      ]
+    },
+    {
+      "components": [
+        {
+          "name": "Debug Sphere",
+          "type": "TagComponent"
+        },
+        {
+          "position": [
+            -20.0,
+            20.0,
+            0.0
+          ],
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            2.0,
+            2.0,
+            2.0
+          ],
+          "type": "TransformComponent"
+        },
+        {
+          "assetPath": "res/models/uvSphere.gltf",
           "type": "ModelComponent"
         }
       ]
@@ -171,16 +171,17 @@
     },
     "pointLight": {
       "diffuse": [
-        300.0,
-        300.0,
-        300.0
+        3000.0,
+        3000.0,
+        3000.0
       ],
       "position": [
-        5.0,
+        -0.9460275173187256,
         30.0,
-        5.0
+        9.955150604248047
       ]
-    }
+    },
+    "environmentMap": "res/textures/Cubemaps/Kiara1-Dawn/kiara_dawn-1k.png"
   },
   "name": "Demo Scene"
 }

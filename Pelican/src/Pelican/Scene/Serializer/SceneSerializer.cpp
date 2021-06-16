@@ -9,6 +9,7 @@
 #include "../Scene.h"
 
 #include "ald_serializer.h"
+#include "Pelican/Assets/AssetManager.h"
 
 namespace Pelican
 {
@@ -22,6 +23,7 @@ namespace Pelican
 		json lighting = json::object();
 		lighting["directionalLight"] = pScene->m_DirectionalLight;
 		lighting["pointLight"] = pScene->m_PointLight;
+		lighting["environmentMap"] = pScene->m_Cubemap->GetAssetPath();
 		jsonScene["lighting"] = lighting;
 
 		json jEntities = json::array();
@@ -87,6 +89,7 @@ namespace Pelican
 
 		jLighting["directionalLight"].get_to(pScene->m_DirectionalLight);
 		jLighting["pointLight"].get_to(pScene->m_PointLight);
+		pScene->m_Cubemap = AssetManager::GetInstance().LoadTexture(jLighting["environmentMap"], VulkanTexture::TextureMode::Cubemap);
 
 		for (json jEntity : jEntities)
 		{

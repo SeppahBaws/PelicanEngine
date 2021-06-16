@@ -20,6 +20,8 @@ namespace Pelican
 		GltfModel(const std::string& file);
 		~GltfModel();
 
+		void Initialize();
+
 		void UpdateDrawData(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj);
 		void Draw();
 
@@ -28,7 +30,6 @@ namespace Pelican
 		[[nodiscard]] const GltfMaterial& GetMaterial(int32_t idx) const { return m_Materials[idx]; }
 
 	private:
-		void Initialize(const std::string& file);
 		void Load(const tinygltf::Model& model);
 
 

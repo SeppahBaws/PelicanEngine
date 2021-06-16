@@ -29,7 +29,7 @@ namespace Pelican
 	GltfModel::GltfModel(const std::string& file)
 		: m_AssetPath(file)
 	{
-		Initialize(file);
+		Initialize();
 	}
 
 	GltfModel::~GltfModel()
@@ -76,7 +76,7 @@ namespace Pelican
 		}
 	}
 
-	void GltfModel::Initialize(const std::string& file)
+	void GltfModel::Initialize()
 	{
 		tinygltf::Model model;
 		tinygltf::TinyGLTF loader;
@@ -85,7 +85,7 @@ namespace Pelican
 
 		Logger::LogTrace("Started loading GLTF file");
 
-		bool res = loader.LoadASCIIFromFile(&model, &err, &warn, file);
+		bool res = loader.LoadASCIIFromFile(&model, &err, &warn, m_AssetPath);
 		if (!warn.empty())
 		{
 			Logger::LogWarning(warn);
@@ -97,9 +97,9 @@ namespace Pelican
 		}
 
 		if (!res)
-			Logger::LogWarning("Failed to load glTF: %s", file.c_str());
+			Logger::LogWarning("Failed to load glTF: %s", m_AssetPath.c_str());
 		else
-			Logger::LogDebug("Loaded glTF: %s", file.c_str());
+			Logger::LogDebug("Loaded glTF: %s", m_AssetPath.c_str());
 
 		Load(model);
 	}

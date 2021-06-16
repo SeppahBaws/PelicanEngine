@@ -9,6 +9,8 @@
 #include "Entity.h"
 #include "Serializer/SceneSerializer.h"
 
+#include "Pelican/Assets/AssetManager.h"
+
 #include "Pelican/Core/Application.h"
 #include "Pelican/Core/Time.h"
 #include "Pelican/Core/System/FileUtils.h"
@@ -98,13 +100,19 @@ namespace Pelican
 	{
 		auto view = m_Registry.view<TransformComponent, ModelComponent>();
 
-		VkDebugMarker::BeginRegion(VulkanRenderer::GetCurrentBuffer(), "Scene Render", glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
+		vk::CommandBuffer cmd = VulkanRenderer::GetCurrentBuffer();
+
+		//
+		// Scene Render
+		//
+		VkDebugMarker::BeginRegion(cmd, "Scene Render", glm::vec4(1.0f, 0.5f, 0.0f, 1.0f));
+
+		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, VulkanRenderer::GetCurrentPipeline());
 
 		// Bind push constants
 		CameraPushConst pushConst;
 		pushConst.eyePos = pCamera->GetPosition();
 
-		vk::CommandBuffer cmd = VulkanRenderer::GetCurrentBuffer();
 		cmd.pushConstants(VulkanRenderer::GetPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, sizeof(CameraPushConst), &pushConst);
 
 		// Draw meshes
@@ -113,11 +121,11 @@ namespace Pelican
 			model.pModel->Draw();
 		}
 
-		VkDebugMarker::EndRegion(VulkanRenderer::GetCurrentBuffer());
+		VkDebugMarker::EndRegion(cmd);
 
 
 		// TODO: move this out to an editor or so...
-
+#pragma region Debug UI
 		bool isOpen = true;
 		// Debug UI
 		if (ImGui::Begin("Scene debugger", &isOpen, ImGuiWindowFlags_MenuBar))
@@ -190,6 +198,7 @@ namespace Pelican
 			}
 		}
 		ImGui::End();
+#pragma endregion 
 	}
 
 	void Scene::Cleanup()
@@ -201,5 +210,7 @@ namespace Pelican
 		{
 			delete model.pModel;
 		}
+
+		AssetManager::GetInstance().UnloadTexture(m_Cubemap);
 	}
 }

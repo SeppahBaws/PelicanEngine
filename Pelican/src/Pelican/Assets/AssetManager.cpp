@@ -9,7 +9,7 @@
 
 namespace Pelican
 {
-	VulkanTexture* AssetManager::LoadTexture(const std::string& filePath)
+	VulkanTexture* AssetManager::LoadTexture(const std::string& filePath, VulkanTexture::TextureMode textureMode)
 	{
 		const bool bAssetExists = m_TextureMap.find(filePath) != m_TextureMap.end();
 
@@ -21,7 +21,7 @@ namespace Pelican
 		}
 
 		// Else, we need to load the asset and register it in our asset map
-		VulkanTexture* pTexture = new VulkanTexture(filePath); // Loads the texture into GPU memory.
+		VulkanTexture* pTexture = new VulkanTexture(filePath, textureMode); // Loads the texture into GPU memory.
 		AssetReference<VulkanTexture> ref = {
 			pTexture,
 			1

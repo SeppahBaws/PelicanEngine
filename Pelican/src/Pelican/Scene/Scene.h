@@ -10,6 +10,7 @@ namespace Pelican
 	class Camera;
 	class Entity;
 	class SceneSerializer;
+	class VulkanTexture;
 
 	class Scene
 	{
@@ -34,6 +35,8 @@ namespace Pelican
 		void Draw(Camera* pCamera);
 		void Cleanup();
 
+		[[nodiscard]] VulkanTexture* GetSkybox() const { return m_Cubemap; }
+
 	private:
 		// We need access to the registry to add components.
 		friend class Entity;
@@ -45,5 +48,6 @@ namespace Pelican
 		DirectionalLight m_DirectionalLight;
 		PointLight m_PointLight;
 		bool m_AnimateLight{ false };
+		VulkanTexture* m_Cubemap;
 	};
 }

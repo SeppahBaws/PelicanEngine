@@ -8,6 +8,8 @@
 
 namespace Pelican
 {
+	class GltfModel;
+	class VulkanTexture;
 	// Forward declarations
 	class Camera;
 	class ImGuiWrapper;
@@ -46,6 +48,7 @@ namespace Pelican
 		static int GetMaxImages() { return m_pInstance->MAX_FRAMES_IN_FLIGHT; }
 		static vk::Instance GetInstance() { return m_pInstance->m_Instance.get(); }
 		static VulkanDevice* GetVulkanDevice() { return m_pInstance->m_pDevice; }
+		static VulkanSwapChain* GetSwapChain() { return m_pInstance->m_pSwapChain; }
 		static vk::Device GetDevice() { return m_pInstance->m_pDevice->GetDevice(); }
 		static vk::RenderPass GetRenderPass() { return m_pInstance->m_RenderPass; }
 		static vk::PhysicalDevice GetPhysicalDevice() { return m_pInstance->m_pDevice->GetPhysicalDevice(); }
@@ -54,8 +57,14 @@ namespace Pelican
 		static vk::DescriptorSetLayout& GetDescriptorSetLayout() { return m_pInstance->m_DescriptorSetLayout; }
 		static vk::CommandPool GetCommandPool() { return m_pInstance->m_CommandPool; }
 		static vk::CommandBuffer GetCurrentBuffer() { return m_pInstance->m_CommandBuffers[m_pInstance->m_CurrentBuffer]; }
+		static vk::Framebuffer GetCurrentFramebuffer() { return m_pInstance->m_pSwapChain->GetFramebuffers()[m_pInstance->m_CurrentBuffer]; }
 		static vk::PipelineLayout GetPipelineLayout();
+		static vk::Pipeline GetCurrentPipeline();
 		static vk::PipelineLayout GetUnlitPipelineLayout() { return m_pInstance->m_UnlitPipeline.GetLayout(); }
+
+#if TEST_ENABLE_SKYBOX
+		static VulkanTexture* GetSkybox() { return m_pInstance->m_pSkyboxCubemap; }
+#endif
 
 	private:
 		void CreateInstance();

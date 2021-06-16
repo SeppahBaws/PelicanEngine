@@ -37,6 +37,7 @@ namespace Pelican
 		VulkanRenderer& GetRenderer() const { return *m_pRenderer; }
 		static Application& Get() { return *m_Instance; }
 		Scene* GetScene() const { return m_pScene; }
+		Camera* GetCamera() const { return m_pCamera; }
 
 	public:
 		RenderMode m_RenderMode = RenderMode::Filled;

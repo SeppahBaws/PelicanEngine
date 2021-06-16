@@ -1,0 +1,34 @@
+{
+    "name": "Environment Test",
+    "entities": [
+        {
+            "components": [
+                {
+                    "type": "TagComponent",
+                    "name": "Gun"
+                },
+                {
+                    "type": "TransformComponent",
+                    "position": [ 0, 0, -25 ],
+                    "rotation": [ -90, 0, 0 ],
+                    "scale": [ 0.5, 0.5, 0.5 ]
+                },
+                {
+                    "type": "ModelComponent",
+                    "assetPath": "res/models/cerberus_gun/scene.gltf"
+                }
+            ]
+        }
+    ],
+    "lighting": {
+        "directionalLight": {
+            "ambientColor": [ 0, 0, 0 ],
+            "direction": [ 0.67, -0.7, -0.7 ],
+            "lightColor": [ 1, 1, 1 ]
+        },
+        "pointLight": {
+            "diffuse": [ 3000, 3000, 3000 ],
+            "position": [ 0, 10, 0 ]
+        }
+    }
+}

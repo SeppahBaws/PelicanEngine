@@ -26,7 +26,6 @@
 #include "Gltf/GltfMaterial.h"
 #include "Gltf/GltfModel.h"
 #include "Pelican/Renderer/UniformData.h"
-#include "Pelican/Assets/AssetManager.h"
 #include "Pelican/Core/Application.h"
 #include "Pelican/Scene/Scene.h"
 
@@ -181,17 +180,19 @@ namespace Pelican
 
 		const GltfMaterial& mat = pParent->GetMaterial(m_MaterialIdx);
 
-		std::array<vk::DescriptorImageInfo, static_cast<uint32_t>(TextureSlot::SLOT_COUNT)> imageInfos =
+		const std::array<vk::DescriptorImageInfo, static_cast<uint32_t>(TextureSlot::SLOT_COUNT)> imageInfos =
 		{
 			mat.m_pAlbedoTexture->GetDescriptorImageInfo(),
 			mat.m_pNormalTexture->GetDescriptorImageInfo(),
 			mat.m_pMetallicRoughnessTexture->GetDescriptorImageInfo(),
 			mat.m_pAOTexture->GetDescriptorImageInfo(),
 		};
+		// TODO: Descriptor Sets shouldn't be in the mesh.
+		const vk::DescriptorImageInfo skyboxInfo =  Application::Get().GetScene()->GetSkybox()->GetDescriptorImageInfo();
 
-		vk::DescriptorSetAllocateInfo allocInfo;
-		allocInfo.descriptorPool = pool;
-		allocInfo.setSetLayouts(VulkanRenderer::GetDescriptorSetLayout());
+		vk::DescriptorSetAllocateInfo allocInfo = vk::DescriptorSetAllocateInfo()
+			.setDescriptorPool(pool)
+			.setSetLayouts(VulkanRenderer::GetDescriptorSetLayout());
 
 		try
 		{
@@ -206,15 +207,22 @@ namespace Pelican
 			throw std::runtime_error("Failed to allocate descriptor sets: "s + e.what());
 		}
 
-		std::array<vk::WriteDescriptorSet, 6> descriptorWrites{};
+		std::array<vk::WriteDescriptorSet, 7> descriptorWrites{};
 
 		// MVP Uniform buffer
-		descriptorWrites[0].dstSet = m_DescriptorSet;
-		descriptorWrites[0].dstBinding = 0;
-		descriptorWrites[0].dstArrayElement = 0;
-		descriptorWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer;
-		descriptorWrites[0].descriptorCount = 1;
-		descriptorWrites[0].pBufferInfo = &mvpBufferInfo;
+		descriptorWrites[0] = vk::WriteDescriptorSet()
+			.setDstSet(m_DescriptorSet)
+			.setDstBinding(0)
+			.setDstArrayElement(0)
+			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+			.setDescriptorCount(1)
+			.setBufferInfo(mvpBufferInfo);
+		// descriptorWrites[0].dstSet = m_DescriptorSet;
+		// descriptorWrites[0].dstBinding = 0;
+		// descriptorWrites[0].dstArrayElement = 0;
+		// descriptorWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer;
+		// descriptorWrites[0].descriptorCount = 1;
+		// descriptorWrites[0].pBufferInfo = &mvpBufferInfo;
 
 		// Lights Uniform buffer
 		descriptorWrites[1].dstSet = m_DescriptorSet;
@@ -255,6 +263,14 @@ namespace Pelican
 		descriptorWrites[5].descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		descriptorWrites[5].descriptorCount = 1;
 		descriptorWrites[5].pImageInfo = &imageInfos[3];
+
+		descriptorWrites[6] = vk::WriteDescriptorSet()
+			.setDstSet(m_DescriptorSet)
+			.setDstBinding(6)
+			.setDstArrayElement(0)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(1)
+			.setPImageInfo(&skyboxInfo);
 
 		VulkanRenderer::GetDevice().updateDescriptorSets(descriptorWrites, {});
 	}

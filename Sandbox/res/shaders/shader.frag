@@ -20,7 +20,6 @@ layout(location = 3) in vec3 vTangent;
 
 layout(location = 0) out vec4 fragColor;
 
-
 layout(set = 0, binding = 1) uniform LightInformation
 {
     DirectionalLight directionalLight;
@@ -36,6 +35,8 @@ layout(binding = 2) uniform sampler2D texAlbedo;
 layout(binding = 3) uniform sampler2D texNormal;
 layout(binding = 4) uniform sampler2D texMetallicRoughness;
 layout(binding = 5) uniform sampler2D texAmbientOcclusion;
+
+layout(binding = 6) uniform samplerCube cubemap;
 
 const float PI = 3.14159265359;
 
@@ -160,11 +161,12 @@ void main()
     
     color = Reinhard(color);
 
-
-
-    // float fresnel = CalculateFresnel(N, V, 5);
-    // finalColor = vec3(fresnel);
-    finalColor = vec3(color);
-
     fragColor = vec4(finalColor, alpha);
+    
+
+    vec3 R = reflect(V, N);
+    R.yz *= -1.0;
+    vec4 envColor = texture(cubemap, R);
+
+    fragColor = envColor;
 }

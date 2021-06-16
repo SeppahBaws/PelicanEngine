@@ -27,6 +27,7 @@
 #include "VulkanShader.h"
 #include "VulkanPipeline.h"
 #include "ImGui/ImGuiWrapper.h"
+#include "Pelican/Assets/AssetManager.h"
 #include "Pelican/Scene/Component.h"
 #include "Pelican/Scene/Scene.h"
 
@@ -247,6 +248,11 @@ namespace Pelican
 		return m_pInstance->m_Pipelines[static_cast<int>(Application::Get().m_RenderMode)].GetLayout();
 	}
 
+	vk::Pipeline VulkanRenderer::GetCurrentPipeline()
+	{
+		return m_pInstance->m_Pipelines[static_cast<int>(Application::Get().m_RenderMode)].GetPipeline();
+	}
+
 	void VulkanRenderer::CreateInstance()
 	{
 		if (m_EnableValidationLayers && !CheckValidationLayerSupport())
@@ -445,13 +451,21 @@ namespace Pelican
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		const std::array<vk::DescriptorSetLayoutBinding, 6> bindings = {
+		const vk::DescriptorSetLayoutBinding cubemapSamplerBinding = vk::DescriptorSetLayoutBinding()
+			.setBinding(6)
+			.setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setPImmutableSamplers(nullptr)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+		const std::array<vk::DescriptorSetLayoutBinding, 7> bindings = {
 			mvpUboLayoutBinding,
 			lightUboBinding,
 			albedoSamplerBinding,
 			normalSamplerBinding,
 			metallicRoughnessSamplerBinding,
 			ambientOcclusionSamplerBinding,
+			cubemapSamplerBinding
 		};
 
 		const vk::DescriptorSetLayoutCreateInfo layoutInfo = vk::DescriptorSetLayoutCreateInfo()
@@ -472,10 +486,6 @@ namespace Pelican
 		VulkanShader* pLitShader = new VulkanShader();
 		pLitShader->AddShader(ShaderType::Vertex, "res/shaders/vert.spv");
 		pLitShader->AddShader(ShaderType::Fragment, "res/shaders/frag.spv");
-
-		// VulkanShader* pUnlit = new VulkanShader();
-		// pUnlit->AddShader(ShaderType::Vertex, "res/shaders/unlit_vert.spv");
-		// pUnlit->AddShader(ShaderType::Fragment, "res/shaders/unlit_frag.spv");
 
 		vk::PushConstantRange pushConstant = vk::PushConstantRange()
 			.setOffset(0)
@@ -504,14 +514,8 @@ namespace Pelican
 		builder.SetRasterizer(vk::PolygonMode::ePoint, vk::CullModeFlagBits::eBack);
 		m_Pipelines[static_cast<int>(RenderMode::Points)] = builder.BuildGraphics(m_RenderPass);
 
-		// builder.SetShader(pUnlit);
-		// builder.SetRasterizer(vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack);
-		// m_UnlitPipeline = builder.BuildGraphics(m_RenderPass);
-
 		delete pLitShader;
 		pLitShader = nullptr;
-		// delete pUnlit;
-		// pUnlit = nullptr;
 	}
 
 	void VulkanRenderer::CreateCommandPool()
@@ -931,7 +935,6 @@ namespace Pelican
 			.setClearValues(clearValues);
 
 		cmd.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
-		cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_Pipelines[static_cast<int>(Application::Get().m_RenderMode)].GetPipeline());
 	}
 
 	void VulkanRenderer::EndCommandBuffers()
