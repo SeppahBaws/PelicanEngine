@@ -188,7 +188,9 @@ namespace Pelican
 			mat.m_pAOTexture->GetDescriptorImageInfo(),
 		};
 		// TODO: Descriptor Sets shouldn't be in the mesh.
-		const vk::DescriptorImageInfo skyboxInfo =  Application::Get().GetScene()->GetSkybox()->GetDescriptorImageInfo();
+		const vk::DescriptorImageInfo skyboxInfo = Application::Get().GetScene()->GetSkybox()->GetDescriptorImageInfo();
+		const vk::DescriptorImageInfo radianceInfo = Application::Get().GetScene()->GetRadiance()->GetDescriptorImageInfo();
+		const vk::DescriptorImageInfo irradianceInfo = Application::Get().GetScene()->GetIrradiance()->GetDescriptorImageInfo();
 
 		vk::DescriptorSetAllocateInfo allocInfo = vk::DescriptorSetAllocateInfo()
 			.setDescriptorPool(pool)
@@ -207,7 +209,7 @@ namespace Pelican
 			throw std::runtime_error("Failed to allocate descriptor sets: "s + e.what());
 		}
 
-		std::array<vk::WriteDescriptorSet, 7> descriptorWrites{};
+		std::array<vk::WriteDescriptorSet, 9> descriptorWrites{};
 
 		// MVP Uniform buffer
 		descriptorWrites[0] = vk::WriteDescriptorSet()
@@ -271,6 +273,22 @@ namespace Pelican
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			.setDescriptorCount(1)
 			.setPImageInfo(&skyboxInfo);
+
+		descriptorWrites[7] = vk::WriteDescriptorSet()
+			.setDstSet(m_DescriptorSet)
+			.setDstBinding(7)
+			.setDstArrayElement(0)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(1)
+			.setPImageInfo(&radianceInfo);
+
+		descriptorWrites[8] = vk::WriteDescriptorSet()
+			.setDstSet(m_DescriptorSet)
+			.setDstBinding(8)
+			.setDstArrayElement(0)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(1)
+			.setPImageInfo(&irradianceInfo);
 
 		VulkanRenderer::GetDevice().updateDescriptorSets(descriptorWrites, {});
 	}

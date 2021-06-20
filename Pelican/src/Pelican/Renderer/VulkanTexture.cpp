@@ -35,8 +35,17 @@ namespace Pelican
 	{
 		m_AssetPath = path;
 
+		void* pixels;
+
+		m_IsHDR = path.substr(path.rfind('.') + 1, std::string::npos) == "hdr";
+
+		Logger::LogDebug("Loading \"%s\" - is hdr: %s", path.c_str(), m_IsHDR ? "yes" : "no");
+
 		int width, height, nrChannels;
-		stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
+		if (m_IsHDR)
+			pixels = stbi_loadf(path.c_str(), &width, &height, &nrChannels, 0);
+		else
+			pixels = stbi_load(path.c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
 
 		if (!pixels)
 		{
@@ -164,7 +173,8 @@ namespace Pelican
 			memcpy(data, pixelData, static_cast<size_t>(size));
 		VulkanRenderer::GetDevice().unmapMemory(stagingBufferMemory);
 
-		CreateImage(width, height, vk::Format::eR8G8B8A8Srgb, vk::ImageTiling::eOptimal,
+		m_Format = m_IsHDR ? vk::Format::eR16G16B16A16Sfloat : vk::Format::eR8G8B8A8Srgb;
+		CreateImage(width, height, m_Format, vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal);
 
 		TransitionLayout(vk::ImageLayout::eTransferDstOptimal);

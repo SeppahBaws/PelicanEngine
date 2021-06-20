@@ -59,5 +59,7 @@ namespace Pelican
 		uint32_t m_LayerCount{};
 		vk::Format m_Format{};
 		vk::ImageLayout m_ImageLayout{};
+
+		bool m_IsHDR;
 	};
 }

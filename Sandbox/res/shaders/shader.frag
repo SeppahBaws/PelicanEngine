@@ -37,6 +37,8 @@ layout(binding = 4) uniform sampler2D texMetallicRoughness;
 layout(binding = 5) uniform sampler2D texAmbientOcclusion;
 
 layout(binding = 6) uniform samplerCube cubemap;
+layout(binding = 7) uniform samplerCube radianceMap;
+layout(binding = 8) uniform samplerCube irradianceMap;
 
 const float PI = 3.14159265359;
 
@@ -47,17 +49,18 @@ float CalculateFresnel(vec3 N, vec3 V, float fPow)
 
 vec3 CalculateNormal(vec3 sampledNormal)
 {
-    // TODO: fix sampledNormal integration.
-
-    // if (length(vTangent) == 0.0f)
+    if (length(vTangent) == 0.0f)
         return vNormal;
 
-    // vec3 binormal = normalize(cross(vTangent, vNormal));
-    // mat3 localAxis = mat3(binormal, vTangent, vNormal);
+    vec3 binormal = normalize(cross(vTangent, vNormal));
+    mat3 localAxis = mat3(binormal, vTangent, vNormal);
 
-    // sampledNormal = (2.0f * sampledNormal) - 1.0f;
+    sampledNormal = (2.0f * sampledNormal) - 1.0f;
 
-    // return normalize(vNormal * sampledNormal);
+    vec3 N = normalize(vNormal * sampledNormal);
+
+    N.xy *= -1.0; // x and y were flipped.
+    return N;
 }
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
@@ -107,8 +110,6 @@ vec3 Reinhard(vec3 v)
 
 void main()
 {
-    vec3 finalColor;
-
     vec3 baseColor = texture(texAlbedo, vTexCoord).rgb;
     vec3 sampledNormal = texture(texNormal, vTexCoord).rgb;
     vec3 metallicRoughness = texture(texMetallicRoughness, vTexCoord).rgb;
@@ -151,22 +152,19 @@ void main()
     float NdotL = max(dot(N, L), 0.0);
     vec3 Lo = (kD * baseColor / PI + specular) * radiance * NdotL;
 
-    vec3 ambient = vec3(0.03) * baseColor * ao;
+    kS = FresnelSchlick(max(dot(N, V), 0.0), F0);
+    kD = 1.0 - kS;
+    vec3 irradiance = texture(irradianceMap, N).rgb;
+    vec3 diffuse = irradiance * baseColor;
+    vec3 ambient = (kD * diffuse) * ao;
+
     vec3 color = ambient + Lo;
 
-
     // Tonemapping
-    // color = color / (color + vec3(1.0));
-    // color = pow(color, vec3(1.0 / 2.2));
+    color = color / (color + vec3(1.0));
+    color = pow(color, vec3(1.0 / 2.2));
     
-    color = Reinhard(color);
+    // color = Reinhard(color);
 
-    fragColor = vec4(finalColor, alpha);
-    
-
-    vec3 R = reflect(V, N);
-    R.yz *= -1.0;
-    vec4 envColor = texture(cubemap, R);
-
-    fragColor = envColor;
+    fragColor = vec4(color, alpha);
 }

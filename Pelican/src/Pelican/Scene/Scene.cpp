@@ -211,6 +211,8 @@ namespace Pelican
 			delete model.pModel;
 		}
 
-		AssetManager::GetInstance().UnloadTexture(m_Cubemap);
+		AssetManager::GetInstance().UnloadTexture(m_Skybox);
+		AssetManager::GetInstance().UnloadTexture(m_Radiance);
+		AssetManager::GetInstance().UnloadTexture(m_Irradiance);
 	}
 }

@@ -409,66 +409,82 @@ namespace Pelican
 
 	void VulkanRenderer::CreateDescriptorSetLayout()
 	{
-		const vk::DescriptorSetLayoutBinding mvpUboLayoutBinding = vk::DescriptorSetLayoutBinding()
+		const auto mvpUboLayoutBinding = vk::DescriptorSetLayoutBinding()
 			.setBinding(0)
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDescriptorCount(1)
 			.setStageFlags(vk::ShaderStageFlagBits::eVertex)
 			.setPImmutableSamplers(nullptr);
 
-		const vk::DescriptorSetLayoutBinding lightUboBinding = vk::DescriptorSetLayoutBinding()
+		const auto lightUboBinding = vk::DescriptorSetLayoutBinding()
 			.setBinding(1)
 			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 			.setDescriptorCount(1)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment)
 			.setPImmutableSamplers(nullptr);
 
-		const vk::DescriptorSetLayoutBinding albedoSamplerBinding = vk::DescriptorSetLayoutBinding()
+		const auto albedoSamplerBinding = vk::DescriptorSetLayoutBinding()
 			.setBinding(2)
 			.setDescriptorCount(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		const vk::DescriptorSetLayoutBinding normalSamplerBinding = vk::DescriptorSetLayoutBinding()
+		const auto normalSamplerBinding = vk::DescriptorSetLayoutBinding()
 			.setBinding(3)
 			.setDescriptorCount(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		const vk::DescriptorSetLayoutBinding metallicRoughnessSamplerBinding = vk::DescriptorSetLayoutBinding()
+		const auto metallicRoughnessSamplerBinding = vk::DescriptorSetLayoutBinding()
 			.setBinding(4)
 			.setDescriptorCount(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		const vk::DescriptorSetLayoutBinding ambientOcclusionSamplerBinding = vk::DescriptorSetLayoutBinding()
+		const auto ambientOcclusionSamplerBinding = vk::DescriptorSetLayoutBinding()
 			.setBinding(5)
 			.setDescriptorCount(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		const vk::DescriptorSetLayoutBinding cubemapSamplerBinding = vk::DescriptorSetLayoutBinding()
+		const auto cubemapSamplerBinding = vk::DescriptorSetLayoutBinding()
 			.setBinding(6)
 			.setDescriptorCount(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			.setPImmutableSamplers(nullptr)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
-		const std::array<vk::DescriptorSetLayoutBinding, 7> bindings = {
+		const auto radianceMapSamplerBinding = vk::DescriptorSetLayoutBinding()
+			.setBinding(7)
+			.setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setPImmutableSamplers(nullptr)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+		const auto irradianceMapSamplerBinding = vk::DescriptorSetLayoutBinding()
+			.setBinding(8)
+			.setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setPImmutableSamplers(nullptr)
+			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+		const std::array<vk::DescriptorSetLayoutBinding, 9> bindings = {
 			mvpUboLayoutBinding,
 			lightUboBinding,
 			albedoSamplerBinding,
 			normalSamplerBinding,
 			metallicRoughnessSamplerBinding,
 			ambientOcclusionSamplerBinding,
-			cubemapSamplerBinding
+			cubemapSamplerBinding,
+			radianceMapSamplerBinding,
+			irradianceMapSamplerBinding
 		};
 
-		const vk::DescriptorSetLayoutCreateInfo layoutInfo = vk::DescriptorSetLayoutCreateInfo()
+		const auto layoutInfo = vk::DescriptorSetLayoutCreateInfo()
 			.setBindings(bindings);
 
 		try

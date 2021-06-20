@@ -3,29 +3,29 @@
     {
       "components": [
         {
-          "name": "Damaged Helmet",
+          "name": "Debug Cube",
           "type": "TagComponent"
         },
         {
           "position": [
-            0.0,
-            22.0,
-            5.0
+            -20.0,
+            20.0,
+            10.0
           ],
           "rotation": [
-            90.0,
+            0.0,
             0.0,
             0.0
           ],
           "scale": [
-            5.0,
-            5.0,
-            5.0
+            2.0,
+            2.0,
+            2.0
           ],
           "type": "TransformComponent"
         },
         {
-          "assetPath": "res/models/damaged_helmet/DamagedHelmet.gltf",
+          "assetPath": "res/models/cube.gltf",
           "type": "ModelComponent"
         }
       ]
@@ -33,59 +33,29 @@
     {
       "components": [
         {
-          "name": "Gun",
+          "name": "Debug Sphere",
           "type": "TagComponent"
         },
         {
           "position": [
-            0.0,
-            15.0,
-            8.0
-          ],
-          "rotation": [
-            -90.0,
-            45.0,
-            0.0
-          ],
-          "scale": [
-            0.10000000149011612,
-            0.10000000149011612,
-            0.10000000149011612
-          ],
-          "type": "TransformComponent"
-        },
-        {
-          "assetPath": "res/models/cerberus_gun/scene.gltf",
-          "type": "ModelComponent"
-        }
-      ]
-    },
-    {
-      "components": [
-        {
-          "name": "Car",
-          "type": "TagComponent"
-        },
-        {
-          "position": [
-            0.0,
-            0.0,
+            -20.0,
+            20.0,
             0.0
           ],
           "rotation": [
-            -90.0,
+            0.0,
             0.0,
             0.0
           ],
           "scale": [
-            0.05000000074505806,
-            0.05000000074505806,
-            0.05000000074505806
+            2.0,
+            2.0,
+            2.0
           ],
           "type": "TransformComponent"
         },
         {
-          "assetPath": "res/models/pony_cartoon/scene.gltf",
+          "assetPath": "res/models/uvSphere.gltf",
           "type": "ModelComponent"
         }
       ]
@@ -123,29 +93,89 @@
     {
       "components": [
         {
-          "name": "Debug Sphere",
+          "name": "Car",
           "type": "TagComponent"
         },
         {
           "position": [
-            -20.0,
-            20.0,
+            0.0,
+            0.0,
             0.0
           ],
           "rotation": [
-            0.0,
+            -90.0,
             0.0,
             0.0
           ],
           "scale": [
-            2.0,
-            2.0,
-            2.0
+            0.05000000074505806,
+            0.05000000074505806,
+            0.05000000074505806
           ],
           "type": "TransformComponent"
         },
         {
-          "assetPath": "res/models/uvSphere.gltf",
+          "assetPath": "res/models/pony_cartoon/scene.gltf",
+          "type": "ModelComponent"
+        }
+      ]
+    },
+    {
+      "components": [
+        {
+          "name": "Gun",
+          "type": "TagComponent"
+        },
+        {
+          "position": [
+            0.0,
+            15.0,
+            8.0
+          ],
+          "rotation": [
+            -90.0,
+            45.0,
+            0.0
+          ],
+          "scale": [
+            0.10000000149011612,
+            0.10000000149011612,
+            0.10000000149011612
+          ],
+          "type": "TransformComponent"
+        },
+        {
+          "assetPath": "res/models/cerberus_gun/scene.gltf",
+          "type": "ModelComponent"
+        }
+      ]
+    },
+    {
+      "components": [
+        {
+          "name": "Damaged Helmet",
+          "type": "TagComponent"
+        },
+        {
+          "position": [
+            0.0,
+            22.0,
+            5.0
+          ],
+          "rotation": [
+            90.0,
+            0.0,
+            0.0
+          ],
+          "scale": [
+            5.0,
+            5.0,
+            5.0
+          ],
+          "type": "TransformComponent"
+        },
+        {
+          "assetPath": "res/models/damaged_helmet/DamagedHelmet.gltf",
           "type": "ModelComponent"
         }
       ]
@@ -169,6 +199,11 @@
         0.9999899864196777
       ]
     },
+    "environmentMap": {
+      "irradiance": "res/textures/Cubemaps/Lilienstein/lilienstein_irradiance.tga",
+      "radiance": "res/textures/Cubemaps/Lilienstein/lilienstein_radiance.tga",
+      "skybox": "res/textures/Cubemaps/Lilienstein/lilienstein_skybox.tga"
+    },
     "pointLight": {
       "diffuse": [
         3000.0,
@@ -180,8 +215,7 @@
         30.0,
         9.955150604248047
       ]
-    },
-    "environmentMap": "res/textures/Cubemaps/Kiara1-Dawn/kiara_dawn-1k.png"
+    }
   },
   "name": "Demo Scene"
 }

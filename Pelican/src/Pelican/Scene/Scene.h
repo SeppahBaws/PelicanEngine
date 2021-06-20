@@ -35,7 +35,9 @@ namespace Pelican
 		void Draw(Camera* pCamera);
 		void Cleanup();
 
-		[[nodiscard]] VulkanTexture* GetSkybox() const { return m_Cubemap; }
+		[[nodiscard]] VulkanTexture* GetSkybox() const { return m_Skybox; }
+		[[nodiscard]] VulkanTexture* GetRadiance() const { return m_Radiance; }
+		[[nodiscard]] VulkanTexture* GetIrradiance() const { return m_Irradiance; }
 
 	private:
 		// We need access to the registry to add components.
@@ -48,6 +50,9 @@ namespace Pelican
 		DirectionalLight m_DirectionalLight;
 		PointLight m_PointLight;
 		bool m_AnimateLight{ false };
-		VulkanTexture* m_Cubemap;
+
+		VulkanTexture* m_Skybox;
+		VulkanTexture* m_Radiance;
+		VulkanTexture* m_Irradiance;
 	};
 }

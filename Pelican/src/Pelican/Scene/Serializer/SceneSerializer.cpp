@@ -23,7 +23,13 @@ namespace Pelican
 		json lighting = json::object();
 		lighting["directionalLight"] = pScene->m_DirectionalLight;
 		lighting["pointLight"] = pScene->m_PointLight;
-		lighting["environmentMap"] = pScene->m_Cubemap->GetAssetPath();
+
+		json environment = json::object();
+		environment["skybox"] = pScene->m_Skybox->GetAssetPath();
+		environment["radiance"] = pScene->m_Radiance->GetAssetPath();
+		environment["irradiance"] = pScene->m_Irradiance->GetAssetPath();
+		lighting["environmentMap"] = environment;
+
 		jsonScene["lighting"] = lighting;
 
 		json jEntities = json::array();
@@ -89,7 +95,11 @@ namespace Pelican
 
 		jLighting["directionalLight"].get_to(pScene->m_DirectionalLight);
 		jLighting["pointLight"].get_to(pScene->m_PointLight);
-		pScene->m_Cubemap = AssetManager::GetInstance().LoadTexture(jLighting["environmentMap"], VulkanTexture::TextureMode::Cubemap);
+
+		const json jEnv = jLighting["environmentMap"];
+		pScene->m_Skybox = AssetManager::GetInstance().LoadTexture(jEnv["skybox"], VulkanTexture::TextureMode::Cubemap);
+		pScene->m_Radiance = AssetManager::GetInstance().LoadTexture(jEnv["radiance"], VulkanTexture::TextureMode::Cubemap);
+		pScene->m_Irradiance = AssetManager::GetInstance().LoadTexture(jEnv["irradiance"], VulkanTexture::TextureMode::Cubemap);
 
 		for (json jEntity : jEntities)
 		{
