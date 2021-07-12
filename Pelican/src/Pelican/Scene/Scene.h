@@ -6,7 +6,7 @@
 
 namespace Pelican
 {
-	class GltfModel;
+	class Model;
 	class Camera;
 	class Entity;
 	class SceneSerializer;

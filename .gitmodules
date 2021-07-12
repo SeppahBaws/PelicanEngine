@@ -12,3 +12,6 @@
 	path = Pelican/dependencies/imgui
 	url = https://github.com/SeppahBaws/imgui
 	branch = docking
+[submodule "Pelican/dependencies/assimp"]
+	path = Pelican/dependencies/assimp
+	url = https://github.com/assimp/assimp

@@ -3,7 +3,11 @@
 #include "Pelican/Renderer/Mesh.h"
 #include "Pelican/Renderer/VulkanTexture.h"
 
-#include "GltfMaterial.h"
+#include "Gltf/GltfMaterial.h"
+
+struct aiMesh;
+struct aiScene;
+struct aiNode;
 
 namespace tinygltf
 {
@@ -14,11 +18,11 @@ namespace Pelican
 {
 	class Camera;
 
-	class GltfModel
+	class Model
 	{
 	public:
-		GltfModel(const std::string& file);
-		~GltfModel();
+		Model(const std::string& file);
+		~Model();
 
 		void Initialize();
 
@@ -30,8 +34,8 @@ namespace Pelican
 		[[nodiscard]] const GltfMaterial& GetMaterial(int32_t idx) const { return m_Materials[idx]; }
 
 	private:
-		void Load(const tinygltf::Model& model);
-
+		void ProcessNode(aiNode* pNode, const aiScene* pScene);
+		Mesh ProcessMesh(aiMesh* pMesh);
 
 		void CreateDescriptorPool();
 

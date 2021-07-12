@@ -34,6 +34,8 @@ project "Pelican"
         "%{IncludeDir.Vulkan}",
         "%{IncludeDir.ImGui}",
         "%{IncludeDir.entt}",
+        "%{IncludeDir.assimp}",
+        "%{IncludeDir.assimpBuild}",
     }
 
     libdirs
@@ -45,6 +47,7 @@ project "Pelican"
     {
         "GLFW",
         "ImGui",
+        "Assimp",
         "vulkan-1"
     }
 

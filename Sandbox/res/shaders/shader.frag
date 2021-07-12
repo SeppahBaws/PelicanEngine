@@ -122,6 +122,9 @@ void main()
     float alpha = texture(texAlbedo, vTexCoord).a;
     if (alpha <= 0.1f)
         discard;
+    
+    if (texture(texNormal, vTexCoord).a <= 0.1f)
+        discard;
 
     vec3 N = CalculateNormal(sampledNormal);
     vec3 V = normalize(pushConstants.eyePos - vPosition); // View direction
@@ -161,10 +164,10 @@ void main()
     vec3 color = ambient + Lo;
 
     // Tonemapping
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0 / 2.2));
+    // color = color / (color + vec3(1.0));
+    // color = pow(color, vec3(1.0 / 2.2));
     
-    // color = Reinhard(color);
+    color = Reinhard(color);
 
     fragColor = vec4(color, alpha);
 }

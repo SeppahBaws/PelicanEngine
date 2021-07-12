@@ -40,9 +40,24 @@ IncludeDir["tiny_gltf"] = "%{wks.location}/Pelican/dependencies/tiny_gltf/includ
 IncludeDir["Vulkan"] = (vulkanDir .. "/Include")
 IncludeDir["ImGui"] = "%{wks.location}/Pelican/dependencies/imgui"
 IncludeDir["entt"] = "%{wks.location}/Pelican/dependencies/entt/include"
+IncludeDir["assimp"] = "%{wks.location}/Pelican/dependencies/assimp/include"
+IncludeDir["assimpBuild"] = "%{wks.location}/Pelican/dependencies/assimp/build/include"
 
 LibDir = {}
 LibDir["Vulkan"] = (vulkanDir .. "/Lib")
+
+
+group "Dependencies/Assimp"
+    externalproject "zlibstatic"
+        location "Pelican/dependencies/assimp/build/contrib/zlib"
+        uuid "0B10AC6D-B1BF-3E69-B188-19E0BA552B8A"
+        kind "StaticLib"
+        language "C++"
+    externalproject "assimp"
+        location "Pelican/dependencies/assimp/build/code"
+        uuid "BF5998C7-CFC7-349F-9213-B65DC300AEF6"
+        kind "SharedLib"
+        language "C++"
 
 group "Dependencies"
     include "Pelican/dependencies/glfw"

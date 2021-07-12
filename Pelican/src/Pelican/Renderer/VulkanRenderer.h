@@ -8,7 +8,7 @@
 
 namespace Pelican
 {
-	class GltfModel;
+	class Model;
 	class VulkanTexture;
 	// Forward declarations
 	class Camera;

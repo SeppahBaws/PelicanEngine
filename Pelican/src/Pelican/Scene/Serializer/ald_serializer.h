@@ -85,7 +85,7 @@ namespace nlohmann
 				return;
 
 			const std::string assetPath = j["assetPath"];
-			t.pModel = new Pelican::GltfModel(assetPath);
+			t.pModel = new Pelican::Model(assetPath);
 		}
 	};
 

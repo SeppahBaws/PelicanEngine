@@ -11,7 +11,7 @@ namespace Pelican
 {
 	class Scene;
 	class Mesh;
-	class GltfModel;
+	class Model;
 	class ImGuiWrapper;
 
 	class Application

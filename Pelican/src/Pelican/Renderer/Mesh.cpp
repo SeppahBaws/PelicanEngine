@@ -23,15 +23,15 @@
 #include <glm/gtc/type_ptr.hpp>
 #pragma warning(pop)
 
+#include "Model.h"
 #include "Gltf/GltfMaterial.h"
-#include "Gltf/GltfModel.h"
 #include "Pelican/Renderer/UniformData.h"
 #include "Pelican/Core/Application.h"
 #include "Pelican/Scene/Scene.h"
 
 namespace Pelican
 {
-	Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices, int32_t materialIdx)
+	Mesh::Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices, uint32_t materialIdx)
 		: m_Vertices(std::move(vertices)), m_Indices(std::move(indices)), m_MaterialIdx(materialIdx)
 	{
 	}
@@ -173,7 +173,8 @@ namespace Pelican
 		}
 	}
 
-	void Mesh::CreateDescriptorSet(const GltfModel* pParent, const vk::DescriptorPool& pool)
+	// TODO: Descriptor Sets shouldn't be in the mesh.
+	void Mesh::CreateDescriptorSet(const Model* pParent, const vk::DescriptorPool& pool)
 	{
 		vk::DescriptorBufferInfo mvpBufferInfo(m_UniformBuffer, 0, sizeof(UniformBufferObject));
 		vk::DescriptorBufferInfo lightBufferInfo(m_LightBuffer, 0, sizeof(LightsData));
@@ -187,7 +188,7 @@ namespace Pelican
 			mat.m_pMetallicRoughnessTexture->GetDescriptorImageInfo(),
 			mat.m_pAOTexture->GetDescriptorImageInfo(),
 		};
-		// TODO: Descriptor Sets shouldn't be in the mesh.
+
 		const vk::DescriptorImageInfo skyboxInfo = Application::Get().GetScene()->GetSkybox()->GetDescriptorImageInfo();
 		const vk::DescriptorImageInfo radianceInfo = Application::Get().GetScene()->GetRadiance()->GetDescriptorImageInfo();
 		const vk::DescriptorImageInfo irradianceInfo = Application::Get().GetScene()->GetIrradiance()->GetDescriptorImageInfo();

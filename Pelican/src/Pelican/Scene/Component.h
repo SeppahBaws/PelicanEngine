@@ -8,7 +8,7 @@
 #include <glm/gtx/quaternion.hpp>
 #pragma warning(pop)
 
-#include "Pelican/Renderer/Gltf/GltfModel.h"
+#include "Pelican/Renderer/Model.h"
 
 namespace Pelican
 {
@@ -49,6 +49,6 @@ namespace Pelican
 
 	struct ModelComponent
 	{
-		GltfModel* pModel;
+		Model* pModel;
 	};
 }

@@ -5,7 +5,7 @@
 #include "Pelican/Input/Input.h"
 #include "Pelican/Renderer/Camera.h"
 #include "Pelican/Renderer/Mesh.h"
-#include "Pelican/Renderer/Gltf/GltfModel.h"
+#include "Pelican/Renderer/Model.h"
 #include "Pelican/Renderer/ImGui/ImGuiWrapper.h"
 #include "Pelican/Scene/Scene.h"
 

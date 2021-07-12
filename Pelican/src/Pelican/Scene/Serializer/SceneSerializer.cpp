@@ -152,7 +152,7 @@ namespace Pelican
 
 					std::string assetPath;
 					jComponent["assetPath"].get_to(assetPath);
-					e.AddComponent<ModelComponent>(new GltfModel(assetPath));
+					e.AddComponent<ModelComponent>(new Model(assetPath));
 				}
 			}
 		}

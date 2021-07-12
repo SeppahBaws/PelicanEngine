@@ -55,6 +55,16 @@ project "Sandbox"
         runtime "Debug"
         symbols "on"
 
+        postbuildcommands
+        {
+            "{COPYDIR} \"%{wks.location}/Pelican/dependencies/assimp/build/bin/Debug\" \"%{cfg.targetdir}\""
+        }
+
     filter "configurations:Release"
         runtime "Release"
         optimize "on"
+
+        postbuildcommands
+        {
+            "{COPYDIR} \"%{wks.location}/Pelican/dependencies/assimp/build/bin/Release\" \"%{cfg.targetdir}\""
+        }
