@@ -9,6 +9,7 @@
 #include <set>
 #include <functional>
 #include <utility>
+#include <filesystem>
 
 // useful for operator""s
 using namespace std::string_literals;

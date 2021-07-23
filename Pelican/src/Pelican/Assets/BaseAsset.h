@@ -5,11 +5,11 @@ namespace Pelican
 	class BaseAsset
 	{
 	public:
-		BaseAsset(const std::string& path);
+		BaseAsset(const std::filesystem::path& path);
 
-		[[nodiscard]] const std::string& GetAssetPath() const { return m_AssetPath; }
+		[[nodiscard]] const std::filesystem::path& GetAssetPath() const { return m_AssetPath; }
 
 	protected:
-		std::string m_AssetPath;
+		std::filesystem::path m_AssetPath;
 	};
 }

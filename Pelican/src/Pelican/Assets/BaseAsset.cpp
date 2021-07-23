@@ -3,7 +3,7 @@
 
 namespace Pelican
 {
-	BaseAsset::BaseAsset(const std::string& path)
+	BaseAsset::BaseAsset(const std::filesystem::path& path)
 		: m_AssetPath(path)
 	{
 	}

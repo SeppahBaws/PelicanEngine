@@ -17,12 +17,12 @@ namespace Pelican
 		};
 
 		// VulkanTexture();
-		explicit VulkanTexture(const std::string& path, TextureMode mode);
+		explicit VulkanTexture(const std::filesystem::path& path, TextureMode mode);
 		// TODO: implement this
 		// explicit VulkanTexture(const glm::vec4& color, int width, int height);
 		~VulkanTexture();
 
-		void InitFromFile(const std::string& path);
+		void InitFromFile(const std::filesystem::path& path);
 
 		// Ignore these, they don't work atm.
 		void InitFromColor(const glm::vec4& color, int width, int height);

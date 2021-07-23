@@ -12,7 +12,7 @@
 
 namespace Pelican
 {
-	VulkanTexture::VulkanTexture(const std::string& path, TextureMode textureMode)
+	VulkanTexture::VulkanTexture(const std::filesystem::path& path, TextureMode textureMode)
 		: BaseAsset(path), m_TextureMode(textureMode)
 	{
 		InitFromFile(path);
@@ -31,26 +31,53 @@ namespace Pelican
 		VulkanRenderer::GetDevice().freeMemory(m_ImageMemory);
 	}
 
-	void VulkanTexture::InitFromFile(const std::string& path)
+	void VulkanTexture::InitFromFile(const std::filesystem::path& path)
 	{
 		m_AssetPath = path;
 
 		void* pixels;
 
-		m_IsHDR = path.substr(path.rfind('.') + 1, std::string::npos) == "hdr";
+		const std::array<const char*, 8> supportedFormats = {
+			".jpg",
+			".png",
+			".tga",
+			".bmp",
+			".psd",
+			".gif",
+			".hdr",
+			".pic"
+		};
 
-		Logger::LogDebug("Loading \"%s\" - is hdr: %s", path.c_str(), m_IsHDR ? "yes" : "no");
+		bool supported = false;
+		for (const char* format : supportedFormats)
+		{
+			if (path.extension() == format)
+			{
+				supported = true;
+				break;
+			}
+		}
+
+		if (!supported)
+		{
+			Logger::LogError("Texture extension \"%s\" is not supported!", path.extension().string().c_str());
+		}
+
+		m_IsHDR = path.extension() == "hdr";
+
+		Logger::LogDebug("Loading \"%s\" - is hdr: %s", path.string().c_str(), m_IsHDR ? "yes" : "no");
 
 		int width, height, nrChannels;
 		if (m_IsHDR)
-			pixels = stbi_loadf(path.c_str(), &width, &height, &nrChannels, 0);
+			pixels = stbi_loadf(path.string().c_str(), &width, &height, &nrChannels, 0);
 		else
-			pixels = stbi_load(path.c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
+			pixels = stbi_load(path.string().c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
 
 		if (!pixels)
 		{
-			Logger::LogDebug("Tried loading texture \"%s\"", path.c_str());
+			Logger::LogDebug("Tried loading texture \"%s\"", path.string().c_str());
 			ASSERT_MSG(false, "failed to load texture image!");
+			return;
 		}
 
 		CreateTextureImage(pixels, width, height, STBI_rgb_alpha);
@@ -193,7 +220,7 @@ namespace Pelican
 		VulkanRenderer::GetDevice().destroyBuffer(stagingBuffer);
 		VulkanRenderer::GetDevice().freeMemory(stagingBufferMemory);
 
-		VkDebugMarker::SetImageName(VulkanRenderer::GetDevice(), m_Image, m_AssetPath.c_str());
+		VkDebugMarker::SetImageName(VulkanRenderer::GetDevice(), m_Image, m_AssetPath.string().c_str());
 	}
 
 	void VulkanTexture::CreateTextureImageView()

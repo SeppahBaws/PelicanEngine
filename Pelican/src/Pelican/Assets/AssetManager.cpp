@@ -33,7 +33,7 @@ namespace Pelican
 
 	void AssetManager::UnloadTexture(VulkanTexture* pAsset)
 	{
-		const std::string assetPath = pAsset->GetAssetPath();
+		const std::string assetPath = pAsset->GetAssetPath().string();
 
 		// Don't unload the asset when other items are pointing to it.
 		if (m_TextureMap[assetPath].refCount > 1)
