@@ -30,6 +30,8 @@ namespace Pelican
 		VulkanTexture* LoadTexture(const std::string& filePath, VulkanTexture::TextureMode textureMode = VulkanTexture::TextureMode::Texture2d);
 		void UnloadTexture(VulkanTexture* pAsset);
 
+		void DebugDraw() const;
+
 	private:
 		TextureMap m_TextureMap;
 	};

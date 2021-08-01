@@ -1,7 +1,6 @@
 ﻿#include "PelicanPCH.h"
 #include "VulkanTexture.h"
 
-
 #include <logtools.h>
 #include <stb_image.h>
 #include <glm/vec4.hpp>

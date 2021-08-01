@@ -198,6 +198,8 @@ namespace Pelican
 			}
 		}
 		ImGui::End();
+
+		AssetManager::GetInstance().DebugDraw();
 #pragma endregion 
 	}
 

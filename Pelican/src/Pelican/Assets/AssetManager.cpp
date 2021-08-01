@@ -3,6 +3,7 @@
 
 #include <logtools.h>
 
+#include "imgui.h"
 
 #include "BaseAsset.h"
 #include "Pelican/Renderer/VulkanTexture.h"
@@ -45,5 +46,26 @@ namespace Pelican
 		// If this is the last item pointing to this asset, we can safely unload it.
 		m_TextureMap.extract(assetPath); // remove the element from the map.
 		delete pAsset; // Releases the texture from GPU memory.
+	}
+
+	void AssetManager::DebugDraw() const
+	{
+		if (ImGui::Begin("Asset Manager"))
+		{
+			ImGui::Text("Total assest loaded: %d", m_TextureMap.size());
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Separator();
+
+			for (auto& it : m_TextureMap)
+			{
+				ImGui::Text("Hash: %d", it.second.pAsset->GetHash());
+				ImGui::Text("Path: %s", it.second.pAsset->GetAssetPath().string().c_str());
+				ImGui::Separator();
+			}
+		}
+		ImGui::End();
 	}
 }
