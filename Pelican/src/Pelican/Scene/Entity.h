@@ -39,7 +39,7 @@ namespace Pelican
 		template<typename T>
 		bool HasComponent()
 		{
-			return m_pScene->m_Registry.has<T>(m_Entity);
+			return m_pScene->m_Registry.all_of<T>(m_Entity);
 		}
 
 		template<typename T>

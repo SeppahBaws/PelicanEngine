@@ -38,6 +38,9 @@ namespace Pelican
 		glm::vec3 scale{ 1.0f };
 
 		TransformComponent() = default;
+		explicit TransformComponent(const glm::vec3& pos, const glm::vec3& rot, const glm::vec3& scale)
+			: position(pos), rotation(rot), scale(scale)
+		{}
 
 		[[nodiscard]] glm::mat4 GetTransform() const
 		{

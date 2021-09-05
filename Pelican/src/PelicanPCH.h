@@ -16,6 +16,12 @@ using namespace std::string_literals;
 
 #include "Pelican/Util/Defines.h"
 
+#ifdef PELICAN_WINDOWS
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
+
 // Configuration
 
 // Whether or not to use validation layers.
