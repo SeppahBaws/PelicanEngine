@@ -17,7 +17,7 @@ namespace Pelican
 	{
 	}
 
-	void ImGuiWrapper::Init(const ImGuiInitInfo& initInfo)
+	void ImGuiWrapper::Init(GLFWwindow* window, const ImGuiInitInfo& initInfo)
 	{
 		// Keep track of the device.
 		m_Device = initInfo.device;
@@ -121,7 +121,7 @@ namespace Pelican
 		colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
 
 
-		ImGui_ImplGlfw_InitForVulkan(Application::Get().GetWindow()->GetGLFWWindow(), true);
+		ImGui_ImplGlfw_InitForVulkan(window, true);
 
 		ImGui_ImplVulkan_InitInfo imguiInit = {};
 		imguiInit.Instance = initInfo.instance;

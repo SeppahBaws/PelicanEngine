@@ -1,6 +1,6 @@
 ﻿#pragma once
+#include "Context.h"
 #include "Window.h"
-#include "LayerStack.h"
 
 #include "Pelican/Events/ApplicationEvent.h"
 #include "Pelican/Events/Event.h"
@@ -18,12 +18,9 @@ namespace Pelican
 	{
 	public:
 		Application();
-		virtual ~Application() = default;
+		virtual ~Application();
 
 		void OnEvent(Event& e);
-
-		void PushLayer(Layer* layer);
-		void PushOverlay(Layer* overlay);
 
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
@@ -33,8 +30,6 @@ namespace Pelican
 		virtual void LoadScene(Scene* /*pScene*/) {}
 
 	public:
-		Window* GetWindow() const { return m_pWindow; }
-		VulkanRenderer& GetRenderer() const { return *m_pRenderer; }
 		static Application& Get() { return *m_Instance; }
 		Scene* GetScene() const { return m_pScene; }
 		Camera* GetCamera() const { return m_pCamera; }
@@ -43,16 +38,12 @@ namespace Pelican
 		RenderMode m_RenderMode = RenderMode::Filled;
 
 	private:
-		void Init();
-		void Cleanup();
+		std::shared_ptr<Context> m_pContext;
 
-	private:
-		Window* m_pWindow{};
-		VulkanRenderer* m_pRenderer{};
+		// TODO: make these subsystems
 		Scene* m_pScene{};
-		Camera* m_pCamera{};
 
-		LayerStack m_LayerStack;
+		Camera* m_pCamera{};
 
 		static Application* m_Instance;
 	};

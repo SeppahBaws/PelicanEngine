@@ -3,6 +3,8 @@
 #include <optional>
 #include <vulkan/vulkan.hpp>
 
+#include "Pelican/Core/Context.h"
+
 namespace Pelican
 {
 	struct QueueFamilyIndices
@@ -19,7 +21,7 @@ namespace Pelican
 	class VulkanDevice final
 	{
 	public:
-		VulkanDevice(vk::Instance instance);
+		VulkanDevice(Context* pContext, vk::Instance instance);
 		~VulkanDevice();
 
 		void WaitIdle();
@@ -41,9 +43,10 @@ namespace Pelican
 		void PickPhysicalDevice();
 		void CreateLogicalDevice();
 
-		bool IsDeviceSuitable(vk::PhysicalDevice device) const;
+		[[nodiscard]] bool IsDeviceSuitable(vk::PhysicalDevice device) const;
 
 	private:
+		Context* m_pContext{};
 		vk::Instance m_Instance;
 
 		vk::SurfaceKHR m_Surface{};

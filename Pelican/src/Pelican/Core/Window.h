@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Subsystem.h"
 #include "Pelican/Events/Event.h"
 
 struct GLFWwindow;
@@ -6,7 +7,7 @@ struct GLFWmonitor;
 
 namespace Pelican
 {
-	class Window final
+	class Window final : public Subsystem
 	{
 	public:
 		using EventCallbackFn = std::function<void(Event&)>;
@@ -19,15 +20,14 @@ namespace Pelican
 			bool resizable;
 		};
 
-		Window(Params&& params);
-		~Window();
-
-		void Init();
-		void Cleanup();
+		Window(Context* pContext, Params&& params);
+		~Window() override;
 
 		void SetEventCallback(const EventCallbackFn& callback) { m_EventCallback = callback; }
 
-		void Update();
+		bool OnInitialize() override;
+		void OnTick() override;
+		void OnShutdown() override;
 
 		[[nodiscard]] bool ShouldClose() const;
 

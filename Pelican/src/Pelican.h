@@ -19,8 +19,6 @@
 
 #include "Pelican/Core/Application.h"
 #include "Pelican/Core/Time.h"
-#include "Pelican/Core/Layer.h"
-#include "Pelican/Core/LayerStack.h"
 
 #include "Pelican/Events/ApplicationEvent.h"
 #include "Pelican/Events/Event.h"

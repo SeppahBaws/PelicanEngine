@@ -2,6 +2,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "Pelican/Core/Context.h"
+
 namespace Pelican
 {
 	class VulkanDevice;
@@ -9,7 +11,7 @@ namespace Pelican
 	class VulkanSwapChain final
 	{
 	public:
-		VulkanSwapChain(VulkanDevice* pDevice);
+		VulkanSwapChain(Context* pContext, VulkanDevice* pDevice);
 		~VulkanSwapChain();
 
 		void Initialize();
@@ -35,6 +37,7 @@ namespace Pelican
 		vk::ImageView CreateImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags) const;
 
 	private:
+		Context* m_pContext;
 		VulkanDevice* m_pDevice{};
 
 		vk::SwapchainKHR m_SwapChain{};

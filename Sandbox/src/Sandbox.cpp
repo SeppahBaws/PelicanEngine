@@ -6,19 +6,10 @@
 #include <Pelican.h>
 #include <Pelican/Core/Entrypoint.h>
 
-#include "SandboxLayer.h"
-
 class Sandbox final : public Pelican::Application
 {
 public:
-	Sandbox()
-	{
-		PushLayer(new SandboxLayer());
-	}
-
-	virtual ~Sandbox()
-	{
-	}
+	Sandbox() = default;
 
 	void LoadScene(Pelican::Scene* pScene) override
 	{

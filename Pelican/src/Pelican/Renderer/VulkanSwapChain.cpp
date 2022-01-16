@@ -10,8 +10,9 @@
 
 namespace Pelican
 {
-	VulkanSwapChain::VulkanSwapChain(VulkanDevice* pDevice)
-		: m_pDevice(pDevice)
+	VulkanSwapChain::VulkanSwapChain(Context* pContext, VulkanDevice* pDevice)
+		: m_pContext(pContext)
+		, m_pDevice(pDevice)
 	{
 		Initialize();
 	}
@@ -118,7 +119,7 @@ namespace Pelican
 			return capabilities.currentExtent;
 		}
 
-		Window::Params params = Application::Get().GetWindow()->GetParams();
+		Window::Params params = m_pContext->GetSubsystem<Window>()->GetParams();
 
 		vk::Extent2D actualExtent = { static_cast<uint32_t>(params.width), static_cast<uint32_t>(params.height) };
 

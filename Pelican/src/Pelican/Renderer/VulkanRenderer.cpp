@@ -36,14 +36,15 @@ namespace Pelican
 {
 	VulkanRenderer* VulkanRenderer::m_pInstance{};
 
-	VulkanRenderer::VulkanRenderer()
+	VulkanRenderer::VulkanRenderer(Context* pContext)
+		: Subsystem(pContext)
 	{
 		ASSERT_MSG(!m_pInstance, "VulkanRenderer::m_pInstance is not nullptr, there can only be one instance at a time!");
 
 		m_pInstance = this;
 	}
 
-	void VulkanRenderer::Initialize()
+	bool VulkanRenderer::OnInitialize()
 	{
 		CreateInstance();
 
@@ -52,14 +53,14 @@ namespace Pelican
 			VkDebug::Setup(m_Instance.get());
 		}
 
-		m_pDevice = new VulkanDevice(m_Instance.get());
+		m_pDevice = new VulkanDevice(m_pContext, m_Instance.get());
 
 		if (m_EnableValidationLayers)
 		{
 			VkDebugMarker::Setup(m_pDevice->GetDevice());
 		}
 
-		m_pSwapChain = new VulkanSwapChain(m_pDevice);
+		m_pSwapChain = new VulkanSwapChain(m_pContext, m_pDevice);
 
 		CreateRenderPass();
 		CreateDescriptorSetLayout();
@@ -80,18 +81,15 @@ namespace Pelican
 		imGuiInit.device = m_pDevice->GetDevice();
 		imGuiInit.queue = GetGraphicsQueue();
 		imGuiInit.renderPass = m_RenderPass;
-		m_pImGui->Init(imGuiInit);
+		m_pImGui->Init(m_pContext->GetSubsystem<Window>()->GetGLFWWindow(), imGuiInit);
+
+		return true;
 	}
 
-	void VulkanRenderer::BeforeSceneCleanup()
+	void VulkanRenderer::OnShutdown()
 	{
-		m_pDevice->WaitIdle();
-
 		CleanupSwapChain();
-	}
 
-	void VulkanRenderer::AfterSceneCleanup()
-	{
 		m_pImGui->Cleanup();
 		delete m_pImGui;
 		m_pImGui = nullptr;
@@ -231,6 +229,11 @@ namespace Pelican
 			m_ReloadShadersFlag = false;
 			ReloadShaders_Internal();
 		}
+	}
+
+	void VulkanRenderer::WaitForIdle()
+	{
+		m_pDevice->WaitIdle();
 	}
 
 	void VulkanRenderer::SetCamera(Camera* pCamera)
@@ -691,10 +694,10 @@ namespace Pelican
 
 	void VulkanRenderer::RecreateSwapChain()
 	{
-		Window::Params params = Application::Get().GetWindow()->GetParams();
+		Window::Params params = m_pContext->GetSubsystem<Window>()->GetParams();
 		while (params.width == 0 || params.height == 0)
 		{
-			params = Application::Get().GetWindow()->GetParams();
+			params = m_pContext->GetSubsystem<Window>()->GetParams();
 			glfwWaitEvents();
 		}
 

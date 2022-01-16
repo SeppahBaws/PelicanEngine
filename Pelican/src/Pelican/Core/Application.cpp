@@ -11,11 +11,9 @@
 
 #include <thread>
 #include <logtools.h>
-#include <filesystem>
 
 #include <imgui.h>
 
-#include "Layer.h"
 #include "Pelican/Events/ApplicationEvent.h"
 
 namespace Pelican
@@ -30,6 +28,53 @@ namespace Pelican
 		}
 
 		m_Instance = this;
+
+
+		Logger::Init();
+		Logger::Configure({ true, true });
+
+
+		m_pContext = std::make_shared<Context>();
+
+		m_pContext->AddSubsystem<Window>(Window::Params{ 1600, 900, "Sandbox", true });
+		m_pContext->AddSubsystem<VulkanRenderer>();
+
+		if (!m_pContext->OnInitialize())
+		{
+			Logger::LogInfo("Failed to initialize some subsystems!");
+		}
+		else
+		{
+			Logger::LogInfo("Initialized all subsystems!");
+		}
+
+
+		// TODO: camera should be fetched from the scene.
+		Window* pWindow = m_pContext->GetSubsystem<Window>();
+		VulkanRenderer* pRenderer = m_pContext->GetSubsystem<VulkanRenderer>();
+		m_pCamera = new Camera(120.0f,
+			static_cast<float>(pWindow->GetParams().width),
+			static_cast<float>(pWindow->GetParams().height),
+			0.1f, 1000.0f);
+		pRenderer->SetCamera(m_pCamera);
+
+		pWindow->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
+		Input::Init(pWindow->GetGLFWWindow());
+
+		m_pScene = new Scene();
+	}
+
+	Application::~Application()
+	{
+		m_pContext->GetSubsystem<VulkanRenderer>()->WaitForIdle();
+
+		delete m_pScene;
+		delete m_pCamera;
+
+		m_pScene = nullptr;
+		m_pCamera = nullptr;
+
+		m_pContext->OnShutdown();
 	}
 
 	void Application::OnEvent(Event& e)
@@ -45,25 +90,6 @@ namespace Pelican
 			const std::string s = e.ToString();
 			Logger::LogDebug(s);
 		}
-
-		for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
-		{
-			if (e.Handled)
-				break;
-			(*it)->OnEvent(e);
-		}
-	}
-
-	void Application::PushLayer(Layer* layer)
-	{
-		m_LayerStack.PushLayer(layer);
-		layer->OnAttach();
-	}
-
-	void Application::PushOverlay(Layer* overlay)
-	{
-		m_LayerStack.PushOverlay(overlay);
-		overlay->OnAttach();
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent& /*e*/)
@@ -73,26 +99,28 @@ namespace Pelican
 
 	bool Application::OnWindowResize(WindowResizeEvent& /*e*/)
 	{
-		m_pRenderer->FlagWindowResized();
+		m_pContext->GetSubsystem<VulkanRenderer>()->FlagWindowResized();
 
 		return false;
 	}
 
 	void Application::Run()
 	{
-		Init();
-
 		LoadScene(m_pScene);
+
+		Window* pWindow = m_pContext->GetSubsystem<Window>();
+		VulkanRenderer* pRenderer = m_pContext->GetSubsystem<VulkanRenderer>();
 
 		auto t = std::chrono::high_resolution_clock::now();
 		auto lastTime = std::chrono::high_resolution_clock::now();
-		while (!m_pWindow->ShouldClose())
+		while (!pWindow->ShouldClose())
 		{
 			const auto currentTime = std::chrono::high_resolution_clock::now();
 			Time::Update(lastTime);
 			lastTime = currentTime;
 
-			m_pWindow->Update();
+			m_pContext->OnTick();
+
 			m_pCamera->Update();
 
 			// Update scene
@@ -100,10 +128,7 @@ namespace Pelican
 				m_pScene->Update(m_pCamera);
 			}
 
-			for (Layer* layer : m_LayerStack)
-				layer->OnUpdate();
-
-			if (!m_pRenderer->BeginScene())
+			if (!pRenderer->BeginScene())
 				continue;
 
 			// Draw scene
@@ -125,14 +150,11 @@ namespace Pelican
 				}
 				ImGui::End();
 
-				for (Layer* layer : m_LayerStack)
-					layer->OnImGuiRender();
-
 				if (ImGui::Begin("Shader Reloader"))
 				{
 					if (ImGui::Button("Reload Shaders!"))
 					{
-						m_pRenderer->ReloadShaders();
+						pRenderer->ReloadShaders();
 					}
 				}
 				ImGui::End();
@@ -153,51 +175,9 @@ namespace Pelican
 				ImGui::End();
 			}
 
-			m_pRenderer->EndScene();
+			pRenderer->EndScene();
 
 			Input::Update();
 		}
-
-		Cleanup();
-	}
-
-	void Application::Init()
-	{
-		Logger::Init();
-		Logger::Configure({ true, true });
-
-		m_pWindow = new Window(Window::Params{ 1600, 900, "Sandbox", true });
-		m_pRenderer = new VulkanRenderer();
-		m_pCamera = new Camera(120.0f,
-			static_cast<float>(m_pWindow->GetParams().width),
-			static_cast<float>(m_pWindow->GetParams().height),
-			0.1f, 1000.0f);
-		m_pRenderer->SetCamera(m_pCamera);
-
-		m_pWindow->Init();
-		m_pWindow->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
-		Input::Init(m_pWindow->GetGLFWWindow());
-		m_pRenderer->Initialize();
-
-		m_pScene = new Scene();
-	}
-
-	void Application::Cleanup()
-	{
-		m_pRenderer->BeforeSceneCleanup();
-
-		delete m_pScene;
-
-		m_pRenderer->AfterSceneCleanup();
-		m_pWindow->Cleanup();
-
-		delete m_pCamera;
-		delete m_pRenderer;
-		delete m_pWindow;
-
-		m_pScene = nullptr;
-		m_pCamera = nullptr;
-		m_pRenderer = nullptr;
-		m_pWindow = nullptr;
 	}
 }

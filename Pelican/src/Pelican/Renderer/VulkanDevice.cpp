@@ -9,8 +9,9 @@
 
 namespace Pelican
 {
-	VulkanDevice::VulkanDevice(vk::Instance instance)
-		: m_Instance(instance)
+	VulkanDevice::VulkanDevice(Context* pContext, vk::Instance instance)
+		: m_pContext(pContext)
+		, m_Instance(instance)
 	{
 		CreateSurface();
 		PickPhysicalDevice();
@@ -80,8 +81,9 @@ namespace Pelican
 
 	void VulkanDevice::CreateSurface()
 	{
+		GLFWwindow* window = m_pContext->GetSubsystem<Window>()->GetGLFWWindow();
 		VkSurfaceKHR rawSurface;
-		VK_CHECK(glfwCreateWindowSurface(m_Instance, Application::Get().GetWindow()->GetGLFWWindow(), nullptr, &rawSurface));
+		VK_CHECK(glfwCreateWindowSurface(m_Instance, window, nullptr, &rawSurface));
 
 		m_Surface = rawSurface;
 	}

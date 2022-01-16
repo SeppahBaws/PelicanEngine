@@ -11,8 +11,9 @@
 
 namespace Pelican
 {
-	Window::Window(Params&& params)
-		: m_pGLFWwindow(nullptr)
+	Window::Window(Context* pContext, Params&& params)
+		: Subsystem(pContext)
+		, m_pGLFWwindow(nullptr)
 		, m_Params(std::move(params))
 	{
 	}
@@ -21,11 +22,12 @@ namespace Pelican
 	{
 	}
 
-	void Window::Init()
+	bool Window::OnInitialize()
 	{
 		if (!glfwInit())
 		{
 			ASSERT_MSG(false, "Failed to initialize GLFW!");
+			return false;
 		}
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -35,7 +37,8 @@ namespace Pelican
 		if (!m_pGLFWwindow)
 		{
 			glfwTerminate();
-			throw std::exception("Failed to create GLFW window!");
+			ASSERT_MSG(false, "Failed to create GLFW window!");
+			return false;
 		}
 
 		CenterWindow();
@@ -148,17 +151,19 @@ namespace Pelican
 			MouseMovedEvent event(static_cast<float>(xPos), static_cast<float>(yPos));
 			pWindow->m_EventCallback(event);
 		});
+
+		return true;
 	}
 
-	void Window::Cleanup()
+	void Window::OnTick()
+	{
+		glfwPollEvents();
+	}
+
+	void Window::OnShutdown()
 	{
 		glfwDestroyWindow(m_pGLFWwindow);
 		glfwTerminate();
-	}
-
-	void Window::Update()
-	{
-		glfwPollEvents();
 	}
 
 	bool Window::ShouldClose() const

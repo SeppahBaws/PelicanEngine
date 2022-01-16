@@ -21,7 +21,7 @@ namespace Pelican
 	public:
 		ImGuiWrapper();
 
-		void Init(const ImGuiInitInfo& initInfo);
+		void Init(GLFWwindow* window, const ImGuiInitInfo& initInfo);
 		void Cleanup();
 
 		void NewFrame();

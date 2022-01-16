@@ -5,6 +5,7 @@
 #include "VulkanDevice.h"
 #include "VulkanPipeline.h"
 #include "VulkanSwapChain.h"
+#include "Pelican/Core/Subsystem.h"
 
 namespace Pelican
 {
@@ -24,20 +25,21 @@ namespace Pelican
 		RENDERING_MODE_MAX
 	};
 
-	class VulkanRenderer final
+	class VulkanRenderer final : public Subsystem
 	{
 	public:
-		VulkanRenderer();
+		VulkanRenderer(Context* pContext);
 
-		void Initialize();
-		void BeforeSceneCleanup();
-		void AfterSceneCleanup();
+		bool OnInitialize() override;
+		void OnShutdown() override;
 
 		// Very important: returns true when the scene is ready to be rendered.
 		// For example: when the window gets resized, we want to skip this frame, because we'll be recreating the command buffers
 		// so we won't be able to record to them.
 		bool BeginScene();
 		void EndScene();
+
+		void WaitForIdle();
 
 		void FlagWindowResized() { m_FrameBufferResized = true; }
 		void SetCamera(Camera* pCamera);
