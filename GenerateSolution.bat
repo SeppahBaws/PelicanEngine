@@ -13,6 +13,6 @@ echo.
 @REM Generate all other project files with Premake
 echo Generating project files with Premake
 echo ===================================================
-call premake5.exe vs2019 --use-vld
+call premake5.exe vs2022 --use-vld
 
 pause
