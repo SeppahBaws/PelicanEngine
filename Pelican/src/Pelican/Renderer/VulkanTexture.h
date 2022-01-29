@@ -7,6 +7,8 @@
 
 namespace Pelican
 {
+	class VulkanBuffer;
+
 	class VulkanTexture : public BaseAsset
 	{
 	public:
@@ -44,8 +46,8 @@ namespace Pelican
 		void CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
 			vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties);
 		vk::ImageView CreateImageView(vk::ImageAspectFlags aspectFlags);
-		void CopyBufferToImage(vk::Buffer buffer);
-		void CopyBufferToImageCubemap(vk::Buffer buffer);
+		void CopyBufferToImage(const VulkanBuffer& buffer);
+		void CopyBufferToImageCubemap(const VulkanBuffer& buffer);
 
 	private:
 		vk::Image m_Image{};

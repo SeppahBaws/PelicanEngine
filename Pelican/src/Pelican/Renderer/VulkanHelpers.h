@@ -51,9 +51,6 @@ namespace Pelican
 		static void EndSingleTimeCommands(vk::CommandBuffer commandBuffer);
 
 		static uint32_t FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
-		static void CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
-			vk::Buffer& buffer, vk::DeviceMemory& bufferMemory);
-		static void CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
 
 		static bool CheckDeviceExtensionSupport(vk::PhysicalDevice physicalDevice);
 		static SwapChainSupportDetails QuerySwapChainSupport(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);

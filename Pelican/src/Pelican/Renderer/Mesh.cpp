@@ -38,17 +38,10 @@ namespace Pelican
 
 	void Mesh::Cleanup()
 	{
-		const vk::Device device = VulkanRenderer::GetDevice();
-		device.destroyBuffer(m_IndexBuffer);
-		device.freeMemory(m_IndexBufferMemory);
-
-		device.destroyBuffer(m_VertexBuffer);
-		device.freeMemory(m_VertexBufferMemory);
-
-		device.destroyBuffer(m_UniformBuffer);
-		device.freeMemory(m_UniformBufferMemory);
-		device.destroyBuffer(m_LightBuffer);
-		device.freeMemory(m_LightBufferMemory);
+		delete m_pIndexBuffer;
+		delete m_pVertexBuffer;
+		delete m_pUniformBuffer;
+		delete m_pLightBuffer;
 	}
 
 	void Mesh::SetupVerticesIndices(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
@@ -67,17 +60,17 @@ namespace Pelican
 		ubo.view = view;
 		ubo.proj = proj;
 
-		void* data = VulkanRenderer::GetDevice().mapMemory(m_UniformBufferMemory, 0, sizeof(ubo));
+		void* data = m_pUniformBuffer->Map(sizeof(ubo));
 			memcpy(data, &ubo, sizeof(ubo));
-		VulkanRenderer::GetDevice().unmapMemory(m_UniformBufferMemory);
+		m_pUniformBuffer->Unmap();
 
 		LightsData lights;
 		lights.directionalLight = Application::Get().GetScene()->GetDirectionalLight();
 		lights.pointLight = Application::Get().GetScene()->GetPointLight();
 
-		data = VulkanRenderer::GetDevice().mapMemory(m_LightBufferMemory, 0, sizeof(LightsData));
+		data = m_pLightBuffer->Map(sizeof(LightsData));
 			memcpy(data, &lights, sizeof(lights));
-		VulkanRenderer::GetDevice().unmapMemory(m_LightBufferMemory);
+		m_pLightBuffer->Unmap();
 	}
 
 	void Mesh::Draw() const
@@ -86,10 +79,10 @@ namespace Pelican
 
 		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, VulkanRenderer::GetPipelineLayout(), 0, m_DescriptorSet, {});
 
-		std::vector<vk::Buffer> vertexBuffers = { m_VertexBuffer };
+		std::vector<vk::Buffer> vertexBuffers = { m_pVertexBuffer->GetBuffer() };
 		std::vector<vk::DeviceSize> offsets = { 0 };
 		commandBuffer.bindVertexBuffers(0, vertexBuffers, offsets);
-		commandBuffer.bindIndexBuffer(m_IndexBuffer, 0, vk::IndexType::eUint32);
+		commandBuffer.bindIndexBuffer(m_pIndexBuffer->GetBuffer(), 0, vk::IndexType::eUint32);
 
 		commandBuffer.drawIndexed(static_cast<uint32_t>(m_Indices.size()), 1, 0, 0, 0);
 	}
@@ -97,87 +90,69 @@ namespace Pelican
 	void Mesh::CreateBuffers()
 	{
 		// MVP Uniform buffer
-		{
-			const vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
-			VulkanHelpers::CreateBuffer(
-				bufferSize,
-				vk::BufferUsageFlagBits::eUniformBuffer,
-				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-				m_UniformBuffer, m_UniformBufferMemory);
-		}
+		m_pUniformBuffer = new VulkanBuffer(
+			sizeof(UniformBufferObject),
+			vk::BufferUsageFlagBits::eUniformBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
 		// Light Uniform buffer
-		{
-			const vk::DeviceSize bufferSize = sizeof(LightsData);
-			VulkanHelpers::CreateBuffer(
-				bufferSize,
-				vk::BufferUsageFlagBits::eUniformBuffer,
-				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-				m_LightBuffer, m_LightBufferMemory);
-		}
+		m_pLightBuffer = new VulkanBuffer(
+			sizeof(LightsData),
+			vk::BufferUsageFlagBits::eUniformBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
 		// Vertex Buffer
 		{
 			const vk::DeviceSize bufferSize = sizeof(m_Vertices[0]) * m_Vertices.size();
 
-			vk::Buffer stagingBuffer;
-			vk::DeviceMemory stagingBufferMemory;
-			VulkanHelpers::CreateBuffer(
+			VulkanBuffer stagingBuffer{
 				bufferSize,
 				vk::BufferUsageFlagBits::eTransferSrc,
-				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-				stagingBuffer, stagingBufferMemory);
+				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+			};
 
-			void* data = VulkanRenderer::GetDevice().mapMemory(stagingBufferMemory, 0, bufferSize);
-				memcpy(data, m_Vertices.data(), static_cast<size_t>(bufferSize));
-			VulkanRenderer::GetDevice().unmapMemory(stagingBufferMemory);
+			void* data = stagingBuffer.Map(bufferSize);
+				memcpy(data, m_Vertices.data(), bufferSize);
+			stagingBuffer.Unmap();
 
-			VulkanHelpers::CreateBuffer(
+			m_pVertexBuffer = new VulkanBuffer{
 				bufferSize,
 				vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
-				vk::MemoryPropertyFlagBits::eDeviceLocal,
-				m_VertexBuffer, m_VertexBufferMemory);
+				vk::MemoryPropertyFlagBits::eDeviceLocal
+			};
 
-			VulkanHelpers::CopyBuffer(stagingBuffer, m_VertexBuffer, bufferSize);
-
-			VulkanRenderer::GetDevice().destroyBuffer(stagingBuffer);
-			VulkanRenderer::GetDevice().freeMemory(stagingBufferMemory);
+			m_pVertexBuffer->CopyFromBuffer(stagingBuffer);
 		}
 
 		// Index Buffer
 		{
 			const vk::DeviceSize bufferSize = sizeof(m_Indices[0]) * m_Indices.size();
 
-			vk::Buffer stagingBuffer;
-			vk::DeviceMemory stagingBufferMemory;
-			VulkanHelpers::CreateBuffer(
+			VulkanBuffer stagingBuffer{
 				bufferSize,
 				vk::BufferUsageFlagBits::eTransferSrc,
-				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-				stagingBuffer, stagingBufferMemory);
+				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+			};
 
-			void* data = VulkanRenderer::GetDevice().mapMemory(stagingBufferMemory, 0, bufferSize);
-				memcpy(data, m_Indices.data(), static_cast<size_t>(bufferSize));
-			VulkanRenderer::GetDevice().unmapMemory(stagingBufferMemory);
+			void* data = stagingBuffer.Map(bufferSize);
+				memcpy(data, m_Indices.data(), bufferSize);
+			stagingBuffer.Unmap();
 
-			VulkanHelpers::CreateBuffer(
+			m_pIndexBuffer = new VulkanBuffer{
 				bufferSize,
 				vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer,
-				vk::MemoryPropertyFlagBits::eDeviceLocal,
-				m_IndexBuffer, m_IndexBufferMemory);
+				vk::MemoryPropertyFlagBits::eDeviceLocal
+			};
 
-			VulkanHelpers::CopyBuffer(stagingBuffer, m_IndexBuffer, bufferSize);
-
-			VulkanRenderer::GetDevice().destroyBuffer(stagingBuffer);
-			VulkanRenderer::GetDevice().freeMemory(stagingBufferMemory);
+			m_pIndexBuffer->CopyFromBuffer(stagingBuffer);
 		}
 	}
 
 	// TODO: Descriptor Sets shouldn't be in the mesh.
 	void Mesh::CreateDescriptorSet(const Model* pParent, const vk::DescriptorPool& pool)
 	{
-		vk::DescriptorBufferInfo mvpBufferInfo(m_UniformBuffer, 0, sizeof(UniformBufferObject));
-		vk::DescriptorBufferInfo lightBufferInfo(m_LightBuffer, 0, sizeof(LightsData));
+		vk::DescriptorBufferInfo mvpBufferInfo(m_pUniformBuffer->GetBuffer(), 0, sizeof(UniformBufferObject));
+		vk::DescriptorBufferInfo lightBufferInfo(m_pLightBuffer->GetBuffer(), 0, sizeof(LightsData));
 
 		const GltfMaterial& mat = pParent->GetMaterial(m_MaterialIdx);
 

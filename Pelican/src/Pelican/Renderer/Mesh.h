@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Camera.h"
+#include "VulkanBuffer.h"
 
 namespace Pelican
 {
@@ -42,15 +43,12 @@ namespace Pelican
 		std::vector<uint32_t> m_Indices{};
 		uint32_t m_MaterialIdx;
 
-		vk::Buffer m_UniformBuffer{};
-		vk::DeviceMemory m_UniformBufferMemory{};
-		vk::Buffer m_LightBuffer{};
-		vk::DeviceMemory m_LightBufferMemory{};
+		VulkanBuffer* m_pUniformBuffer;
+		VulkanBuffer* m_pLightBuffer;
 
-		vk::Buffer m_VertexBuffer{};
-		vk::DeviceMemory m_VertexBufferMemory{};
-		vk::Buffer m_IndexBuffer{};
-		vk::DeviceMemory m_IndexBufferMemory{};
+		VulkanBuffer* m_pVertexBuffer;
+		VulkanBuffer* m_pIndexBuffer;
+
 		vk::DescriptorSet m_DescriptorSet{};
 	};
 }

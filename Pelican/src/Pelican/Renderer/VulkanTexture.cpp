@@ -5,6 +5,7 @@
 #include <stb_image.h>
 #include <glm/vec4.hpp>
 
+#include "VulkanBuffer.h"
 #include "VulkanDebug.h"
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
@@ -186,18 +187,15 @@ namespace Pelican
 	{
 		const vk::DeviceSize size = width * height * channels;
 
-		vk::Buffer stagingBuffer;
-		vk::DeviceMemory stagingBufferMemory;
-
-		VulkanHelpers::CreateBuffer(
+		VulkanBuffer stagingBuffer{
 			size,
 			vk::BufferUsageFlagBits::eTransferSrc,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-			stagingBuffer, stagingBufferMemory);
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		};
 
-		void* data = VulkanRenderer::GetDevice().mapMemory(stagingBufferMemory, 0, size);
-			memcpy(data, pixelData, static_cast<size_t>(size));
-		VulkanRenderer::GetDevice().unmapMemory(stagingBufferMemory);
+		void* data = stagingBuffer.Map(size);
+			memcpy(data, pixelData, size);
+		stagingBuffer.Unmap();
 
 		m_Format = m_IsHDR ? vk::Format::eR16G16B16A16Sfloat : vk::Format::eR8G8B8A8Srgb;
 		CreateImage(width, height, m_Format, vk::ImageTiling::eOptimal,
@@ -215,9 +213,6 @@ namespace Pelican
 		}
 
 		TransitionLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-
-		VulkanRenderer::GetDevice().destroyBuffer(stagingBuffer);
-		VulkanRenderer::GetDevice().freeMemory(stagingBufferMemory);
 
 		VkDebugMarker::SetImageName(VulkanRenderer::GetDevice(), m_Image, m_AssetPath.string().c_str());
 	}
@@ -338,7 +333,7 @@ namespace Pelican
 		return imageView;
 	}
 
-	void VulkanTexture::CopyBufferToImage(vk::Buffer buffer)
+	void VulkanTexture::CopyBufferToImage(const VulkanBuffer& buffer)
 	{
 		vk::CommandBuffer commandBuffer = VulkanHelpers::BeginSingleTimeCommands();
 
@@ -353,12 +348,12 @@ namespace Pelican
 		region.imageOffset = vk::Offset3D(0, 0, 0);
 		region.imageExtent = vk::Extent3D(m_Width, m_Height, 1);
 
-		commandBuffer.copyBufferToImage(buffer, m_Image, vk::ImageLayout::eTransferDstOptimal, region);
+		commandBuffer.copyBufferToImage(buffer.GetBuffer(), m_Image, vk::ImageLayout::eTransferDstOptimal, region);
 
 		VulkanHelpers::EndSingleTimeCommands(commandBuffer);
 	}
 
-	void VulkanTexture::CopyBufferToImageCubemap(vk::Buffer buffer)
+	void VulkanTexture::CopyBufferToImageCubemap(const VulkanBuffer& buffer)
 	{
 		vk::CommandBuffer cmd = VulkanHelpers::BeginSingleTimeCommands();
 
@@ -384,7 +379,7 @@ namespace Pelican
 			regions.push_back(region);
 		}
 
-		cmd.copyBufferToImage(buffer, m_Image, vk::ImageLayout::eTransferDstOptimal, regions);
+		cmd.copyBufferToImage(buffer.GetBuffer(), m_Image, vk::ImageLayout::eTransferDstOptimal, regions);
 		VulkanHelpers::EndSingleTimeCommands(cmd);
 	}
 }

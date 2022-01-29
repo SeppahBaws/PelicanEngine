@@ -23,6 +23,7 @@
 #include "VulkanDebug.h"
 #include "UniformData.h"
 #include "Camera.h"
+#include "VulkanBuffer.h"
 
 #include "VulkanShader.h"
 #include "VulkanPipeline.h"
@@ -569,29 +570,23 @@ namespace Pelican
 
 	void VulkanRenderer::CreateUniformBuffers()
 	{
-		const vk::DeviceSize uboBufferSize = sizeof(UniformBufferObject);
-		const vk::DeviceSize lightBufferSize = sizeof(DirectionalLight);
+		const size_t imgCount = m_pSwapChain->GetImages().size();
 
-		m_MvpUbo.resize(m_pSwapChain->GetImages().size());
-		m_MvpUboMemory.resize(m_pSwapChain->GetImages().size());
+		m_MvpUBOs.resize(imgCount);
+		m_LightUBOs.resize(imgCount);
 
-		m_LightUbo.resize(m_pSwapChain->GetImages().size());
-		m_LightUboMemory.resize(m_pSwapChain->GetImages().size());
-
-		for (size_t i = 0; i < m_pSwapChain->GetImages().size(); i++)
+		for (size_t i = 0; i < imgCount; i++)
 		{
-			VulkanHelpers::CreateBuffer(
-				uboBufferSize,
-				vk::BufferUsageFlagBits::eUniformBuffer,
-				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-				m_MvpUbo[i], m_MvpUboMemory[i]
-			);
+			constexpr vk::DeviceSize lightBufferSize = sizeof(DirectionalLight);
+			constexpr vk::DeviceSize uboBufferSize = sizeof(UniformBufferObject);
 
-			VulkanHelpers::CreateBuffer(
-				lightBufferSize,
+			m_MvpUBOs[i] = new VulkanBuffer(uboBufferSize,
 				vk::BufferUsageFlagBits::eUniformBuffer,
-				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-				m_LightUbo[i], m_LightUboMemory[i]);
+				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+			
+			m_LightUBOs[i] = new VulkanBuffer(lightBufferSize,
+				vk::BufferUsageFlagBits::eUniformBuffer,
+				vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 		}
 	}
 
@@ -682,11 +677,8 @@ namespace Pelican
 
 		for (size_t i = 0; i < m_pSwapChain->GetImages().size(); i++)
 		{
-			m_pDevice->GetDevice().destroyBuffer(m_MvpUbo[i]);
-			m_pDevice->GetDevice().freeMemory(m_MvpUboMemory[i]);
-
-			m_pDevice->GetDevice().destroyBuffer(m_LightUbo[i]);
-			m_pDevice->GetDevice().freeMemory(m_LightUboMemory[i]);
+			delete m_MvpUBOs[i];
+			delete m_LightUBOs[i];
 		}
 
 		m_pDevice->GetDevice().destroyDescriptorPool(m_DescriptorPool);
@@ -747,15 +739,17 @@ namespace Pelican
 		ubo.proj = m_pCamera->GetProjection();
 		ubo.proj[1][1] *= -1;
 
-		void* data = m_pDevice->GetDevice().mapMemory(m_MvpUboMemory[currentImage], 0, sizeof(ubo));
+		const VulkanBuffer* mvpBuf = m_MvpUBOs[currentImage];
+		void* data = mvpBuf->Map(sizeof(ubo));
 			memcpy(data, &ubo, sizeof(ubo));
-		m_pDevice->GetDevice().unmapMemory(m_MvpUboMemory[currentImage]);
+		mvpBuf->Unmap();
 
 		const DirectionalLight& light = Application::Get().GetScene()->GetDirectionalLight();
 
-		data = m_pDevice->GetDevice().mapMemory(m_LightUboMemory[currentImage], 0, sizeof(light));
+		const VulkanBuffer* lightBuf = m_LightUBOs[currentImage];
+		data = lightBuf->Map(sizeof(light));
 			memcpy(data, &light, sizeof(light));
-		m_pDevice->GetDevice().unmapMemory(m_LightUboMemory[currentImage]);
+		lightBuf->Unmap();
 	}
 
 	void VulkanRenderer::CreateImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling,
