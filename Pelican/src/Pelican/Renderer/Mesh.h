@@ -35,7 +35,7 @@ namespace Pelican
 		void CreateDescriptorSet(const Model* pParent, const vk::DescriptorPool& pool);
 
 		void Update(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj);
-		void Draw() const;
+		void Draw(u32 frameIdx) const;
 
 
 	private:
@@ -49,6 +49,6 @@ namespace Pelican
 		VulkanBuffer* m_pVertexBuffer;
 		VulkanBuffer* m_pIndexBuffer;
 
-		vk::DescriptorSet m_DescriptorSet{};
+		std::array<vk::DescriptorSet, 3> m_DescriptorSets{};
 	};
 }

@@ -97,21 +97,6 @@ namespace Pelican
 		return availableFormats[0];
 	}
 
-	vk::PresentModeKHR VulkanSwapChain::ChooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) const
-	{
-		// TODO: return FIFO if we want VSync, otherwise return the next best thing.
-
-		for (const auto& availablePresentMode : availablePresentModes)
-		{
-			if (availablePresentMode == vk::PresentModeKHR::eMailbox)
-			{
-				return availablePresentMode;
-			}
-		}
-
-		return vk::PresentModeKHR::eFifo;
-	}
-
 	vk::Extent2D VulkanSwapChain::ChooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const
 	{
 		if (capabilities.currentExtent.width != UINT32_MAX)
@@ -134,7 +119,6 @@ namespace Pelican
 		SwapChainSupportDetails swapChainSupport = VulkanHelpers::QuerySwapChainSupport(m_pDevice->GetPhysicalDevice(), m_pDevice->GetSurface());
 
 		vk::SurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
-		vk::PresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
 		vk::Extent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
 
 		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
@@ -171,7 +155,7 @@ namespace Pelican
 
 		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
 		createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-		createInfo.presentMode = presentMode;
+		createInfo.presentMode = vk::PresentModeKHR::eFifo; // TODO: add toggle for vsync.
 		createInfo.clipped = VK_TRUE;
 		createInfo.oldSwapchain = nullptr;
 

@@ -42,6 +42,7 @@ namespace Pelican
 		glm::vec3 m_Rotation{};
 
 		float m_MoveSpeed{ 40.0f };
+		float m_LookSpeed{ 10.0f };
 		float m_MoveSpeedSlow{ 10.0f };
 		float m_MouseSpeed{ 5.0f };
 		bool m_IsSlowMovement{ false };

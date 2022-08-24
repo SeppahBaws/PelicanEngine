@@ -36,7 +36,7 @@ namespace Pelican
 
 		m_pContext = std::make_shared<Context>();
 
-		m_pContext->AddSubsystem<Window>(Window::Params{ 1600, 900, "Sandbox", true });
+		m_pContext->AddSubsystem<Window>(Window::Params{ 1920, 1080, "Sandbox", true });
 		m_pContext->AddSubsystem<VulkanRenderer>();
 
 		if (!m_pContext->OnInitialize())

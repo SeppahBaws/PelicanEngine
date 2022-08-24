@@ -60,6 +60,8 @@ namespace Pelican
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;  // No separate ImGui windows yet, TODO: need to figure out why it doesn't want to work.
 
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("res/fonts/Roboto/Roboto-Regular.ttf", 15.0f, nullptr, io.Fonts->GetGlyphRangesCyrillic());
+
 		ImGui::StyleColorsDark();
 
 		ImGuiStyle& style = ImGui::GetStyle();

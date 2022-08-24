@@ -96,6 +96,9 @@ namespace Pelican
 		}
 	}
 
+	// Temp, will be moved to its own EditorPanel in the future.
+	static std::optional<entt::entity> selectedEntity{};
+
 	void Scene::Draw(Camera* pCamera)
 	{
 		auto view = m_Registry.view<TransformComponent, ModelComponent>();
@@ -118,7 +121,7 @@ namespace Pelican
 		// Draw meshes
 		for (auto [entity, transform, model] : view.each())
 		{
-			model.pModel->Draw();
+			model.pModel->Draw(m_FrameIdx);
 		}
 
 		VkDebugMarker::EndRegion(cmd);
@@ -163,23 +166,50 @@ namespace Pelican
 
 			for (auto [entity, tag] : entities.each())
 			{
-				ImGui::Text("%s", tag.name.c_str());
+				ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
+				if (selectedEntity == entity)
+					flags |= ImGuiTreeNodeFlags_Selected;
+
+				// if (entity.has_children())
+				flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+				ImGui::TreeNodeEx(tag.name.c_str(), flags);
+				if (ImGui::IsItemClicked())
+					selectedEntity = entity;
 			}
 		}
 		ImGui::End();
 
-		for (auto [entity, tag, transform] : m_Registry.view<TagComponent, TransformComponent>().each())
+		if (ImGui::Begin("Selected entity"))
 		{
-			if (ImGui::Begin(std::string("Entity debugger##" + tag.name).c_str()))
+			auto draw = [&]()
 			{
-				ImGui::Text("Debug for: %s", tag.name.c_str());
+				if (!selectedEntity)
+					return;
+
+				auto [tag, transform, model] = m_Registry.get<TagComponent, TransformComponent, ModelComponent>(*selectedEntity);
+
+				ImGui::InputText("Name", &tag.name);
+
 				ImGui::Spacing();
-				ImGui::InputFloat3("position", reinterpret_cast<float*>(&transform.position));
-				ImGui::InputFloat3("rotation", reinterpret_cast<float*>(&transform.rotation));
-				ImGui::InputFloat3("scale", reinterpret_cast<float*>(&transform.scale));
-			}
-			ImGui::End();
+				if (ImGui::CollapsingHeader("Transform Component", ImGuiTreeNodeFlags_DefaultOpen))
+				{
+					ImGui::InputFloat3("position", reinterpret_cast<float*>(&transform.position));
+					ImGui::InputFloat3("rotation", reinterpret_cast<float*>(&transform.rotation));
+					ImGui::InputFloat3("scale", reinterpret_cast<float*>(&transform.scale));
+				}
+
+				ImGui::Spacing();
+
+				if (ImGui::CollapsingHeader("Model Component", ImGuiTreeNodeFlags_DefaultOpen))
+				{
+					ImGui::LabelText("Asset path", model.pModel->GetAssetPath().c_str());
+				}
+			};
+
+			draw();
 		}
+		ImGui::End();
 
 		if (ImGui::Begin("Light Settings"))
 		{
@@ -200,7 +230,9 @@ namespace Pelican
 		ImGui::End();
 
 		AssetManager::GetInstance().DebugDraw();
-#pragma endregion 
+#pragma endregion
+
+		m_FrameIdx = (m_FrameIdx + 1) % 3;
 	}
 
 	void Scene::Cleanup()

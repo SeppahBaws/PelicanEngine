@@ -72,11 +72,11 @@ namespace Pelican
 		}
 	}
 
-	void Model::Draw()
+	void Model::Draw(u32 frameIdx)
 	{
 		for (size_t i = 0; i < m_Meshes.size(); i++)
 		{
-			m_Meshes[i].Draw();
+			m_Meshes[i].Draw(frameIdx);
 		}
 	}
 
@@ -217,11 +217,11 @@ namespace Pelican
 
 	void Model::CreateDescriptorPool()
 	{
-		vk::DescriptorPoolSize poolSize(vk::DescriptorType::eUniformBuffer, static_cast<uint32_t>(m_Meshes.size()));
+		vk::DescriptorPoolSize poolSize(vk::DescriptorType::eUniformBuffer, static_cast<uint32_t>(m_Meshes.size()) * 3);
 
 		vk::DescriptorPoolCreateInfo createInfo = vk::DescriptorPoolCreateInfo()
 			.setPoolSizes(poolSize)
-			.setMaxSets(static_cast<uint32_t>(m_Meshes.size()));
+			.setMaxSets(static_cast<uint32_t>(m_Meshes.size()) * 3);
 
 		try
 		{

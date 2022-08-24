@@ -56,8 +56,8 @@ namespace Pelican
 				movement.z += 1;
 
 			// Camera look
-			m_Yaw -= mouseMov.x * 0.3f;
-			m_Pitch += mouseMov.y * 0.3f;
+			m_Yaw -= mouseMov.x * Time::GetDeltaTime() * m_LookSpeed;
+			m_Pitch += mouseMov.y * Time::GetDeltaTime() * m_LookSpeed;
 
 			Input::SetCursorMode(false);
 		}

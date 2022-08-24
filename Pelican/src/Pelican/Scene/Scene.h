@@ -46,6 +46,8 @@ namespace Pelican
 
 		entt::registry m_Registry;
 
+		u32 m_FrameIdx = 0;
+
 		std::string m_Name{};
 		DirectionalLight m_DirectionalLight;
 		PointLight m_PointLight;

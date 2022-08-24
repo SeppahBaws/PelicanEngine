@@ -73,11 +73,11 @@ namespace Pelican
 		m_pLightBuffer->Unmap();
 	}
 
-	void Mesh::Draw() const
+	void Mesh::Draw(u32 frameIdx) const
 	{
 		vk::CommandBuffer commandBuffer = VulkanRenderer::GetCurrentBuffer();
 
-		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, VulkanRenderer::GetPipelineLayout(), 0, m_DescriptorSet, {});
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, VulkanRenderer::GetPipelineLayout(), 0, m_DescriptorSets[frameIdx], {});
 
 		std::vector<vk::Buffer> vertexBuffers = { m_pVertexBuffer->GetBuffer() };
 		std::vector<vk::DeviceSize> offsets = { 0 };
@@ -174,11 +174,14 @@ namespace Pelican
 
 		try
 		{
-			std::vector<vk::DescriptorSet> sets = VulkanRenderer::GetDevice().allocateDescriptorSets(allocInfo);
+			for (u32 i = 0; i < 3; i++)
+			{
+				std::vector<vk::DescriptorSet> sets = VulkanRenderer::GetDevice().allocateDescriptorSets(allocInfo);
 
-			ASSERT_MSG(!sets.empty(), "No descriptors were allocated!");
+				ASSERT_MSG(!sets.empty(), "No descriptors were allocated!");
 
-			m_DescriptorSet = sets[0];
+				m_DescriptorSets[i] = sets[0];
+			}
 		}
 		catch (vk::SystemError& e)
 		{
@@ -187,85 +190,88 @@ namespace Pelican
 
 		std::array<vk::WriteDescriptorSet, 9> descriptorWrites{};
 
-		// MVP Uniform buffer
-		descriptorWrites[0] = vk::WriteDescriptorSet()
-			.setDstSet(m_DescriptorSet)
-			.setDstBinding(0)
-			.setDstArrayElement(0)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-			.setDescriptorCount(1)
-			.setBufferInfo(mvpBufferInfo);
-		// descriptorWrites[0].dstSet = m_DescriptorSet;
-		// descriptorWrites[0].dstBinding = 0;
-		// descriptorWrites[0].dstArrayElement = 0;
-		// descriptorWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer;
-		// descriptorWrites[0].descriptorCount = 1;
-		// descriptorWrites[0].pBufferInfo = &mvpBufferInfo;
+		for (u32 i = 0; i < 3; i++)
+		{
+			// MVP Uniform buffer
+			descriptorWrites[0] = vk::WriteDescriptorSet()
+				.setDstSet(m_DescriptorSets[i])
+				.setDstBinding(0)
+				.setDstArrayElement(0)
+				.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+				.setDescriptorCount(1)
+				.setBufferInfo(mvpBufferInfo);
+			// descriptorWrites[0].dstSet = m_DescriptorSet;
+			// descriptorWrites[0].dstBinding = 0;
+			// descriptorWrites[0].dstArrayElement = 0;
+			// descriptorWrites[0].descriptorType = vk::DescriptorType::eUniformBuffer;
+			// descriptorWrites[0].descriptorCount = 1;
+			// descriptorWrites[0].pBufferInfo = &mvpBufferInfo;
 
-		// Lights Uniform buffer
-		descriptorWrites[1].dstSet = m_DescriptorSet;
-		descriptorWrites[1].dstBinding = 1;
-		descriptorWrites[1].dstArrayElement = 0;
-		descriptorWrites[1].descriptorType = vk::DescriptorType::eUniformBuffer;
-		descriptorWrites[1].descriptorCount = 1;
-		descriptorWrites[1].pBufferInfo = &lightBufferInfo;
+			// Lights Uniform buffer
+			descriptorWrites[1].dstSet = m_DescriptorSets[i];
+			descriptorWrites[1].dstBinding = 1;
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorType = vk::DescriptorType::eUniformBuffer;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].pBufferInfo = &lightBufferInfo;
 
-		// Albedo texture
-		descriptorWrites[2].dstSet = m_DescriptorSet;
-		descriptorWrites[2].dstBinding = 2;
-		descriptorWrites[2].dstArrayElement = 0;
-		descriptorWrites[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		descriptorWrites[2].descriptorCount = 1;
-		descriptorWrites[2].pImageInfo = &imageInfos[0];
+			// Albedo texture
+			descriptorWrites[2].dstSet = m_DescriptorSets[i];
+			descriptorWrites[2].dstBinding = 2;
+			descriptorWrites[2].dstArrayElement = 0;
+			descriptorWrites[2].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			descriptorWrites[2].descriptorCount = 1;
+			descriptorWrites[2].pImageInfo = &imageInfos[0];
 
-		// Normal texture
-		descriptorWrites[3].dstSet = m_DescriptorSet;
-		descriptorWrites[3].dstBinding = 3;
-		descriptorWrites[3].dstArrayElement = 0;
-		descriptorWrites[3].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		descriptorWrites[3].descriptorCount = 1;
-		descriptorWrites[3].pImageInfo = &imageInfos[1];
+			// Normal texture
+			descriptorWrites[3].dstSet = m_DescriptorSets[i];
+			descriptorWrites[3].dstBinding = 3;
+			descriptorWrites[3].dstArrayElement = 0;
+			descriptorWrites[3].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			descriptorWrites[3].descriptorCount = 1;
+			descriptorWrites[3].pImageInfo = &imageInfos[1];
 
-		// Metallic Roughness texture
-		descriptorWrites[4].dstSet = m_DescriptorSet;
-		descriptorWrites[4].dstBinding = 4;
-		descriptorWrites[4].dstArrayElement = 0;
-		descriptorWrites[4].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		descriptorWrites[4].descriptorCount = 1;
-		descriptorWrites[4].pImageInfo = &imageInfos[2];
+			// Metallic Roughness texture
+			descriptorWrites[4].dstSet = m_DescriptorSets[i];
+			descriptorWrites[4].dstBinding = 4;
+			descriptorWrites[4].dstArrayElement = 0;
+			descriptorWrites[4].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			descriptorWrites[4].descriptorCount = 1;
+			descriptorWrites[4].pImageInfo = &imageInfos[2];
 
-		// AO texture
-		descriptorWrites[5].dstSet = m_DescriptorSet;
-		descriptorWrites[5].dstBinding = 5;
-		descriptorWrites[5].dstArrayElement = 0;
-		descriptorWrites[5].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		descriptorWrites[5].descriptorCount = 1;
-		descriptorWrites[5].pImageInfo = &imageInfos[3];
+			// AO texture
+			descriptorWrites[5].dstSet = m_DescriptorSets[i];
+			descriptorWrites[5].dstBinding = 5;
+			descriptorWrites[5].dstArrayElement = 0;
+			descriptorWrites[5].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			descriptorWrites[5].descriptorCount = 1;
+			descriptorWrites[5].pImageInfo = &imageInfos[3];
 
-		descriptorWrites[6] = vk::WriteDescriptorSet()
-			.setDstSet(m_DescriptorSet)
-			.setDstBinding(6)
-			.setDstArrayElement(0)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
-			.setPImageInfo(&skyboxInfo);
+			descriptorWrites[6] = vk::WriteDescriptorSet()
+				.setDstSet(m_DescriptorSets[i])
+				.setDstBinding(6)
+				.setDstArrayElement(0)
+				.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+				.setDescriptorCount(1)
+				.setPImageInfo(&skyboxInfo);
 
-		descriptorWrites[7] = vk::WriteDescriptorSet()
-			.setDstSet(m_DescriptorSet)
-			.setDstBinding(7)
-			.setDstArrayElement(0)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
-			.setPImageInfo(&radianceInfo);
+			descriptorWrites[7] = vk::WriteDescriptorSet()
+				.setDstSet(m_DescriptorSets[i])
+				.setDstBinding(7)
+				.setDstArrayElement(0)
+				.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+				.setDescriptorCount(1)
+				.setPImageInfo(&radianceInfo);
 
-		descriptorWrites[8] = vk::WriteDescriptorSet()
-			.setDstSet(m_DescriptorSet)
-			.setDstBinding(8)
-			.setDstArrayElement(0)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
-			.setPImageInfo(&irradianceInfo);
+			descriptorWrites[8] = vk::WriteDescriptorSet()
+				.setDstSet(m_DescriptorSets[i])
+				.setDstBinding(8)
+				.setDstArrayElement(0)
+				.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+				.setDescriptorCount(1)
+				.setPImageInfo(&irradianceInfo);
 
-		VulkanRenderer::GetDevice().updateDescriptorSets(descriptorWrites, {});
+			VulkanRenderer::GetDevice().updateDescriptorSets(descriptorWrites, {});
+		}
 	}
 }

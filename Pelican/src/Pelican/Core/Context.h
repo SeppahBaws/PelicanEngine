@@ -11,13 +11,13 @@ namespace Pelican
 	public:
 		Context() = default;
 
-		template<typename T, typename = std::enable_if_t<std::is_base_of_v<Subsystem, T>>, class... TArgs>
+		template<EngineSystem T, class... TArgs>
 		void AddSubsystem(TArgs&&... args)
 		{
 			m_Subsystems.emplace_back(std::make_shared<T>(this, std::forward<TArgs>(args)...));
 		}
 
-		template<typename T, typename = std::enable_if_t<std::is_base_of_v<Subsystem, T>>>
+		template<EngineSystem T>
 		T* GetSubsystem()
 		{
 			for (const auto& subsystem : m_Subsystems)

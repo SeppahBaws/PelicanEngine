@@ -27,7 +27,7 @@ namespace Pelican
 		void Initialize();
 
 		void UpdateDrawData(const glm::mat4& model, const glm::mat4& view, const glm::mat4& proj);
-		void Draw();
+		void Draw(u32 frameIdx);
 
 		[[nodiscard]] std::string GetAssetPath() const { return m_AssetPath; }
 

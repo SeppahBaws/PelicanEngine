@@ -32,3 +32,7 @@ constexpr bool PELICAN_VALIDATE = false;
 #else
 constexpr bool PELICAN_VALIDATE = false;
 #endif
+
+
+// Hacky workaround for slow compile times :) TODO: find a more decent way
+#include <vulkan/vulkan.hpp>
