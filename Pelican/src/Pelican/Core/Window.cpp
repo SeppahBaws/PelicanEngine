@@ -11,10 +11,10 @@
 
 namespace Pelican
 {
-	Window::Window(Context* pContext, Params&& params)
+	Window::Window(Context* pContext, const WindowSpecification& specification)
 		: Subsystem(pContext)
 		, m_pGLFWwindow(nullptr)
-		, m_Params(std::move(params))
+		, m_Specification(specification)
 	{
 	}
 
@@ -31,14 +31,29 @@ namespace Pelican
 		}
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, m_Params.resizable ? GLFW_TRUE : GLFW_FALSE);
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-		m_pGLFWwindow = glfwCreateWindow(m_Params.width, m_Params.height, m_Params.title.c_str(), nullptr, nullptr);
+		m_pGLFWwindow = glfwCreateWindow(
+			static_cast<i32>(m_Specification.width),
+			static_cast<i32>(m_Specification.height),
+			m_Specification.title.c_str(),
+			nullptr,
+			nullptr);
 		if (!m_pGLFWwindow)
 		{
 			glfwTerminate();
 			ASSERT_MSG(false, "Failed to create GLFW window!");
 			return false;
+		}
+
+		if (m_Specification.fullscreen)
+		{
+			GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+			const GLFWvidmode* videoMode = glfwGetVideoMode(monitor);
+			glfwSetWindowMonitor(m_pGLFWwindow, monitor, 0, 0, videoMode->width, videoMode->height, videoMode->refreshRate);
+
+			m_Specification.width = videoMode->width;
+			m_Specification.height = videoMode->height;
 		}
 
 		CenterWindow();
@@ -49,8 +64,8 @@ namespace Pelican
 		glfwSetFramebufferSizeCallback(m_pGLFWwindow, [](GLFWwindow* window, int width, int height)
 		{
 			Window* pWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
-			pWindow->m_Params.width = width;
-			pWindow->m_Params.height = height;
+			pWindow->m_Specification.width = width;
+			pWindow->m_Specification.height = height;
 
 			WindowResizeEvent event(width, height);
 			pWindow->m_EventCallback(event);
@@ -86,19 +101,19 @@ namespace Pelican
 
 			switch (action)
 			{
-				case GLFW_PRESS:
+			case GLFW_PRESS:
 				{
 					KeyPressedEvent event(static_cast<KeyCode>(key), 0);
 					pWindow->m_EventCallback(event);
 					break;
 				}
-				case GLFW_RELEASE:
+			case GLFW_RELEASE:
 				{
 					KeyReleasedEvent event(static_cast<KeyCode>(key));
 					pWindow->m_EventCallback(event);
 					break;
 				}
-				case GLFW_REPEAT:
+			case GLFW_REPEAT:
 				{
 					KeyPressedEvent event(static_cast<KeyCode>(key), 1);
 					pWindow->m_EventCallback(event);
@@ -122,17 +137,17 @@ namespace Pelican
 			switch (action)
 			{
 			case GLFW_PRESS:
-			{
-				MouseButtonPressedEvent event(static_cast<MouseCode>(button));
-				pWindow->m_EventCallback(event);
-				break;
-			}
+				{
+					MouseButtonPressedEvent event(static_cast<MouseCode>(button));
+					pWindow->m_EventCallback(event);
+					break;
+				}
 			case GLFW_RELEASE:
-			{
-				MouseButtonReleasedEvent event(static_cast<MouseCode>(button));
-				pWindow->m_EventCallback(event);
-				break;
-			}
+				{
+					MouseButtonReleasedEvent event(static_cast<MouseCode>(button));
+					pWindow->m_EventCallback(event);
+					break;
+				}
 			}
 		});
 
@@ -169,6 +184,31 @@ namespace Pelican
 	bool Window::ShouldClose() const
 	{
 		return glfwWindowShouldClose(m_pGLFWwindow);
+	}
+
+	void Window::Maximize()
+	{
+		glfwMaximizeWindow(m_pGLFWwindow);
+	}
+
+	void Window::Restore()
+	{
+		glfwRestoreWindow(m_pGLFWwindow);
+	}
+
+	void Window::SetResizable(bool resizable)
+	{
+		glfwSetWindowAttrib(m_pGLFWwindow, GLFW_RESIZABLE, resizable);
+	}
+
+	void Window::SetTitle(const std::string& title)
+	{
+		glfwSetWindowTitle(m_pGLFWwindow, title.c_str());
+	}
+
+	void Window::Center()
+	{
+		CenterWindow();
 	}
 
 	// Credits to ValentinDev: https://vallentin.dev/2014/02/07/glfw-center-window

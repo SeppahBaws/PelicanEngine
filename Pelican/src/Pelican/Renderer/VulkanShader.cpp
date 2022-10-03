@@ -1,7 +1,7 @@
 ﻿#include "PelicanPCH.h"
 #include "VulkanShader.h"
 
-#include "Pelican/Core/System/FileUtils.h"
+#include "Pelican/IO/FileUtils.h"
 
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
@@ -51,7 +51,7 @@ namespace Pelican
 	void ShaderModule::Initialize()
 	{
 		std::string buf;
-		if (!FileUtils::ReadFileSync(m_FilePath, buf))
+		if (!IO::ReadFileSync(m_FilePath, buf))
 		{
 			throw std::runtime_error("Failed to read shader file: "s + m_FilePath);
 		}

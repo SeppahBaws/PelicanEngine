@@ -104,9 +104,9 @@ namespace Pelican
 			return capabilities.currentExtent;
 		}
 
-		Window::Params params = m_pContext->GetSubsystem<Window>()->GetParams();
+		const WindowSpecification& windowSpec = m_pContext->GetSubsystem<Window>()->GetSpecification();
 
-		vk::Extent2D actualExtent = { static_cast<uint32_t>(params.width), static_cast<uint32_t>(params.height) };
+		vk::Extent2D actualExtent = { static_cast<uint32_t>(windowSpec.width), static_cast<uint32_t>(windowSpec.height) };
 
 		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
 		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));

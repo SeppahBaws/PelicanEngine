@@ -7,20 +7,20 @@ struct GLFWmonitor;
 
 namespace Pelican
 {
+	struct WindowSpecification
+	{
+		std::string title = "Pelican Application";
+		u32 width = 1600;
+		u32 height = 900;
+		bool fullscreen = false;
+	};
+
 	class Window final : public Subsystem
 	{
 	public:
 		using EventCallbackFn = std::function<void(Event&)>;
 
-		struct Params
-		{
-			int width;
-			int height;
-			std::string title;
-			bool resizable;
-		};
-
-		Window(Context* pContext, Params&& params);
+		Window(Context* pContext, const WindowSpecification& specification);
 		~Window() override;
 
 		void SetEventCallback(const EventCallbackFn& callback) { m_EventCallback = callback; }
@@ -31,9 +31,16 @@ namespace Pelican
 
 		[[nodiscard]] bool ShouldClose() const;
 
-		[[nodiscard]] GLFWwindow* GetGLFWWindow() const { return m_pGLFWwindow; }
+		void Maximize();
+		void Restore();
+		void SetResizable(bool resizable);
+		void SetTitle(const std::string& title);
 
-		[[nodiscard]] Params GetParams() const { return m_Params; }
+		void Center();
+
+		[[nodiscard]] GLFWwindow* GetHandle() const { return m_pGLFWwindow; }
+
+		[[nodiscard]] const WindowSpecification& GetSpecification() const { return m_Specification; }
 
 	private:
 		void CenterWindow();
@@ -41,7 +48,7 @@ namespace Pelican
 
 	private:
 		GLFWwindow* m_pGLFWwindow;
-		Params m_Params;
+		WindowSpecification m_Specification;
 
 		EventCallbackFn m_EventCallback;
 	};

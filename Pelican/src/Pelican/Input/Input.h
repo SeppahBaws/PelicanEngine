@@ -4,38 +4,32 @@
 
 #include "KeyCodes.h"
 #include "MouseCodes.h"
+#include "Pelican/Core/Subsystem.h"
 
 struct GLFWwindow;
 
 namespace Pelican
 {
-	class Input
+	class Input final : public Subsystem
 	{
 	public:
-		static void Init(GLFWwindow* window);
-		static void Update();
+		explicit Input(Context* pContext);
+		~Input() override = default;
+		bool OnInitialize() override;
+		void OnTick() override;
 
-		static bool GetKey(KeyCode key);
+		[[nodiscard]] bool GetKey(KeyCode key) const;
+		[[nodiscard]] bool GetMouseButton(MouseCode code) const;
+		[[nodiscard]] glm::vec2 GetMousePos() const;
+		[[nodiscard]] glm::vec2 GetMouseMovement();
+		[[nodiscard]] glm::vec2 GetScroll() const;
 
-		static bool GetMouseButton(MouseCode code);
-		static glm::vec2 GetMousePos();
-		static glm::vec2 GetMouseMovement();
-		static float GetScroll();
-
-		static void SetCursorMode(bool enabled);
-
-	private:
-		// Singleton
-		static Input& GetInstance()
-		{
-			static Input instance{};
-			return instance;
-		}
+		void SetCursorMode(bool enabled);
 
 	private:
 		GLFWwindow* m_pWindow{};
 
 		glm::vec2 m_LastMousePos{};
-		float m_Scroll{};
+		glm::vec2 m_Scroll{};
 	};
 }

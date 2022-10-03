@@ -10,7 +10,7 @@ namespace Pelican
 {
 	// TODO: make a Path utility, which points to a file or folder which has both string and wstring for ease of use.
 	// TODO: add functionality for extension filter, multiple files etc.
-	bool FileDialog::OpenFileDialog(std::wstring& filePath)
+	bool IO::FileDialog::OpenFileDialog(std::wstring& filePath)
 	{
 #ifdef PELICAN_WINDOWS
 		HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);

@@ -2,6 +2,7 @@
 
 #include <entt.hpp>
 
+#include "Pelican/Core/Subsystem.h"
 #include "Pelican/Renderer/UniformData.h"
 
 namespace Pelican
@@ -12,12 +13,16 @@ namespace Pelican
 	class SceneSerializer;
 	class VulkanTexture;
 
-	class Scene
+	class Scene final : public Subsystem
 	{
 	public:
-		Scene();
-		~Scene();
+		explicit Scene(Context* pContext);
+		~Scene() override = default;
 
+		bool OnInitialize() override;
+		void OnTick() override;
+		void OnShutdown() override;
+		
 		void LoadFromFile(const std::string& file);
 		void SaveToFile(const std::string& file) const;
 
@@ -30,14 +35,12 @@ namespace Pelican
 		void SetName(const std::string& name) { m_Name = name; }
 		std::string GetName() const { return m_Name; }
 
-		void Initialize();
-		void Update(Camera* pCamera);
-		void Draw(Camera* pCamera);
-		void Cleanup();
-
 		[[nodiscard]] VulkanTexture* GetSkybox() const { return m_Skybox; }
 		[[nodiscard]] VulkanTexture* GetRadiance() const { return m_Radiance; }
 		[[nodiscard]] VulkanTexture* GetIrradiance() const { return m_Irradiance; }
+
+	private:
+		void Draw();
 
 	private:
 		// We need access to the registry to add components.
@@ -47,6 +50,8 @@ namespace Pelican
 		entt::registry m_Registry;
 
 		u32 m_FrameIdx = 0;
+
+		Camera* m_pCamera{};
 
 		std::string m_Name{};
 		DirectionalLight m_DirectionalLight;

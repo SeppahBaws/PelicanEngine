@@ -163,7 +163,7 @@ namespace Pelican
 			mat.m_pMetallicRoughnessTexture->GetDescriptorImageInfo(),
 			mat.m_pAOTexture->GetDescriptorImageInfo(),
 		};
-
+		
 		const vk::DescriptorImageInfo skyboxInfo = Application::Get().GetScene()->GetSkybox()->GetDescriptorImageInfo();
 		const vk::DescriptorImageInfo radianceInfo = Application::Get().GetScene()->GetRadiance()->GetDescriptorImageInfo();
 		const vk::DescriptorImageInfo irradianceInfo = Application::Get().GetScene()->GetIrradiance()->GetDescriptorImageInfo();

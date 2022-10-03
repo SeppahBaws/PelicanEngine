@@ -2,7 +2,7 @@
 
 namespace Pelican
 {
-	namespace FileDialog
+	namespace IO::FileDialog
 	{
 		bool OpenFileDialog(std::wstring& filePath);
 	}

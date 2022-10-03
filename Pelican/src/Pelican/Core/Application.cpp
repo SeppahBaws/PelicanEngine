@@ -18,17 +18,17 @@
 
 namespace Pelican
 {
-	Application* Application::m_Instance = nullptr;
+	Application* Application::m_Instance{};
 
-	Application::Application()
+	Application::Application(const ApplicationSpecification& specification)
 	{
 		if (m_Instance)
 		{
 			ASSERT_MSG(false, "Application already exists! Cannot create two applications at once!");
 		}
-
 		m_Instance = this;
 
+		m_Specification = specification;
 
 		Logger::Init();
 		Logger::Configure({ true, true });
@@ -36,8 +36,16 @@ namespace Pelican
 
 		m_pContext = std::make_shared<Context>();
 
-		m_pContext->AddSubsystem<Window>(Window::Params{ 1920, 1080, "Sandbox", true });
+		WindowSpecification windowSpec = {
+			.title = m_Specification.name,
+			.width = m_Specification.windowWidth,
+			.height = m_Specification.windowHeight,
+			.fullscreen = m_Specification.fullscreen
+		};
+		Window* pWindow = m_pContext->AddSubsystem<Window>(windowSpec);
+		m_pContext->AddSubsystem<Input>();
 		m_pContext->AddSubsystem<VulkanRenderer>();
+		m_pContext->AddSubsystem<Scene>();
 
 		if (!m_pContext->OnInitialize())
 		{
@@ -48,42 +56,30 @@ namespace Pelican
 			Logger::LogInfo("Initialized all subsystems!");
 		}
 
-
-		// TODO: camera should be fetched from the scene.
-		Window* pWindow = m_pContext->GetSubsystem<Window>();
-		VulkanRenderer* pRenderer = m_pContext->GetSubsystem<VulkanRenderer>();
-		m_pCamera = new Camera(120.0f,
-			static_cast<float>(pWindow->GetParams().width),
-			static_cast<float>(pWindow->GetParams().height),
-			0.1f, 1000.0f);
-		pRenderer->SetCamera(m_pCamera);
-
+		// if (m_Specification.startMaximized)
+		// {
+		// 	pWindow->Maximize();
+		// }
+		// pWindow->SetResizable(m_Specification.resizable);
+		
 		pWindow->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
-		Input::Init(pWindow->GetGLFWWindow());
 
-		m_pScene = new Scene();
 	}
 
 	Application::~Application()
 	{
 		m_pContext->GetSubsystem<VulkanRenderer>()->WaitForIdle();
 
-		delete m_pScene;
-		delete m_pCamera;
-
-		m_pScene = nullptr;
-		m_pCamera = nullptr;
-
 		m_pContext->OnShutdown();
 	}
 
 	void Application::OnEvent(Event& e)
 	{
+		m_pContext->OnEvent(e);
+
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(Application::OnWindowClose));
 		dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Application::OnWindowResize));
-
-		m_pCamera->OnEvent(e);
 
 		if (e.IsInCategory(EventCategoryApplication))
 		{
@@ -106,9 +102,11 @@ namespace Pelican
 
 	void Application::Run()
 	{
-		LoadScene(m_pScene);
+		Scene* pScene = m_pContext->GetSubsystem<Scene>();
+		LoadScene(pScene);
 
 		Window* pWindow = m_pContext->GetSubsystem<Window>();
+		Input* pInput = m_pContext->GetSubsystem<Input>();
 		VulkanRenderer* pRenderer = m_pContext->GetSubsystem<VulkanRenderer>();
 
 		auto t = std::chrono::high_resolution_clock::now();
@@ -121,21 +119,6 @@ namespace Pelican
 
 			m_pContext->OnTick();
 
-			m_pCamera->Update();
-
-			// Update scene
-			{
-				m_pScene->Update(m_pCamera);
-			}
-
-			if (!pRenderer->BeginScene())
-				continue;
-
-			// Draw scene
-			{
-				m_pScene->Draw(m_pCamera);
-			}
-
 			// Draw ImGui
 			{
 				// Show some frame time results.
@@ -145,7 +128,7 @@ namespace Pelican
 				{
 					ImGui::Text("Frame time: %fms", Time::GetDeltaTime() * 1000.0f);
 					ImGui::Text("Fps: %.0f", 1.0f / Time::GetDeltaTime());
-					glm::vec2 pos = Input::GetMousePos();
+					const glm::vec2 pos = pInput->GetMousePos();
 					ImGui::Text("Mouse position: (%.0f, %.0f)", pos.x, pos.y);
 				}
 				ImGui::End();
@@ -176,8 +159,12 @@ namespace Pelican
 			}
 
 			pRenderer->EndScene();
-
-			Input::Update();
 		}
+	}
+
+	Scene* Application::GetScene() const
+	{
+		Scene* pScene = m_pContext->GetSubsystem<Scene>();
+		return pScene;
 	}
 }

@@ -4,7 +4,7 @@
 
 namespace Pelican
 {
-	namespace FileUtils
+	namespace IO
 	{
 		enum class FileWriteMode
 		{

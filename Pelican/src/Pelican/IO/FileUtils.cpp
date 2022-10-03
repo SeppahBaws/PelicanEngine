@@ -6,7 +6,7 @@
 
 namespace Pelican
 {
-	namespace FileUtils
+	namespace IO
 	{
 		bool ReadFileSync(const std::string& path, std::string& outputBuf)
 		{

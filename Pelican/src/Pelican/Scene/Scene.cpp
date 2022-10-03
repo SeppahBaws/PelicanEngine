@@ -13,8 +13,8 @@
 
 #include "Pelican/Core/Application.h"
 #include "Pelican/Core/Time.h"
-#include "Pelican/Core/System/FileUtils.h"
-#include "Pelican/Core/System/FileDialog.h"
+#include "Pelican/IO/FileUtils.h"
+#include "Pelican/IO/FileDialog.h"
 
 #include "Pelican/Renderer/Camera.h"
 #include "Pelican/Renderer/UniformData.h"
@@ -23,21 +23,66 @@
 
 namespace Pelican
 {
-	Scene::Scene()
+	Scene::Scene(Context* pContext)
+		: Subsystem(pContext)
 	{
-		Initialize();
 	}
 
-	Scene::~Scene()
+	bool Scene::OnInitialize()
 	{
-		Cleanup();
+		Window* pWindow = m_pContext->GetSubsystem<Window>();
+		VulkanRenderer* pRenderer = m_pContext->GetSubsystem<VulkanRenderer>();
+		m_pCamera = new Camera(m_pContext, 120.0f,
+			static_cast<float>(pWindow->GetSpecification().width),
+			static_cast<float>(pWindow->GetSpecification().height),
+			0.1f, 1000.0f);
+		pRenderer->SetCamera(m_pCamera);
+
+		return true;
+	}
+
+	void Scene::OnTick()
+	{
+		m_pCamera->Update();
+
+		if (m_AnimateLight)
+			m_PointLight.position = glm::vec3(cos(Time::GetTotalTime()) * 10.0f, 30.0f, sin(Time::GetTotalTime()) * 10.0f);
+
+		for (auto [entity, transform, model] : m_Registry.view<TransformComponent, ModelComponent>().each())
+		{
+			glm::mat4 m = transform.GetTransform();
+			glm::mat4 v = m_pCamera->GetView();
+			glm::mat4 p = m_pCamera->GetProjection();
+			p[1][1] *= -1;
+
+			model.pModel->UpdateDrawData(m, v, p);
+		}
+
+		Draw();
+	}
+
+	void Scene::OnShutdown()
+	{
+		// TODO: figure out a way to make this easier.
+		// (registry.destroy() on each entity might work, then we can move the memory free to the deconstructor of the components.)
+		// Will have to test when VLD works again.
+		for (auto [entity, model] : m_Registry.view<ModelComponent>().each())
+		{
+			delete model.pModel;
+		}
+
+		AssetManager::GetInstance().UnloadTexture(m_Skybox);
+		AssetManager::GetInstance().UnloadTexture(m_Radiance);
+		AssetManager::GetInstance().UnloadTexture(m_Irradiance);
+
+		delete m_pCamera;
 	}
 
 	void Scene::LoadFromFile(const std::string& file)
 	{
 		std::string fileContent;
 
-		const bool result = FileUtils::ReadFileSync(file, fileContent);
+		const bool result = IO::ReadFileSync(file, fileContent);
 		if (!result)
 		{
 			Logger::LogError("Failed to read \"%s\"!", file.c_str());
@@ -53,7 +98,7 @@ namespace Pelican
 
 		SceneSerializer::Serialize(this, fileContent);
 
-		const bool result = FileUtils::WriteFileSync(file, fileContent);
+		const bool result = IO::WriteFileSync(file, fileContent);
 		if (!result)
 		{
 			Logger::LogError("Failed to write to \"%s\"", file.c_str());
@@ -76,30 +121,10 @@ namespace Pelican
 		m_Registry.destroy(entity.m_Entity);
 	}
 
-	void Scene::Initialize()
-	{
-	}
-
-	void Scene::Update(Camera* pCamera)
-	{
-		if (m_AnimateLight)
-			m_PointLight.position = glm::vec3(cos(Time::GetTotalTime()) * 10.0f, 30.0f, sin(Time::GetTotalTime()) * 10.0f);
-
-		for (auto [entity, transform, model] : m_Registry.view<TransformComponent, ModelComponent>().each())
-		{
-			glm::mat4 m = transform.GetTransform();
-			glm::mat4 v = pCamera->GetView();
-			glm::mat4 p = pCamera->GetProjection();
-			p[1][1] *= -1;
-
-			model.pModel->UpdateDrawData(m, v, p);
-		}
-	}
-
 	// Temp, will be moved to its own EditorPanel in the future.
 	static std::optional<entt::entity> selectedEntity{};
 
-	void Scene::Draw(Camera* pCamera)
+	void Scene::Draw()
 	{
 		auto view = m_Registry.view<TransformComponent, ModelComponent>();
 
@@ -114,7 +139,7 @@ namespace Pelican
 
 		// Bind push constants
 		CameraPushConst pushConst;
-		pushConst.eyePos = pCamera->GetPosition();
+		pushConst.eyePos = m_pCamera->GetPosition();
 
 		cmd.pushConstants(VulkanRenderer::GetPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, sizeof(CameraPushConst), &pushConst);
 
@@ -147,7 +172,7 @@ namespace Pelican
 					if (ImGui::MenuItem("Load scene file"))
 					{
 						std::wstring filePath;
-						if (FileDialog::OpenFileDialog(filePath))
+						if (IO::FileDialog::OpenFileDialog(filePath))
 						{
 							Logger::LogDebug("Loading scene file \"%ls\"", filePath.c_str());
 						}
@@ -233,20 +258,5 @@ namespace Pelican
 #pragma endregion
 
 		m_FrameIdx = (m_FrameIdx + 1) % 3;
-	}
-
-	void Scene::Cleanup()
-	{
-		// TODO: figure out a way to make this easier.
-		// (registry.destroy() on each entity might work, then we can move the memory free to the deconstructor of the components.)
-		// Will have to test when VLD works again.
-		for (auto [entity, model] : m_Registry.view<ModelComponent>().each())
-		{
-			delete model.pModel;
-		}
-
-		AssetManager::GetInstance().UnloadTexture(m_Skybox);
-		AssetManager::GetInstance().UnloadTexture(m_Radiance);
-		AssetManager::GetInstance().UnloadTexture(m_Irradiance);
 	}
 }

@@ -3,60 +3,71 @@
 
 #include <GLFW/glfw3.h>
 
+#include "Pelican/Core/Context.h"
+#include "Pelican/Core/Window.h"
+
 namespace Pelican
 {
-	void Input::Init(GLFWwindow* window)
+	Input::Input(Context* pContext)
+		: Subsystem(pContext)
 	{
-		GetInstance().m_pWindow = window;
+	}
 
-		glfwSetScrollCallback(window, [](GLFWwindow* /*pWindow*/, double /*x*/, double y)
+	bool Input::OnInitialize()
+	{
+		m_pWindow = m_pContext->GetSubsystem<Window>()->GetHandle();
+		static Input* input = this;
+
+		glfwSetScrollCallback(m_pWindow, [](GLFWwindow* /*pWindow*/, f64 x, f64 y)
 		{
-			GetInstance().m_Scroll = static_cast<float>(y);
+			input->m_Scroll = { x, y };
 		});
+
+		return true;
 	}
 
-	void Input::Update()
+	void Input::OnTick()
 	{
-		GetInstance().m_Scroll = 0.0f;
+		m_Scroll = glm::vec2{ 0.0f };
 	}
 
-	bool Input::GetKey(KeyCode key)
+	bool Input::GetKey(KeyCode key) const
 	{
-		return glfwGetKey(GetInstance().m_pWindow, static_cast<int>(key)) == GLFW_PRESS;
+		return glfwGetKey(m_pWindow, static_cast<int>(key)) == GLFW_PRESS;
 	}
 
-	bool Input::GetMouseButton(MouseCode code)
+	bool Input::GetMouseButton(MouseCode code) const
 	{
-		return glfwGetMouseButton(GetInstance().m_pWindow, static_cast<int>(code)) == GLFW_PRESS;
+		return glfwGetMouseButton(m_pWindow, static_cast<int>(code)) == GLFW_PRESS;
 	}
 
-	glm::vec2 Input::GetMousePos()
+	glm::vec2 Input::GetMousePos() const
 	{
-		double x, y;
-		glfwGetCursorPos(GetInstance().m_pWindow, &x, &y);
+		f64 x, y;
+		glfwGetCursorPos(m_pWindow, &x, &y);
 
 		return glm::vec2(static_cast<float>(x), static_cast<float>(y));
 	}
 
 	glm::vec2 Input::GetMouseMovement()
 	{
-		double x, y;
-		glfwGetCursorPos(GetInstance().m_pWindow, &x, &y);
+		f64 x, y;
+		glfwGetCursorPos(m_pWindow, &x, &y);
 
-		const glm::vec2 mov = GetInstance().m_LastMousePos - glm::vec2(x, y);
+		const glm::vec2 mov = m_LastMousePos - glm::vec2(x, y);
 
-		GetInstance().m_LastMousePos = { x, y };
+		m_LastMousePos = { x, y };
 
 		return mov;
 	}
 
-	float Input::GetScroll()
+	glm::vec2 Input::GetScroll() const
 	{
-		return GetInstance().m_Scroll;
+		return m_Scroll;
 	}
 
 	void Input::SetCursorMode(bool enabled)
 	{
-		glfwSetInputMode(GetInstance().m_pWindow, GLFW_CURSOR, enabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+		glfwSetInputMode(m_pWindow, GLFW_CURSOR, enabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
 	}
 }

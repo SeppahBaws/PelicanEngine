@@ -14,10 +14,21 @@ namespace Pelican
 	class Model;
 	class ImGuiWrapper;
 
+	struct ApplicationSpecification
+	{
+		std::string name = "Pelican Application";
+		u32 windowWidth = 1600;
+		u32 windowHeight = 900;
+		bool fullscreen = false;
+		bool vsync = true;
+		bool resizable = true;
+		bool startMaximized = true;
+	};
+
 	class Application
 	{
 	public:
-		Application();
+		Application(const ApplicationSpecification& specification);
 		virtual ~Application();
 
 		void OnEvent(Event& e);
@@ -31,8 +42,7 @@ namespace Pelican
 
 	public:
 		static Application& Get() { return *m_Instance; }
-		Scene* GetScene() const { return m_pScene; }
-		Camera* GetCamera() const { return m_pCamera; }
+		Scene* GetScene() const;
 
 	public:
 		RenderMode m_RenderMode = RenderMode::Filled;
@@ -40,10 +50,7 @@ namespace Pelican
 	private:
 		std::shared_ptr<Context> m_pContext;
 
-		// TODO: make these subsystems
-		Scene* m_pScene{};
-
-		Camera* m_pCamera{};
+		ApplicationSpecification m_Specification;
 
 		static Application* m_Instance;
 	};

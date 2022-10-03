@@ -9,7 +9,9 @@
 class Sandbox final : public Pelican::Application
 {
 public:
-	Sandbox() = default;
+	explicit Sandbox(const Pelican::ApplicationSpecification& specification)
+		: Application(specification)
+	{}
 
 	void LoadScene(Pelican::Scene* pScene) override
 	{
@@ -21,5 +23,14 @@ public:
 
 Pelican::Application* Pelican::CreateApplication()
 {
-	return new Sandbox();
+	const Pelican::ApplicationSpecification applicationSpecification = {
+		.name = "Sandbox",
+		.windowWidth = 1920,
+		.windowHeight = 1080,
+		.fullscreen = false,
+		.vsync = true,
+		.resizable = true,
+		.startMaximized = false
+	};
+	return new Sandbox(applicationSpecification);
 }

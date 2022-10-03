@@ -12,9 +12,11 @@ namespace Pelican
 		Context() = default;
 
 		template<EngineSystem T, class... TArgs>
-		void AddSubsystem(TArgs&&... args)
+		T* AddSubsystem(TArgs&&... args)
 		{
 			m_Subsystems.emplace_back(std::make_shared<T>(this, std::forward<TArgs>(args)...));
+
+			return static_cast<T*>(m_Subsystems.back().get());
 		}
 
 		template<EngineSystem T>
@@ -58,6 +60,14 @@ namespace Pelican
 			for (auto& subsystem : m_Subsystems | std::views::reverse)
 			{
 				subsystem->OnShutdown();
+			}
+		}
+
+		void OnEvent(Event& e)
+		{
+			for (auto& subsystem : m_Subsystems)
+			{
+				subsystem->OnEvent(e);
 			}
 		}
 

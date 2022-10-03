@@ -13,6 +13,9 @@ typedef int64_t		i64;
 typedef float		f32;
 typedef double		f64;
 
+inline constexpr f32 F32_EPSILON = static_cast<f32>(1e-6);
+inline constexpr f64 F64_EPSILON = 1e-6;
+
 
 #ifdef PELICAN_DEBUG
 #define ENABLE_ASSERTIONS

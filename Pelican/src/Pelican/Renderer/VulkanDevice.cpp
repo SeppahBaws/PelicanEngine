@@ -81,7 +81,7 @@ namespace Pelican
 
 	void VulkanDevice::CreateSurface()
 	{
-		GLFWwindow* window = m_pContext->GetSubsystem<Window>()->GetGLFWWindow();
+		GLFWwindow* window = m_pContext->GetSubsystem<Window>()->GetHandle();
 		VkSurfaceKHR rawSurface;
 		VK_CHECK(glfwCreateWindowSurface(m_Instance, window, nullptr, &rawSurface));
 

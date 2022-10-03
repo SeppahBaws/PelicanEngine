@@ -82,7 +82,7 @@ namespace Pelican
 		imGuiInit.device = m_pDevice->GetDevice();
 		imGuiInit.queue = GetGraphicsQueue();
 		imGuiInit.renderPass = m_RenderPass;
-		m_pImGui->Init(m_pContext->GetSubsystem<Window>()->GetGLFWWindow(), imGuiInit);
+		m_pImGui->Init(m_pContext->GetSubsystem<Window>()->GetHandle(), imGuiInit);
 
 		return true;
 	}
@@ -686,10 +686,10 @@ namespace Pelican
 
 	void VulkanRenderer::RecreateSwapChain()
 	{
-		Window::Params params = m_pContext->GetSubsystem<Window>()->GetParams();
-		while (params.width == 0 || params.height == 0)
+		WindowSpecification windowSpec = m_pContext->GetSubsystem<Window>()->GetSpecification();
+		while (windowSpec.width == 0 || windowSpec.height == 0)
 		{
-			params = m_pContext->GetSubsystem<Window>()->GetParams();
+			windowSpec = m_pContext->GetSubsystem<Window>()->GetSpecification();
 			glfwWaitEvents();
 		}
 
@@ -744,7 +744,8 @@ namespace Pelican
 			memcpy(data, &ubo, sizeof(ubo));
 		mvpBuf->Unmap();
 
-		const DirectionalLight& light = Application::Get().GetScene()->GetDirectionalLight();
+		Scene* pScene = m_pContext->GetSubsystem<Scene>();
+		const DirectionalLight& light = pScene->GetDirectionalLight();
 
 		const VulkanBuffer* lightBuf = m_LightUBOs[currentImage];
 		data = lightBuf->Map(sizeof(light));
